@@ -23,10 +23,15 @@ import Step5Declarations, {
   step5Schema,
   type Step5Data,
 } from "@/components/FormSteps/Step5Declarations"
-import Step6Signature, {
+import dynamic from "next/dynamic"
+import {
   step6Schema,
   type Step6Data,
 } from "@/components/FormSteps/Step6Signature"
+const Step6Signature = dynamic(
+  () => import("@/components/FormSteps/Step6Signature"),
+  { ssr: false }
+)
 import Card from "@/components/ui/Card"
 import Button from "@/components/ui/Button"
 
