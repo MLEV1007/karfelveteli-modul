@@ -1,4 +1,9 @@
-import { uploadToR2 } from "./r2"
+import { createClient } from "@supabase/supabase-js"
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 function formatDateForFolder(): string {
   const now = new Date()
@@ -9,25 +14,10 @@ function formatDateForFolder(): string {
 }
 
 function sanitizeVehiclePlate(plate: string): string {
-  // Replace special characters with dashes for folder naming
   return plate.replace(/[^a-zA-Z0-9]/g, "-")
 }
 
-// Server-side only: upload photo with proper folder structure
-export async function uploadDamagePhotoServer(
-  fileBuffer: Buffer,
-  vehiclePlate: string,
-  reportId: string,
-  index: number
-): Promise<string> {
-  const dateStr = formatDateForFolder()
-  const sanitizedPlate = sanitizeVehiclePlate(vehiclePlate)
-  const key = `${sanitizedPlate}/${dateStr}_${reportId}/foto_${index + 1}.jpg`
-  
-  return await uploadToR2(fileBuffer, key, "image/jpeg")
-}
-
-// Server-side only: upload signature with proper folder structure
+// Server-side only: upload signature to Supabase Storage
 export async function uploadSignature(
   dataUrl: string,
   vehiclePlate: string,
@@ -40,12 +30,22 @@ export async function uploadSignature(
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i)
   }
-  const buffer = Buffer.from(bytes)
+
   const dateStr = formatDateForFolder()
   const sanitizedPlate = sanitizeVehiclePlate(vehiclePlate)
-  const key = `${sanitizedPlate}/${dateStr}_${reportId}/${type}_alairas.png`
-  
-  return await uploadToR2(buffer, key, "image/png")
+  const path = `${sanitizedPlate}/${dateStr}_${reportId}/${type}_alairas.png`
+
+  const { error } = await supabaseAdmin.storage
+    .from("signatures")
+    .upload(path, bytes, {
+      contentType: "image/png",
+      upsert: true,
+    })
+
+  if (error) throw new Error(`Supabase Storage hiba: ${error.message}`)
+
+  const { data } = supabaseAdmin.storage.from("signatures").getPublicUrl(path)
+  return data.publicUrl
 }
 
 // Client-side: convert file to base64 for transport to API
