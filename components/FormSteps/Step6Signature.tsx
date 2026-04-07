@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import SignatureCanvas from "react-signature-canvas"
+import SignaturePad, { type SignaturePadHandle } from "@/components/ui/SignaturePad"
 import { z } from "zod"
 import Button from "@/components/ui/Button"
 import Checkbox from "@/components/ui/Checkbox"
@@ -35,8 +35,8 @@ export default function Step6Signature({
   onSubmit,
   isSubmitting,
 }: Props) {
-  const ownerSigRef = useRef<SignatureCanvas>(null)
-  const driverSigRef = useRef<SignatureCanvas>(null)
+  const ownerSigRef = useRef<SignaturePadHandle>(null)
+  const driverSigRef = useRef<SignaturePadHandle>(null)
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
@@ -85,15 +85,12 @@ export default function Step6Signature({
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Tulajdonos aláírása <span className="text-red-500">*</span>
         </p>
-        <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800">
-          <SignatureCanvas
+        <div className="border rounded-lg overflow-hidden bg-white">
+          <SignaturePad
             ref={ownerSigRef}
             penColor={penColor}
             backgroundColor="white"
-            canvasProps={{
-              className: "w-full",
-              style: { height: 180 },
-            }}
+            height={180}
             onEnd={handleOwnerEnd}
           />
         </div>
@@ -115,15 +112,12 @@ export default function Step6Signature({
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
           Ha azonos a tulajdonossal, elegendő csak felül aláírni
         </p>
-        <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800">
-          <SignatureCanvas
+        <div className="border rounded-lg overflow-hidden bg-white">
+          <SignaturePad
             ref={driverSigRef}
             penColor={penColor}
             backgroundColor="white"
-            canvasProps={{
-              className: "w-full",
-              style: { height: 180 },
-            }}
+            height={180}
             onEnd={handleDriverEnd}
           />
         </div>
