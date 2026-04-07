@@ -1,0 +1,6 @@
+# TODO: Form lépés komponensek
+# Step1_CustomerInfo.tsx – ügyfél adatok (név, email, telefon)
+# Step2_VehicleInfo.tsx  – jármű adatok (márka, modell, év, rendszám, VIN)
+# Step3_DamageInfo.tsx   – kárleírás + helyszín
+# Step4_Signature.tsx    – react-signature-canvas aláírás
+# Step5_GdprConsent.tsx  – GDPR hozzájárulás + beküldés gomb

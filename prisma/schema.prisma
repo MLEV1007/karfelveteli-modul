@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model DamageReport {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // 1. lépés — Személyes adatok
+  ownerName     String
+  ownerAddress  String?
+  driverName    String?
+  driverAddress String?
+  driverPhone   String?
+  customerEmail String
+  customerPhone String?
+
+  // 2. lépés — Jármű + biztosítás
+  vehiclePlate     String
+  vehicleMake      String
+  vehicleModel     String
+  vehicleYear      Int?
+  vehicleVin       String?
+  hasCasco         Boolean @default(false)
+  cascoInsurer     String?
+  liabilityInsurer String?
+  relevantInsurer  String?
+
+  // 3. lépés — Baleset körülményei
+  accidentDate              DateTime?
+  accidentCountry           String?
+  accidentCity              String?
+  accidentStreet            String?
+  outsideSettlement         Boolean   @default(false)
+  roadNumber                String?
+  kilometerMark             String?
+  policeInvolved            Boolean   @default(false)
+  policeReportNo            String?
+  policeStation             String?
+  otherVehiclePlate         String?
+  otherVehicleType          String?
+  otherVehicleColor         String?
+  additionalParties         String?
+  vehicleInspectionLocation String?
+
+  // 4. lépés — Kár leírása
+  damageDescription String?
+  damagePoints      Json?
+  photoUrls         String[]
+
+  // 5. lépés — Felelősség nyilatkozatok
+  liableParty        String?
+  underInfluence     Boolean @default(false)
+  licenseValid       Boolean @default(true)
+  taxNumber          String?
+  consentToPhotocopy Boolean @default(false)
+  cascoClaimRequest  Boolean @default(false)
+  vehicleEncumbrance Boolean @default(false)
+
+  // 6. lépés — Aláírás + GDPR
+  ownerSignatureUrl  String?
+  driverSignatureUrl String?
+  gdprConsent        Boolean   @default(false)
+  emailSentAt        DateTime?
+
+  // Szerkesztési token (magic link)
+  editToken     String?   @unique
+  tokenExpiresAt DateTime?
+}

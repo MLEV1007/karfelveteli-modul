@@ -1,0 +1,6 @@
+# TODO: Szerver oldali segédkönyvtárak (SOHA nem kerülnek /components/ alá)
+# prisma.ts       – Prisma client singleton
+# supabase.ts     – Supabase client (storage feltöltés)
+# validations.ts  – Zod sémák (DamageReportSchema)
+# ratelimit.ts    – @upstash/ratelimit konfiguráció
+# pdf.ts          – @react-pdf/renderer dokumentum sablon
