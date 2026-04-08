@@ -168,10 +168,6 @@ export async function POST(req: NextRequest) {
 
     // 5. PDF generálás
     // Aláírásokhoz base64 adatot használunk (react-pdf nem kell hálózati kérést küldjön)
-    // createdAt-ot Budapest időzónára konvertáljuk (UTC+1 télen, UTC+2 nyáron)
-    const budapestCreatedAt = new Date(
-      new Date(report.createdAt).toLocaleString("en-US", { timeZone: "Europe/Budapest" })
-    )
     let pdfBuffer: Buffer
     try {
       pdfBuffer = await generatePDF({
@@ -179,7 +175,7 @@ export async function POST(req: NextRequest) {
         ownerSignatureUrl: ownerSignatureBase64,
         driverSignatureUrl: driverSignatureBase64 || undefined,
         id: report.id,
-        createdAt: budapestCreatedAt,
+        createdAt: report.createdAt,
       })
     } catch (pdfError) {
       console.error("PDF hiba részletei:", pdfError)
@@ -196,7 +192,7 @@ export async function POST(req: NextRequest) {
         {
           ...data,
           id: report.id,
-          createdAt: budapestCreatedAt,
+          createdAt: report.createdAt,
           editToken: report.editToken ?? undefined,
         },
         pdfBuffer
