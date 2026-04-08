@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect, useState } from "react"
+import { useRef } from "react"
 import SignaturePad, { type SignaturePadHandle } from "@/components/ui/SignaturePad"
 import { z } from "zod"
 import Button from "@/components/ui/Button"
@@ -37,17 +37,7 @@ export default function Step6Signature({
 }: Props) {
   const ownerSigRef = useRef<SignaturePadHandle>(null)
   const driverSigRef = useRef<SignaturePadHandle>(null)
-  const [isDark, setIsDark] = useState(false)
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)")
-    setIsDark(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches)
-    mq.addEventListener("change", handler)
-    return () => mq.removeEventListener("change", handler)
-  }, [])
-
-  const penColor = isDark ? "#ffffff" : "#1e293b"
+  const penColor = "#1e293b"
 
   const handleOwnerEnd = () => {
     if (!ownerSigRef.current || ownerSigRef.current.isEmpty()) return
