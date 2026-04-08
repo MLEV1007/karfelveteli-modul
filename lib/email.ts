@@ -30,10 +30,15 @@ export async function sendReportEmails(
     attachments: [pdfAttachment],
   })
 
-  // 2. Email a műhelynek
+  // 2. Email a műhelynek (több cím is megadható WORKSHOP_EMAIL_2, stb.)
+  const workshopRecipients = [
+    process.env.WORKSHOP_EMAIL!,
+    process.env.WORKSHOP_EMAIL_2,
+  ].filter(Boolean) as string[]
+
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
-    to: process.env.WORKSHOP_EMAIL!,
+    to: workshopRecipients,
     subject: `Új kárfelvétel — ${data.vehiclePlate.toUpperCase()} — ${new Intl.DateTimeFormat("hu-HU", {
       year: "numeric",
       month: "2-digit",
