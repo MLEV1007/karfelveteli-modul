@@ -21,6 +21,7 @@ interface CustomerEmailProps {
 export default function CustomerEmail({ data }: CustomerEmailProps) {
   const formatDate = (date: Date) =>
     new Intl.DateTimeFormat("hu-HU", {
+      timeZone: "Europe/Budapest",
       year: "numeric",
       month: "long",
       day: "numeric",

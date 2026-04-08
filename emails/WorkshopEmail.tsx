@@ -21,6 +21,7 @@ interface WorkshopEmailProps {
 export default function WorkshopEmail({ data }: WorkshopEmailProps) {
   const formatDate = (date: Date) =>
     new Intl.DateTimeFormat("hu-HU", {
+      timeZone: "Europe/Budapest",
       year: "numeric",
       month: "long",
       day: "numeric",

@@ -152,6 +152,7 @@ interface PDFData extends DamageReportInput {
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("hu-HU", {
+    timeZone: "Europe/Budapest",
     year: "numeric",
     month: "long",
     day: "numeric",
