@@ -18,7 +18,6 @@ import path from "path"
 import fs from "fs"
 import type { DamageReportInput } from "./validation"
 
-// Roboto font – latin + latin-ext merged TTF (covers all Hungarian characters: á, é, í, ó, ö, ő, ú, ü, ű)
 const fontsDir = path.join(process.cwd(), "lib", "fonts")
 const robotoRegular = fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf"))
 const robotoBold = fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf"))
@@ -29,119 +28,179 @@ const logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`
 Font.register({
   family: "Roboto",
   fonts: [
-    {
-      src: `data:font/truetype;base64,${robotoRegular.toString("base64")}`,
-      fontWeight: "normal",
-    },
-    {
-      src: `data:font/truetype;base64,${robotoBold.toString("base64")}`,
-      fontWeight: "bold",
-    },
+    { src: `data:font/truetype;base64,${robotoRegular.toString("base64")}`, fontWeight: "normal" },
+    { src: `data:font/truetype;base64,${robotoBold.toString("base64")}`, fontWeight: "bold" },
   ],
 })
 
-const styles = StyleSheet.create({
+const BORDER = "1pt solid #374151"
+const BORDER_LIGHT = "0.5pt solid #9ca3af"
+const HEADER_BG = "#1e3a5f"
+const SECTION_BG = "#e8edf4"
+const LABEL_COLOR = "#374151"
+const VALUE_COLOR = "#111827"
+const HEADER_TEXT = "#ffffff"
+
+const s = StyleSheet.create({
   page: {
-    paddingTop: 30,
-    paddingLeft: 30,
-    paddingRight: 30,
-    paddingBottom: 70, // extra hely a fixed lábléc miatt
-    fontSize: 10,
+    paddingTop: 14,
+    paddingLeft: 14,
+    paddingRight: 14,
+    paddingBottom: 14,
+    fontSize: 7.5,
     fontFamily: "Roboto",
+    backgroundColor: "#ffffff",
   },
-  header: {
+
+  // ── Fejléc ──────────────────────────────────────────────
+  headerRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    borderBottom: "2px solid #1e3a5f",
-    paddingBottom: 10,
+    borderBottom: BORDER,
+    marginBottom: 0,
   },
   headerLeft: {
-    width: 80,
-    marginRight: 16,
+    flex: 1,
+    padding: 6,
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: HEADER_BG,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    fontSize: 7,
+    color: "#6b7280",
+    marginTop: 2,
   },
   headerRight: {
-    flex: 1,
+    width: 200,
+    flexDirection: "row",
+    borderLeft: BORDER,
+    alignItems: "center",
+    padding: 6,
+    gap: 8,
   },
   logo: {
-    width: 80,
-    height: 40,
+    width: 48,
+    height: 32,
     objectFit: "contain",
   },
-  title: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#1e3a5f",
+  workshopInfo: {
+    flex: 1,
   },
-  subtitle: {
-    fontSize: 10,
+  workshopName: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: HEADER_BG,
+  },
+  workshopDetail: {
+    fontSize: 6.5,
     color: "#6b7280",
+    marginTop: 1,
   },
-  section: {
-    marginBottom: 12,
+
+  // ── Szekció fejléc ──────────────────────────────────────
+  sectionHeader: {
+    backgroundColor: HEADER_BG,
+    padding: "3 5",
   },
-  sectionTitleWrapper: {
-    // minPresenceAhead biztosítja, hogy a szekciócím után
-    // legalább 60pt hely maradjon az oldalon — nem marad egyedül alul
-    minPresenceAhead: 60,
-  },
-  sectionTitle: {
-    fontSize: 11,
+  sectionHeaderText: {
+    fontSize: 7,
     fontWeight: "bold",
-    backgroundColor: "#f3f4f6",
-    padding: 4,
-    marginBottom: 6,
-    color: "#1e3a5f",
+    color: HEADER_TEXT,
+    letterSpacing: 0.3,
   },
+
+  // ── Sor és cella alapelemek ──────────────────────────────
   row: {
     flexDirection: "row",
-    marginBottom: 3,
+  },
+  cell: {
+    padding: "3 5",
+    borderRight: BORDER_LIGHT,
+    borderBottom: BORDER_LIGHT,
+  },
+  cellNoBorderRight: {
+    padding: "3 5",
+    borderBottom: BORDER_LIGHT,
   },
   label: {
-    width: "40%",
+    fontSize: 6,
     color: "#6b7280",
+    marginBottom: 1.5,
   },
   value: {
-    width: "60%",
-    color: "#1e293b",
+    fontSize: 8,
+    fontWeight: "bold",
+    color: VALUE_COLOR,
+    minHeight: 10,
   },
-  signatureBox: {
-    border: "1px solid #d1d5db",
-    borderRadius: 4,
-    padding: 8,
+  valuePlaceholder: {
+    fontSize: 8,
+    color: "#d1d5db",
+    minHeight: 10,
+  },
+
+  // ── Checkbox sor ─────────────────────────────────────────
+  checkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: "3 5",
+    borderBottom: BORDER_LIGHT,
+    gap: 4,
+  },
+  checkBox: {
+    width: 8,
+    height: 8,
+    border: "1pt solid #6b7280",
+    marginRight: 3,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkBoxFilled: {
+    width: 8,
+    height: 8,
+    border: "1pt solid #1e3a5f",
+    backgroundColor: HEADER_BG,
+    marginRight: 3,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkLabel: {
+    fontSize: 7,
+    color: LABEL_COLOR,
+  },
+  checkValue: {
+    fontSize: 7,
+    fontWeight: "bold",
+    color: VALUE_COLOR,
+  },
+
+  // ── Külső keret ──────────────────────────────────────────
+  outerBorder: {
+    border: BORDER,
+    marginBottom: 4,
+  },
+
+  // ── Lábléc ──────────────────────────────────────────────
+  footer: {
     marginTop: 4,
-    width: "48%",
-  },
-  signatureRow: {
+    borderTop: BORDER_LIGHT,
+    paddingTop: 3,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
   },
-  signatureImage: {
-    width: 200,
-    height: 80,
-    marginTop: 4,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 20,
-    left: 30,
-    right: 30,
-    borderTop: "1px solid #d1d5db",
-    paddingTop: 6,
-    fontSize: 8,
+  footerText: {
+    fontSize: 5.5,
     color: "#9ca3af",
+    flex: 1,
   },
-  textBlock: {
-    marginTop: 4,
-    lineHeight: 1.4,
-  },
-  damageImageBox: {
-    border: "1px solid #d1d5db",
-    borderRadius: 4,
-    padding: 10,
-    marginTop: 8,
-    backgroundColor: "#ffffff",
+  footerRight: {
+    fontSize: 5.5,
+    color: "#9ca3af",
+    textAlign: "right",
   },
 })
 
@@ -163,390 +222,435 @@ function formatDate(date: Date): string {
 
 function formatLiableParty(party: string): string {
   const map: Record<string, string> = {
-    own: "Saját felelősség",
-    other: "Másik fél felelőssége",
-    both: "Mindkét fél felelőssége",
+    own: "Én / saját gépjárművem vezetője",
+    other: "A másik fél",
+    both: "Mindkét résztvevő",
   }
   return map[party] || party
 }
 
-// Szekciócím wrapper: minPresenceAhead megakadályozza az árva fejléc sort
-function SectionTitle({ children }: { children: string }) {
+// Egy cella: label + value, rugalmas szélességgel
+function Cell({
+  label,
+  value,
+  flex,
+  width,
+  noBorderRight,
+  tall,
+}: {
+  label: string
+  value?: string | number | null
+  flex?: number
+  width?: number | string
+  noBorderRight?: boolean
+  tall?: boolean
+}) {
+  const cellStyle = [
+    noBorderRight ? s.cellNoBorderRight : s.cell,
+    flex !== undefined ? { flex } : {},
+    width !== undefined ? { width } : {},
+    tall ? { minHeight: 28 } : {},
+  ]
   return (
-    <View style={styles.sectionTitleWrapper}>
-      <Text style={styles.sectionTitle}>{children}</Text>
+    <View style={cellStyle}>
+      <Text style={s.label}>{label}</Text>
+      {value ? (
+        <Text style={s.value}>{String(value)}</Text>
+      ) : (
+        <Text style={s.valuePlaceholder}>—</Text>
+      )}
     </View>
   )
 }
 
-const DamageReportPDF = ({ data }: { data: PDFData }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* Fejléc */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image src={logoBase64} style={styles.logo} />
-        </View>
-        <View style={styles.headerRight}>
-          <Text style={styles.title}>GÉPJÁRMŰ KÁRFELVÉTELI LAP</Text>
-          <Text style={styles.subtitle}>Azonosító: {data.id.slice(-8).toUpperCase()}</Text>
-          <Text style={styles.subtitle}>{formatDate(data.createdAt)}</Text>
-        </View>
+// Checkbox cella
+function CheckCell({
+  label,
+  checked,
+  flex,
+  width,
+  noBorderRight,
+}: {
+  label: string
+  checked: boolean
+  flex?: number
+  width?: number | string
+  noBorderRight?: boolean
+}) {
+  const cellStyle = [
+    noBorderRight ? s.cellNoBorderRight : s.cell,
+    flex !== undefined ? { flex } : {},
+    width !== undefined ? { width } : {},
+    { flexDirection: "row" as const, alignItems: "center" as const, gap: 4 },
+  ]
+  return (
+    <View style={cellStyle}>
+      <View style={checked ? s.checkBoxFilled : s.checkBox}>
+        {checked && <Text style={{ fontSize: 6, color: "#ffffff", fontWeight: "bold" }}>✓</Text>}
       </View>
-
-      {/* 1. Személyes adatok */}
-      <View style={styles.section}>
-        <SectionTitle>1. SZEMÉLYES ADATOK</SectionTitle>
-        <View style={styles.row}>
-          <Text style={styles.label}>Tulajdonos neve:</Text>
-          <Text style={styles.value}>{data.ownerName}</Text>
-        </View>
-        {data.ownerAddress && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Tulajdonos címe:</Text>
-            <Text style={styles.value}>{data.ownerAddress}</Text>
-          </View>
-        )}
-        {data.driverName && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Vezető neve:</Text>
-            <Text style={styles.value}>{data.driverName}</Text>
-          </View>
-        )}
-        {data.driverAddress && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Vezető címe:</Text>
-            <Text style={styles.value}>{data.driverAddress}</Text>
-          </View>
-        )}
-        {data.driverPhone && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Vezető telefonszáma:</Text>
-            <Text style={styles.value}>{data.driverPhone}</Text>
-          </View>
-        )}
-        <View style={styles.row}>
-          <Text style={styles.label}>E-mail cím:</Text>
-          <Text style={styles.value}>{data.customerEmail}</Text>
-        </View>
-        {data.customerPhone && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Telefonszám:</Text>
-            <Text style={styles.value}>{data.customerPhone}</Text>
-          </View>
-        )}
+      <View>
+        <Text style={s.label}>{label}</Text>
+        <Text style={s.value}>{checked ? "Igen" : "Nem"}</Text>
       </View>
+    </View>
+  )
+}
 
-      {/* 2. Jármű és biztosítás */}
-      <View style={styles.section}>
-        <SectionTitle>2. JÁRMŰ ÉS BIZTOSÍTÁSI ADATOK</SectionTitle>
-        <View style={styles.row}>
-          <Text style={styles.label}>Rendszám:</Text>
-          <Text style={styles.value}>{data.vehiclePlate.toUpperCase()}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Gyártmány/Típus:</Text>
-          <Text style={styles.value}>
-            {data.vehicleMake} {data.vehicleModel}
-          </Text>
-        </View>
-        {data.vehicleYear && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Évjárat:</Text>
-            <Text style={styles.value}>{data.vehicleYear}</Text>
-          </View>
-        )}
-        {data.vehicleVin && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Alvázszám:</Text>
-            <Text style={styles.value}>{data.vehicleVin}</Text>
-          </View>
-        )}
-        <View style={styles.row}>
-          <Text style={styles.label}>Casco biztosítás:</Text>
-          <Text style={styles.value}>{data.hasCasco ? "Igen" : "Nem"}</Text>
-        </View>
-        {data.cascoInsurer && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Casco biztosító:</Text>
-            <Text style={styles.value}>{data.cascoInsurer}</Text>
-          </View>
-        )}
-        {data.liabilityInsurer && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Kötelező biztosító:</Text>
-            <Text style={styles.value}>{data.liabilityInsurer}</Text>
-          </View>
-        )}
-        {data.relevantInsurer && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Illetékes biztosító:</Text>
-            <Text style={styles.value}>{data.relevantInsurer}</Text>
-          </View>
-        )}
-      </View>
+// Szekciócím sáv
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <View style={s.sectionHeader}>
+      <Text style={s.sectionHeaderText}>{title}</Text>
+    </View>
+  )
+}
 
-      {/* 3. Baleset körülményei */}
-      <View style={styles.section}>
-        <SectionTitle>3. BALESET KÖRÜLMÉNYEI</SectionTitle>
-        {data.accidentDate && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Baleset dátuma:</Text>
-            <Text style={styles.value}>{data.accidentDate}</Text>
-          </View>
-        )}
-        {data.accidentCountry && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Ország:</Text>
-            <Text style={styles.value}>{data.accidentCountry}</Text>
-          </View>
-        )}
-        {data.accidentCity && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Város:</Text>
-            <Text style={styles.value}>{data.accidentCity}</Text>
-          </View>
-        )}
-        {data.accidentStreet && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Utca:</Text>
-            <Text style={styles.value}>{data.accidentStreet}</Text>
-          </View>
-        )}
-        <View style={styles.row}>
-          <Text style={styles.label}>Lakott területen kívül:</Text>
-          <Text style={styles.value}>{data.outsideSettlement ? "Igen" : "Nem"}</Text>
-        </View>
-        {data.roadNumber && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Út száma:</Text>
-            <Text style={styles.value}>{data.roadNumber}</Text>
-          </View>
-        )}
-        {data.kilometerMark && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Kilométer-szelvény:</Text>
-            <Text style={styles.value}>{data.kilometerMark}</Text>
-          </View>
-        )}
-        <View style={styles.row}>
-          <Text style={styles.label}>Rendőrség:</Text>
-          <Text style={styles.value}>{data.policeInvolved ? "Igen" : "Nem"}</Text>
-        </View>
-        {data.policeReportNo && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Jegyzőkönyv száma:</Text>
-            <Text style={styles.value}>{data.policeReportNo}</Text>
-          </View>
-        )}
-        {data.policeStation && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Intézkedő kapitányság:</Text>
-            <Text style={styles.value}>{data.policeStation}</Text>
-          </View>
-        )}
-        {data.otherVehiclePlate && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Másik jármű rendszáma:</Text>
-            <Text style={styles.value}>{data.otherVehiclePlate}</Text>
-          </View>
-        )}
-        {data.otherVehicleType && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Másik jármű típusa:</Text>
-            <Text style={styles.value}>{data.otherVehicleType}</Text>
-          </View>
-        )}
-        {data.otherVehicleColor && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Másik jármű színe:</Text>
-            <Text style={styles.value}>{data.otherVehicleColor}</Text>
-          </View>
-        )}
-        {data.additionalParties && (
-          <View style={styles.row}>
-            <Text style={styles.label}>További érintettek:</Text>
-            <Text style={styles.value}>{data.additionalParties}</Text>
-          </View>
-        )}
-        {data.vehicleInspectionLocation && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Szemle helyszíne:</Text>
-            <Text style={styles.value}>{data.vehicleInspectionLocation}</Text>
-          </View>
-        )}
-      </View>
+const DamageReportPDF = ({ data }: { data: PDFData }) => {
+  const hasDriver = !!(data.driverName || data.driverAddress || data.driverPhone)
+  const hasOtherVehicle = !!(data.otherVehiclePlate || data.otherVehicleType || data.otherVehicleColor)
+  const hasPoliceDetails = !!(data.policeReportNo || data.policeStation)
+  const hasLocationDetails = !!(data.roadNumber || data.kilometerMark)
+  const hasDamagePoints = !!(data.damagePoints && data.damagePoints.length > 0)
 
-      {/* 4. Kár leírása */}
-      <View style={styles.section}>
-        <SectionTitle>4. KÁR LEÍRÁSA</SectionTitle>
-        <View style={styles.textBlock}>
-          <Text>{data.damageDescription}</Text>
-        </View>
+  return (
+    <Document>
+      <Page size="A4" style={s.page}>
 
-        {/* Sérülésjelölés diagram — wrap={false}: soha nem törik ketté */}
-        {data.damagePoints && data.damagePoints.length > 0 && (
-          <View style={styles.damageImageBox} wrap={false}>
-            <Text style={{ fontSize: 9, fontWeight: "bold", marginBottom: 6, color: "#1e3a5f" }}>
-              Sérülés helye és iránya a járművön:
-            </Text>
-            <Svg viewBox="0 0 400 300" style={{ width: "100%", height: 200 }}>
-              <G transform="translate(111, 61) scale(3.8)" fill="#9ca3af" stroke="#6b7280" strokeWidth="0.2">
-                <Path d="M29.395,0H17.636c-3.117,0-5.643,3.467-5.643,6.584v34.804c0,3.116,2.526,5.644,5.643,5.644h11.759
-                  c3.116,0,5.644-2.527,5.644-5.644V6.584C35.037,3.467,32.511,0,29.395,0z M34.05,14.188v11.665l-2.729,0.351v-4.806
-                  L34.05,14.188z M32.618,10.773c-1.016,3.9-2.219,8.51-2.219,8.51H16.631l-2.222-8.51
-                  C14.41,10.773,23.293,7.755,32.618,10.773z M15.741,21.713v4.492l-2.73-0.349V14.502L15.741,21.713z
-                  M13.011,37.938V27.579l2.73,0.343v8.196L13.011,37.938z M14.568,40.882l2.218-3.336h13.771l2.219,3.336H14.568z
-                  M31.321,35.805v-7.872l2.729-0.355v10.048L31.321,35.805z" />
-              </G>
-
-              <Text x="10" y="70" style={{ fontSize: 12, fill: "#6b7280", fontWeight: "bold" }}>ELÖL</Text>
-              <Text x="345" y="70" style={{ fontSize: 12, fill: "#6b7280", fontWeight: "bold" }}>HÁTUL</Text>
-
-              {data.damagePoints.map((pt, i) => {
-                const hasArrow = pt.dx !== 0 || pt.dy !== 0
-
-                let arrowPoints = ""
-                if (hasArrow) {
-                  const endX = pt.x + pt.dx
-                  const endY = pt.y + pt.dy
-                  const angle = Math.atan2(pt.dy, pt.dx)
-                  const arrowSize = 6
-                  const p1x = endX
-                  const p1y = endY
-                  const p2x = endX - arrowSize * Math.cos(angle - Math.PI / 6)
-                  const p2y = endY - arrowSize * Math.sin(angle - Math.PI / 6)
-                  const p3x = endX - arrowSize * Math.cos(angle + Math.PI / 6)
-                  const p3y = endY - arrowSize * Math.sin(angle + Math.PI / 6)
-                  arrowPoints = `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`
-                }
-
-                return (
-                  <G key={i}>
-                    {hasArrow ? (
-                      <>
-                        <Line
-                          x1={pt.x}
-                          y1={pt.y}
-                          x2={pt.x + pt.dx}
-                          y2={pt.y + pt.dy}
-                          stroke="#ef4444"
-                          strokeWidth="2.5"
-                        />
-                        <Polygon points={arrowPoints} fill="#ef4444" />
-                        <Circle cx={pt.x} cy={pt.y} r="5" fill="#ef4444" />
-                        <Text
-                          x={pt.x - 8}
-                          y={pt.y - 8}
-                          style={{ textAnchor: "middle", fontSize: 9, fill: "#ef4444", fontWeight: "bold" }}
-                        >
-                          {i + 1}
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <Circle cx={pt.x} cy={pt.y} r="8" fill="#ef4444" />
-                        <Text
-                          x={pt.x}
-                          y={pt.y + 4}
-                          style={{ textAnchor: "middle", fontSize: 9, fill: "white", fontWeight: "bold" }}
-                        >
-                          {i + 1}
-                        </Text>
-                      </>
-                    )}
-                  </G>
-                )
-              })}
-            </Svg>
-            <Text style={{ fontSize: 8, color: "#6b7280", marginTop: 4 }}>
-              {data.damagePoints.length} pont megjelölve
-              {data.damagePoints.some(pt => pt.dx !== 0 || pt.dy !== 0) && " (nyilak = becsapódás iránya)"}
+        {/* ═══════════════════════════════════════════════════
+            FEJLÉC
+        ═══════════════════════════════════════════════════ */}
+        <View style={s.headerRow}>
+          <View style={s.headerLeft}>
+            <Text style={s.headerTitle}>GÉPJÁRMŰ KÁRBEJELENTŐ LAP</Text>
+            <Text style={s.headerSubtitle}>
+              Azonosító: {data.id.slice(-8).toUpperCase()} • Kitöltés időpontja: {formatDate(data.createdAt)}
             </Text>
           </View>
-        )}
-
-        {data.photoUrls && data.photoUrls.length > 0 && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Fényképek száma:</Text>
-            <Text style={styles.value}>{data.photoUrls.length} db</Text>
+          <View style={s.headerRight}>
+            <Image src={logoBase64} style={s.logo} />
+            <View style={s.workshopInfo}>
+              <Text style={s.workshopName}>M1 SZERVIZ TATA</Text>
+              <Text style={s.workshopDetail}>Autóüveg · Karosszéria · Autószerviz</Text>
+              <Text style={s.workshopDetail}>2890 Tata, Kalapács u. 1.</Text>
+              <Text style={s.workshopDetail}>Tel.: 0670/540-1062</Text>
+              <Text style={s.workshopDetail}>www.m1szerviztata.hu</Text>
+            </View>
           </View>
-        )}
-      </View>
+        </View>
 
-      {/* 5. Nyilatkozatok — wrap={false}: kompakt szekció, nem törik ketté */}
-      <View style={styles.section} wrap={false}>
-        <SectionTitle>5. NYILATKOZATOK</SectionTitle>
-        <View style={styles.row}>
-          <Text style={styles.label}>Felelős fél:</Text>
-          <Text style={styles.value}>{formatLiableParty(data.liableParty)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Alkohol/kábítószer befolyás:</Text>
-          <Text style={styles.value}>{data.underInfluence ? "Igen" : "Nem"}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Érvényes jogosítvány:</Text>
-          <Text style={styles.value}>{data.licenseValid ? "Igen" : "Nem"}</Text>
-        </View>
-        {data.taxNumber && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Adószám:</Text>
-            <Text style={styles.value}>{data.taxNumber}</Text>
+        {/* ═══════════════════════════════════════════════════
+            1. SZEMÉLYES ADATOK + JÁRMŰ ÉS BIZTOSÍTÁS
+        ═══════════════════════════════════════════════════ */}
+        <View style={[s.outerBorder, { marginTop: 4 }]}>
+          <View style={s.row}>
+            {/* Bal: Személyes adatok */}
+            <View style={{ flex: 1, borderRight: BORDER }}>
+              <SectionHeader title="SZEMÉLYES ADATOK" />
+              <View style={s.row}>
+                <Cell label="Tulajdonos (üzembentartó) neve" value={data.ownerName} flex={1} />
+              </View>
+              {data.ownerAddress && (
+                <View style={s.row}>
+                  <Cell label="Tulajdonos címe" value={data.ownerAddress} flex={1} />
+                </View>
+              )}
+              {hasDriver && (
+                <>
+                  <View style={s.row}>
+                    <Cell label="Vezető neve" value={data.driverName} flex={1} />
+                  </View>
+                  {data.driverAddress && (
+                    <View style={s.row}>
+                      <Cell label="Vezető címe" value={data.driverAddress} flex={1} />
+                    </View>
+                  )}
+                </>
+              )}
+              <View style={s.row}>
+                <Cell label="E-mail cím" value={data.customerEmail} flex={1} />
+                {(data.customerPhone || data.driverPhone) && (
+                  <Cell label="Telefonszám" value={data.customerPhone || data.driverPhone} flex={1} noBorderRight />
+                )}
+              </View>
+            </View>
+
+            {/* Jobb: Jármű és biztosítás */}
+            <View style={{ flex: 1 }}>
+              <SectionHeader title="JÁRMŰ ÉS BIZTOSÍTÁSI ADATOK" />
+              <View style={s.row}>
+                <Cell label="Rendszám" value={data.vehiclePlate.toUpperCase()} width={80} />
+                <Cell label="Gyártmány / Típus" value={`${data.vehicleMake} ${data.vehicleModel}`} flex={1} />
+                {data.vehicleYear && (
+                  <Cell label="Évjárat" value={String(data.vehicleYear)} width={50} noBorderRight />
+                )}
+              </View>
+              {data.vehicleVin && (
+                <View style={s.row}>
+                  <Cell label="Alvázszám (VIN)" value={data.vehicleVin} flex={1} />
+                </View>
+              )}
+              <View style={s.row}>
+                <CheckCell label="Casco biztosítás" checked={data.hasCasco} flex={1} />
+                {data.cascoInsurer && (
+                  <Cell label="Casco biztosító" value={data.cascoInsurer} flex={1} noBorderRight />
+                )}
+              </View>
+              {(data.liabilityInsurer || data.relevantInsurer) && (
+                <View style={s.row}>
+                  {data.liabilityInsurer && (
+                    <Cell label="Kötelező biztosító" value={data.liabilityInsurer} flex={1} />
+                  )}
+                  {data.relevantInsurer && (
+                    <Cell
+                      label="Illetékes biztosító"
+                      value={data.relevantInsurer}
+                      flex={1}
+                      noBorderRight={!data.liabilityInsurer}
+                    />
+                  )}
+                </View>
+              )}
+            </View>
           </View>
-        )}
-        <View style={styles.row}>
-          <Text style={styles.label}>Fotómásolási engedély:</Text>
-          <Text style={styles.value}>{data.consentToPhotocopy ? "Igen" : "Nem"}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>CASCO alapú kárrendezés:</Text>
-          <Text style={styles.value}>{data.cascoClaimRequest ? "Igen" : "Nem"}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Tulajdonjogi terhelés:</Text>
-          <Text style={styles.value}>{data.vehicleEncumbrance ? "Igen" : "Nem"}</Text>
-        </View>
-      </View>
 
-      {/* 6. Aláírások — wrap={false}: aláírásképek soha nem törik ketté */}
-      <View style={styles.section} wrap={false}>
-        <SectionTitle>6. ALÁÍRÁSOK</SectionTitle>
-        <View style={styles.signatureRow}>
-          <View style={styles.signatureBox}>
-            <Text style={{ marginBottom: 4, fontWeight: "bold" }}>Tulajdonos aláírása:</Text>
-            {data.ownerSignatureUrl && (
-              <Image
-                src={data.ownerSignatureUrl}
-                style={styles.signatureImage}
-              />
+        {/* ═══════════════════════════════════════════════════
+            2. BALESET KÖRÜLMÉNYEI
+        ═══════════════════════════════════════════════════ */}
+        <View style={s.outerBorder}>
+          <SectionHeader title="A BALESET (KÁRESEMÉNY) KÖRÜLMÉNYEI" />
+          <View style={s.row}>
+            {data.accidentDate && (
+              <Cell label="A baleset időpontja" value={data.accidentDate} width={120} />
+            )}
+            <Cell label="Ország" value={data.accidentCountry} width={90} />
+            <Cell label="Város / Település" value={data.accidentCity} flex={1} />
+            {data.accidentStreet && (
+              <Cell label="Utca / Helyszín" value={data.accidentStreet} flex={1} noBorderRight />
             )}
           </View>
-          {data.driverSignatureUrl && (
-            <View style={styles.signatureBox}>
-              <Text style={{ marginBottom: 4, fontWeight: "bold" }}>Vezető aláírása:</Text>
-              <Image
-                src={data.driverSignatureUrl}
-                style={styles.signatureImage}
-              />
+          {(data.outsideSettlement || hasLocationDetails) && (
+            <View style={s.row}>
+              <CheckCell label="Lakott területen kívül" checked={data.outsideSettlement} width={130} />
+              {data.roadNumber && <Cell label="Út száma" value={data.roadNumber} width={80} />}
+              {data.kilometerMark && (
+                <Cell label="Km-szelvény" value={data.kilometerMark} flex={1} noBorderRight />
+              )}
             </View>
           )}
         </View>
-      </View>
 
-      {/* Lábléc — fixed: minden oldalon megjelenik */}
-      <View style={styles.footer} fixed>
-        <Text>
-          Jelen dokumentum az Ön által megadott adatok alapján készült. Az adatokat a GDPR
-          előírásainak megfelelően kezeljük. A kárfelvételi lap digitális formában került
-          rögzítésre.
-        </Text>
-        <Text style={{ marginTop: 4 }}>Kelt: {formatDate(data.createdAt)}</Text>
-        <Text style={{ marginTop: 4 }}>M1 Szerviz Tata • www.m1szerviztata.hu</Text>
-      </View>
-    </Page>
-  </Document>
-)
+        {/* ═══════════════════════════════════════════════════
+            3. SZEMLE HELYSZÍNE + MÁSIK JÁRMŰ + RENDŐRSÉG
+        ═══════════════════════════════════════════════════ */}
+        <View style={s.outerBorder}>
+          <View style={s.row}>
+            {/* Szemle helyszíne */}
+            <View style={{ flex: 1, borderRight: BORDER }}>
+              <SectionHeader title="HOL TEKINTHETŐ MEG A GÉPJÁRMŰ?" />
+              <View style={s.row}>
+                <Cell
+                  label="Helyszíni szemle helyszíne"
+                  value={data.vehicleInspectionLocation || "M1 SZERVIZ TATA Kft. – 2890 Tata, Kalapács u. 1."}
+                  flex={1}
+                  noBorderRight
+                  tall
+                />
+              </View>
+            </View>
+
+            {/* Rendőrség */}
+            <View style={{ flex: 1 }}>
+              <SectionHeader title="RENDŐRI INTÉZKEDÉS" />
+              <View style={s.row}>
+                <CheckCell label="Rendőrség intézkedett" checked={data.policeInvolved} flex={1} />
+                {data.policeReportNo && (
+                  <Cell label="Jkv. száma" value={data.policeReportNo} flex={1} noBorderRight />
+                )}
+              </View>
+              {data.policeStation && (
+                <View style={s.row}>
+                  <Cell label="Intézkedő kapitányság / rendőrőrs" value={data.policeStation} flex={1} noBorderRight />
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* ═══════════════════════════════════════════════════
+            4. MÁSIK JÁRMŰ (csak ha van adat)
+        ═══════════════════════════════════════════════════ */}
+        {hasOtherVehicle && (
+          <View style={s.outerBorder}>
+            <SectionHeader title="MÁSIK JÁRMŰ ADATAI" />
+            <View style={s.row}>
+              <Cell label="Rendszám" value={data.otherVehiclePlate} flex={1} />
+              <Cell label="Típus / Gyártmány" value={data.otherVehicleType} flex={1} />
+              <Cell label="Szín" value={data.otherVehicleColor} flex={1} noBorderRight />
+            </View>
+            {data.additionalParties && (
+              <View style={s.row}>
+                <Cell label="További résztvevők" value={data.additionalParties} flex={1} noBorderRight />
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ═══════════════════════════════════════════════════
+            5. KÁR LEÍRÁSA + SÉRÜLÉSI ÁBRA
+        ═══════════════════════════════════════════════════ */}
+        <View style={s.outerBorder}>
+          <SectionHeader title="KÁR LEÍRÁSA ÉS SÉRÜLÉS HELYE" />
+          <View style={s.row}>
+            {/* Bal: Szöveges leírás */}
+            <View style={{ flex: 3, borderRight: hasDamagePoints ? BORDER : undefined }}>
+              <View style={[s.cell, { minHeight: hasDamagePoints ? 130 : 60 }]}>
+                <Text style={s.label}>A káresemény leírása</Text>
+                <Text style={[s.value, { lineHeight: 1.5, fontWeight: "normal" }]}>
+                  {data.damageDescription}
+                </Text>
+              </View>
+              {data.photoUrls && data.photoUrls.length > 0 && (
+                <View style={s.row}>
+                  <Cell label="Csatolt fényképek száma" value={`${data.photoUrls.length} db`} flex={1} noBorderRight />
+                </View>
+              )}
+            </View>
+
+            {/* Jobb: Sérülési ábra (csak ha van pont) */}
+            {hasDamagePoints && (
+              <View style={{ flex: 2, padding: 6 }}>
+                <Text style={[s.label, { marginBottom: 4, textAlign: "center" }]}>
+                  Rajzolja be a gépjármű sérüléseit:
+                </Text>
+                <Svg viewBox="0 0 400 310" style={{ width: "100%", height: 130 }}>
+                  {/* Jármű sziluett */}
+                  <G transform="translate(111, 61) scale(3.8)" fill="#d1d5db" stroke="#9ca3af" strokeWidth="0.4">
+                    <Path d="M29.395,0H17.636c-3.117,0-5.643,3.467-5.643,6.584v34.804c0,3.116,2.526,5.644,5.643,5.644h11.759
+                      c3.116,0,5.644-2.527,5.644-5.644V6.584C35.037,3.467,32.511,0,29.395,0z M34.05,14.188v11.665l-2.729,0.351v-4.806
+                      L34.05,14.188z M32.618,10.773c-1.016,3.9-2.219,8.51-2.219,8.51H16.631l-2.222-8.51
+                      C14.41,10.773,23.293,7.755,32.618,10.773z M15.741,21.713v4.492l-2.73-0.349V14.502L15.741,21.713z
+                      M13.011,37.938V27.579l2.73,0.343v8.196L13.011,37.938z M14.568,40.882l2.218-3.336h13.771l2.219,3.336H14.568z
+                      M31.321,35.805v-7.872l2.729-0.355v10.048L31.321,35.805z" />
+                  </G>
+                  {/* Irányjelzők */}
+                  <Text x="200" y="52" style={{ fontSize: 9, fill: "#374151", fontWeight: "bold", textAnchor: "middle" }}>
+                    ▲ ELÖL
+                  </Text>
+                  <Text x="200" y="298" style={{ fontSize: 9, fill: "#374151", fontWeight: "bold", textAnchor: "middle" }}>
+                    HÁTUL ▼
+                  </Text>
+                  {/* Sérülési pontok */}
+                  {data.damagePoints!.map((pt, i) => {
+                    const hasArrow = pt.dx !== 0 || pt.dy !== 0
+                    if (!hasArrow) {
+                      return (
+                        <G key={i}>
+                          <Circle cx={pt.x} cy={pt.y} r="8" fill="#dc2626" />
+                          <Text x={pt.x} y={pt.y + 3} style={{ textAnchor: "middle", fontSize: 8, fill: "white", fontWeight: "bold" }}>
+                            {i + 1}
+                          </Text>
+                        </G>
+                      )
+                    }
+                    const endX = pt.x + pt.dx
+                    const endY = pt.y + pt.dy
+                    const angle = Math.atan2(pt.dy, pt.dx)
+                    const as = 6
+                    const arrowPoints = `${endX},${endY} ${endX - as * Math.cos(angle - Math.PI / 6)},${endY - as * Math.sin(angle - Math.PI / 6)} ${endX - as * Math.cos(angle + Math.PI / 6)},${endY - as * Math.sin(angle + Math.PI / 6)}`
+                    return (
+                      <G key={i}>
+                        <Line x1={pt.x} y1={pt.y} x2={endX} y2={endY} stroke="#dc2626" strokeWidth="2" />
+                        <Polygon points={arrowPoints} fill="#dc2626" />
+                        <Circle cx={pt.x} cy={pt.y} r="5" fill="#dc2626" />
+                        <Text x={pt.x - 8} y={pt.y - 7} style={{ fontSize: 7, fill: "#dc2626", fontWeight: "bold" }}>
+                          {i + 1}
+                        </Text>
+                      </G>
+                    )
+                  })}
+                </Svg>
+                <Text style={[s.label, { textAlign: "center", marginTop: 2 }]}>
+                  {data.damagePoints!.length} jelölt sérülési pont
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ═══════════════════════════════════════════════════
+            6. NYILATKOZATOK
+        ═══════════════════════════════════════════════════ */}
+        <View style={s.outerBorder}>
+          <SectionHeader title="NYILATKOZATOK" />
+          <View style={s.row}>
+            <View style={{ flex: 1, borderRight: BORDER }}>
+              <View style={s.row}>
+                <Cell label="Felelős fél megjelölése" value={formatLiableParty(data.liableParty)} flex={1} noBorderRight />
+              </View>
+              {data.taxNumber && (
+                <View style={s.row}>
+                  <Cell label="Adószám (ÁFA visszaigénylés esetén)" value={data.taxNumber} flex={1} noBorderRight />
+                </View>
+              )}
+            </View>
+            <View style={{ flex: 2 }}>
+              <View style={s.row}>
+                <CheckCell label="Kábítószer / alkohol befolyás" checked={data.underInfluence} flex={1} />
+                <CheckCell label="Érvényes jogosítvány" checked={data.licenseValid} flex={1} />
+                <CheckCell label="Tulajdonjogi terhelés" checked={data.vehicleEncumbrance} flex={1} noBorderRight />
+              </View>
+              <View style={s.row}>
+                <CheckCell label="DEKRA fotómásolási engedély" checked={data.consentToPhotocopy} flex={1} />
+                <CheckCell label="CASCO alapú kárrendezés igénylése" checked={data.cascoClaimRequest} flex={2} noBorderRight />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ═══════════════════════════════════════════════════
+            7. ALÁÍRÁSOK
+        ═══════════════════════════════════════════════════ */}
+        <View style={s.outerBorder}>
+          <SectionHeader title="ALÁÍRÁSOK" />
+          <View style={s.row}>
+            <View style={[s.cell, { flex: 1, borderRight: BORDER }]}>
+              <Text style={s.label}>Tulajdonos aláírása:</Text>
+              {data.ownerSignatureUrl && (
+                <Image src={data.ownerSignatureUrl} style={{ width: "100%", height: 55, objectFit: "contain" }} />
+              )}
+            </View>
+            {data.driverSignatureUrl ? (
+              <View style={[s.cell, { flex: 1 }]}>
+                <Text style={s.label}>Vezető aláírása:</Text>
+                <Image src={data.driverSignatureUrl} style={{ width: "100%", height: 55, objectFit: "contain" }} />
+              </View>
+            ) : (
+              <View style={[s.cell, { flex: 1 }]}>
+                <Text style={s.label}>Kelt:</Text>
+                <Text style={[s.value, { marginTop: 8 }]}>{formatDate(data.createdAt)}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ═══════════════════════════════════════════════════
+            LÁBLÉC
+        ═══════════════════════════════════════════════════ */}
+        <View style={s.footer} fixed>
+          <Text style={s.footerText}>
+            Jelen dokumentum az Ön által megadott adatok alapján digitálisan rögzítésre került. Az adatokat a GDPR előírásainak megfelelően kezeljük. A bejelentett adatok valódiságáért az ügyfél felelős.
+          </Text>
+          <Text style={s.footerRight}>
+            M1 Szerviz Tata • www.m1szerviztata.hu{"\n"}
+            Azonosító: {data.id.slice(-8).toUpperCase()}
+          </Text>
+        </View>
+
+      </Page>
+    </Document>
+  )
+}
 
 export async function generatePDF(data: PDFData): Promise<Buffer> {
   const doc = <DamageReportPDF data={data} />
