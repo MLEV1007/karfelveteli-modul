@@ -220,6 +220,10 @@ function formatDate(date: Date): string {
   }).format(date)
 }
 
+function formatAccidentDate(raw: string): string {
+  return raw.replace("T", " ")
+}
+
 function formatLiableParty(party: string): string {
   const map: Record<string, string> = {
     own: "Én / saját gépjárművem vezetője",
@@ -421,7 +425,7 @@ const DamageReportPDF = ({ data }: { data: PDFData }) => {
           <SectionHeader title="A BALESET (KÁRESEMÉNY) KÖRÜLMÉNYEI" />
           <View style={s.row}>
             {data.accidentDate && (
-              <Cell label="A baleset időpontja" value={data.accidentDate} width={120} />
+              <Cell label="A baleset időpontja" value={formatAccidentDate(data.accidentDate)} width={120} />
             )}
             <Cell label="Ország" value={data.accidentCountry} width={90} />
             <Cell label="Város / Település" value={data.accidentCity} flex={1} />
