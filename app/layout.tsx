@@ -20,7 +20,7 @@ export default function RootLayout({
             <img
               src="/api/logo"
               alt="M1 Szerviz Tata"
-              style={{ height: 140, width: "auto", objectFit: "contain" }}
+              style={{ height: 80, width: "auto", objectFit: "contain" }}
             />
           </div>
         </header>

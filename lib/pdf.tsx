@@ -22,7 +22,7 @@ const fontsDir = path.join(process.cwd(), "lib", "fonts")
 const robotoRegular = fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf"))
 const robotoBold = fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf"))
 
-const logoBuffer = fs.readFileSync(path.join(process.cwd(), "pictures", "0001.png"))
+const logoBuffer = fs.readFileSync(path.join(process.cwd(), "pictures", "0001_cropped.png"))
 const logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`
 
 Font.register({
@@ -83,8 +83,8 @@ const s = StyleSheet.create({
     gap: 8,
   },
   logo: {
-    width: 48,
-    height: 32,
+    width: 90,
+    height: 18,
     objectFit: "contain",
   },
   workshopInfo: {
