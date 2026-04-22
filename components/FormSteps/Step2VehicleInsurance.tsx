@@ -88,6 +88,7 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
             onChange={handleInput("vehicleVin")}
             error={errors.vehicleVin}
             placeholder="17 karakter"
+            maxLength={17}
           />
         </div>
       </section>
