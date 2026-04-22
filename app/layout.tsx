@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,14 +15,12 @@ export default function RootLayout({
     <html lang="hu">
       <body>
         <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-          <div className="max-w-2xl mx-auto px-4 h-24 flex items-center justify-center">
-            <Image
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/api/logo"
               alt="M1 Szerviz Tata"
-              width={260}
-              height={90}
-              style={{ objectFit: "contain", height: 88, width: "auto" }}
-              priority
+              style={{ height: 140, width: "auto", objectFit: "contain" }}
             />
           </div>
         </header>
