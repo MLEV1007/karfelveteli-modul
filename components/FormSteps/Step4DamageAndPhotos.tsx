@@ -252,9 +252,33 @@ export default function Step4DamageAndPhotos({ data, onChange, errors }: Props) 
         <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Jelölje be a sérülés helyét és irányát (opcionális)
         </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-          Kattintás = pont • Kattintás és húzás = nyíl (becsapódás iránya)
-        </p>
+        <div className="flex gap-3 mb-3">
+          <div className="flex-1 flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg px-3 py-2">
+            <svg width="36" height="36" viewBox="0 0 36 36" className="flex-shrink-0">
+              <circle cx="18" cy="18" r="9" fill="#ef4444" />
+              <text x="18" y="22" textAnchor="middle" fontSize="11" fill="white" fontWeight="bold">1</text>
+            </svg>
+            <div>
+              <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">Kattintás</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Sérülés helyének megjelölése</p>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center gap-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 rounded-lg px-3 py-2">
+            <svg width="36" height="36" viewBox="0 0 36 36" className="flex-shrink-0">
+              <defs>
+                <marker id="tip" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+                  <path d="M0,0 L0,5 L5,2.5 z" fill="#f97316" />
+                </marker>
+              </defs>
+              <circle cx="8" cy="28" r="4" fill="#f97316" />
+              <line x1="10" y1="26" x2="26" y2="10" stroke="#f97316" strokeWidth="2.5" markerEnd="url(#tip)" />
+            </svg>
+            <div>
+              <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">Kattintás + húzás</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Becsapódás irányának jelölése</p>
+            </div>
+          </div>
+        </div>
         <div className="border rounded-xl overflow-hidden bg-white dark:bg-gray-800 touch-none">
           <svg
             ref={svgRef}

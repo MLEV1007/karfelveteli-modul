@@ -32,7 +32,7 @@ interface Step3Props {
   errors: Partial<Record<keyof Step3Data, string>>
 }
 
-const WORKSHOP_ADDRESS = "M1 Szerviz Tata, 2890 Tata, Ipartelep utca 1."
+const WORKSHOP_ADDRESS = "M1 Szerviz Tata, 2890 Tata, Kalapács utca 1."
 
 const COUNTRIES = [
   "Magyarország",
@@ -292,7 +292,7 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
           onChange={handleInput("vehicleInspectionLocation")}
           error={errors.vehicleInspectionLocation}
           disabled={data.vehicleInspectionLocation === WORKSHOP_ADDRESS}
-          placeholder="pl. M1 Szerviz Tata, 2890 Tata, Ipartelep u. 1."
+          placeholder="pl. M1 Szerviz Tata, 2890 Tata, Kalapács u. 1."
         />
       </section>
     </div>
