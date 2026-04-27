@@ -3,7 +3,7 @@ import fs from "fs"
 import path from "path"
 
 export async function GET() {
-  const logoPath = path.join(process.cwd(), "pictures", "0001_nav.png")
+  const logoPath = path.join(process.cwd(), "pictures", "0001_cropped.png")
   const logo = fs.readFileSync(logoPath)
   return new NextResponse(logo, {
     headers: {
