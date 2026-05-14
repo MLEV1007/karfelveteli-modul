@@ -608,6 +608,11 @@ const DamageReportPDF = ({ data }: { data: PDFData }) => {
                 <CheckCell label="DEKRA fotómásolási engedély" checked={data.consentToPhotocopy} flex={1} />
                 <CheckCell label="CASCO alapú kárrendezés igénylése" checked={data.cascoClaimRequest} flex={2} noBorderRight />
               </View>
+              {data.vehicleEncumbrance && data.encumbranceFinancier && (
+                <View style={s.row}>
+                  <Cell label="Finanszírozó neve" value={data.encumbranceFinancier} flex={1} noBorderRight />
+                </View>
+              )}
             </View>
           </View>
         </View>

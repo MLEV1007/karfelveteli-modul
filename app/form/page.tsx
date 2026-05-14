@@ -93,6 +93,7 @@ const initialData: FormData = {
   consentToPhotocopy: false,
   cascoClaimRequest: false,
   vehicleEncumbrance: false,
+  encumbranceFinancier: "",
   // Step 6
   ownerSignatureUrl: "",
   driverSignatureUrl: "",
@@ -182,6 +183,7 @@ export default function FormPage() {
         consentToPhotocopy: formData.consentToPhotocopy,
         cascoClaimRequest: formData.cascoClaimRequest,
         vehicleEncumbrance: formData.vehicleEncumbrance,
+        encumbranceFinancier: formData.encumbranceFinancier,
       }
     } else if (currentStep === 6) {
       schema = step6Schema
@@ -339,6 +341,7 @@ export default function FormPage() {
               consentToPhotocopy: formData.consentToPhotocopy,
               cascoClaimRequest: formData.cascoClaimRequest,
               vehicleEncumbrance: formData.vehicleEncumbrance,
+              encumbranceFinancier: formData.encumbranceFinancier,
             }}
             onChange={(field, value) => updateField(field, value)}
             errors={errors}

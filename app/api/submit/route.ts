@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
           consentToPhotocopy: data.consentToPhotocopy,
           cascoClaimRequest: data.cascoClaimRequest,
           vehicleEncumbrance: data.vehicleEncumbrance,
+          encumbranceFinancier: data.encumbranceFinancier ?? null,
           ownerSignatureUrl: null, // Will be updated after R2 upload
           driverSignatureUrl: null, // Will be updated after R2 upload
           gdprConsent: data.gdprConsent,

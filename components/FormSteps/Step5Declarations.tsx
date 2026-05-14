@@ -15,6 +15,7 @@ export const step5Schema = z.object({
   consentToPhotocopy: z.boolean(),
   cascoClaimRequest: z.boolean(),
   vehicleEncumbrance: z.boolean(),
+  encumbranceFinancier: z.string().optional(),
 })
 
 export type Step5Data = {
@@ -25,6 +26,7 @@ export type Step5Data = {
   consentToPhotocopy: boolean
   cascoClaimRequest: boolean
   vehicleEncumbrance: boolean
+  encumbranceFinancier: string
 }
 
 type Props = {
@@ -103,13 +105,27 @@ export default function Step5Declarations({ data, onChange, errors }: Props) {
             error={errors.cascoClaimRequest}
           />
 
-          <Checkbox
-            label="A jármű tulajdonjogát korlátozó teher (hitel, lízing, zálog) áll fenn."
-            name="vehicleEncumbrance"
-            checked={data.vehicleEncumbrance}
-            onChange={(e) => onChange("vehicleEncumbrance", e.target.checked)}
-            error={errors.vehicleEncumbrance}
-          />
+          <div>
+            <Checkbox
+              label="A jármű tulajdonjogát korlátozó teher (hitel, lízing, zálog) áll fenn."
+              name="vehicleEncumbrance"
+              checked={data.vehicleEncumbrance}
+              onChange={(e) => onChange("vehicleEncumbrance", e.target.checked)}
+              error={errors.vehicleEncumbrance}
+            />
+            {data.vehicleEncumbrance && (
+              <div className="mt-2 ml-7">
+                <Input
+                  label="Finanszírozó neve"
+                  name="encumbranceFinancier"
+                  value={data.encumbranceFinancier}
+                  onChange={(e) => onChange("encumbranceFinancier", e.target.value)}
+                  error={errors.encumbranceFinancier}
+                  placeholder="pl. OTP Bank Zrt., Erste Leasing..."
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

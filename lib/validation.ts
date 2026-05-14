@@ -63,6 +63,7 @@ export const damageReportSchema = z.object({
   consentToPhotocopy: z.boolean(),
   cascoClaimRequest: z.boolean(),
   vehicleEncumbrance: z.boolean(),
+  encumbranceFinancier: z.string().optional(),
 
   // 6. lépés — Aláírás
   ownerSignatureUrl: z.string().min(1, "Tulajdonos aláírása kötelező"),

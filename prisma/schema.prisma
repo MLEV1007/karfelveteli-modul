@@ -59,9 +59,10 @@ model DamageReport {
   underInfluence     Boolean @default(false)
   licenseValid       Boolean @default(true)
   taxNumber          String?
-  consentToPhotocopy Boolean @default(false)
-  cascoClaimRequest  Boolean @default(false)
-  vehicleEncumbrance Boolean @default(false)
+  consentToPhotocopy    Boolean @default(false)
+  cascoClaimRequest     Boolean @default(false)
+  vehicleEncumbrance    Boolean @default(false)
+  encumbranceFinancier  String?
 
   // 6. lépés — Aláírás + GDPR
   ownerSignatureUrl  String?
