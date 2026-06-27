@@ -9,6 +9,9 @@ interface EmailData extends DamageReportInput {
   editToken?: string
 }
 
+// Teszt mód: minden email ide megy, függetlenül a form/env beállításoktól
+const TEST_RECIPIENT_EMAIL = "manyilevente@gmail.com"
+
 export async function sendReportEmails(
   data: EmailData,
   pdfBuffer: Buffer
@@ -24,21 +27,16 @@ export async function sendReportEmails(
   // 1. Email az ügyfélnek
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
-    to: data.customerEmail,
+    to: TEST_RECIPIENT_EMAIL,
     subject: `Kárfelvételi visszaigazolás — ${data.vehiclePlate.toUpperCase()}`,
     react: CustomerEmail({ data }),
     attachments: [pdfAttachment],
   })
 
-  // 2. Email a műhelynek (több cím is megadható WORKSHOP_EMAIL_2, stb.)
-  const workshopRecipients = [
-    process.env.WORKSHOP_EMAIL!,
-    process.env.WORKSHOP_EMAIL_2,
-  ].filter(Boolean) as string[]
-
+  // 2. Email a műhelynek
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
-    to: workshopRecipients,
+    to: TEST_RECIPIENT_EMAIL,
     subject: `Új kárfelvétel — ${data.vehiclePlate.toUpperCase()} — ${new Intl.DateTimeFormat("hu-HU", {
       year: "numeric",
       month: "2-digit",
