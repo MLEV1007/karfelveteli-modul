@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     if (report.status === "COMPLETED") {
       return NextResponse.json(
-        { error: "A munkalap már le van zárva, nem módosítható" },
+        { error: "A jegyzőkönyv már le van zárva, nem módosítható" },
         { status: 409 }
       )
     }
@@ -58,20 +58,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // A munkalap adatait MINDIG elmentjük, mielőtt a PDF/email pipeline-t megpróbálnánk —
+    // A jegyzőkönyv adatait MINDIG elmentjük, mielőtt a PDF/email pipeline-t megpróbálnánk —
     // így a technikus rögzített munkája sosem veszik el egy esetleges PDF/email hiba esetén.
     await prisma.damageReport.update({
       where: { id: report.id },
       data: {
         vehicleCheckIn: new Date(data.vehicleCheckIn),
         vehicleCheckOut: new Date(data.vehicleCheckOut),
-        mileage: data.mileage,
-        workType: data.workType,
-        eurocode: data.eurocode,
-        materialsUsed: data.materialsUsed,
-        materialCost: data.materialCost,
-        laborCost: data.laborCost,
-        paymentMethod: data.paymentMethod,
+        equipmentChecklist: data.equipmentChecklist,
         damageNotes: data.damageNotes,
         technicianName: data.technicianName,
         technicianSignatureUrl: technicianSigUrl,
@@ -85,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           success: false,
           retryable: true,
           error:
-            "A munkalap adatai elmentve, de a végleges PDF/email küldés sikertelen volt. Próbálja újra a Retry gombbal.",
+            "A jegyzőkönyv adatai elmentve, de a végleges PDF/email küldés sikertelen volt. Próbálja újra a Retry gombbal.",
         },
         { status: 207 }
       )
@@ -93,10 +87,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      message: "Munkalap lezárva, a végleges dokumentumok kiküldve",
+      message: "Jegyzőkönyv lezárva, a végleges dokumentumok kiküldve",
     })
   } catch (error) {
-    console.error("Munkalap finalize hiba:", error)
+    console.error("Jegyzőkönyv finalize hiba:", error)
     return NextResponse.json(
       { error: "Váratlan hiba történt. Kérjük próbálja újra később." },
       { status: 500 }

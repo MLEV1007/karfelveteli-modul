@@ -1,5 +1,5 @@
-import { Page, View, Text, Svg, Path, Line, Circle, G, Polygon } from "@react-pdf/renderer"
-import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, CheckCell, SignatureBlock, formatDate } from "./shared"
+import { Page, View, Text } from "@react-pdf/renderer"
+import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, CheckCell, SignatureBlock, DamageDiagram, formatDate } from "./shared"
 import type { FullPdfData } from "./types"
 
 function formatAccidentDate(raw: string): string {
@@ -192,50 +192,7 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
               <Text style={[s.label, { marginBottom: 4, textAlign: "center" }]}>
                 Rajzolja be a gépjármű sérüléseit:
               </Text>
-              <Svg viewBox="0 0 400 310" style={{ width: "100%", height: 130 }}>
-                <G transform="translate(111, 61) scale(3.8)" fill="#d1d5db" stroke="#9ca3af" strokeWidth="0.4">
-                  <Path d="M29.395,0H17.636c-3.117,0-5.643,3.467-5.643,6.584v34.804c0,3.116,2.526,5.644,5.643,5.644h11.759
-                    c3.116,0,5.644-2.527,5.644-5.644V6.584C35.037,3.467,32.511,0,29.395,0z M34.05,14.188v11.665l-2.729,0.351v-4.806
-                    L34.05,14.188z M32.618,10.773c-1.016,3.9-2.219,8.51-2.219,8.51H16.631l-2.222-8.51
-                    C14.41,10.773,23.293,7.755,32.618,10.773z M15.741,21.713v4.492l-2.73-0.349V14.502L15.741,21.713z
-                    M13.011,37.938V27.579l2.73,0.343v8.196L13.011,37.938z M14.568,40.882l2.218-3.336h13.771l2.219,3.336H14.568z
-                    M31.321,35.805v-7.872l2.729-0.355v10.048L31.321,35.805z" />
-                </G>
-                <Text x="200" y="52" style={{ fontSize: 9, fill: "#374151", fontWeight: "bold", textAnchor: "middle" }}>
-                  ▲ ELÖL
-                </Text>
-                <Text x="200" y="298" style={{ fontSize: 9, fill: "#374151", fontWeight: "bold", textAnchor: "middle" }}>
-                  HÁTUL ▼
-                </Text>
-                {data.damagePoints!.map((pt, i) => {
-                  const hasArrow = pt.dx !== 0 || pt.dy !== 0
-                  if (!hasArrow) {
-                    return (
-                      <G key={i}>
-                        <Circle cx={pt.x} cy={pt.y} r="8" fill="#dc2626" />
-                        <Text x={pt.x} y={pt.y + 3} style={{ textAnchor: "middle", fontSize: 8, fill: "white", fontWeight: "bold" }}>
-                          {i + 1}
-                        </Text>
-                      </G>
-                    )
-                  }
-                  const endX = pt.x + pt.dx
-                  const endY = pt.y + pt.dy
-                  const angle = Math.atan2(pt.dy, pt.dx)
-                  const as = 6
-                  const arrowPoints = `${endX},${endY} ${endX - as * Math.cos(angle - Math.PI / 6)},${endY - as * Math.sin(angle - Math.PI / 6)} ${endX - as * Math.cos(angle + Math.PI / 6)},${endY - as * Math.sin(angle + Math.PI / 6)}`
-                  return (
-                    <G key={i}>
-                      <Line x1={pt.x} y1={pt.y} x2={endX} y2={endY} stroke="#dc2626" strokeWidth="2" />
-                      <Polygon points={arrowPoints} fill="#dc2626" />
-                      <Circle cx={pt.x} cy={pt.y} r="5" fill="#dc2626" />
-                      <Text x={pt.x - 8} y={pt.y - 7} style={{ fontSize: 7, fill: "#dc2626", fontWeight: "bold" }}>
-                        {i + 1}
-                      </Text>
-                    </G>
-                  )
-                })}
-              </Svg>
+              <DamageDiagram points={data.damagePoints!} />
               <Text style={[s.label, { textAlign: "center", marginTop: 2 }]}>
                 {data.damagePoints!.length} jelölt sérülési pont
               </Text>

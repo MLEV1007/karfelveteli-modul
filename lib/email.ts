@@ -13,8 +13,8 @@ interface EmailData extends DamageReportInput {
 // Teszt mód: minden email ide megy, függetlenül a form/env beállításoktól
 const TEST_RECIPIENT_EMAIL = "manyilevente@gmail.com"
 
-// Ügyfél beküldése után — a technikusnak szóló értesítés a munkalap linkkel.
-// Még NINCS végleges PDF (a technikus munkalapja hiányzik), ezért melléklet nélkül megy ki.
+// Ügyfél beküldése után — a technikusnak szóló értesítés a jegyzőkönyv linkkel.
+// Még NINCS végleges PDF (a technikus jegyzőkönyve hiányzik), ezért melléklet nélkül megy ki.
 export async function sendTechnicianNotification(data: {
   vehiclePlate: string
   ownerName: string
@@ -26,7 +26,7 @@ export async function sendTechnicianNotification(data: {
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
     to: TEST_RECIPIENT_EMAIL,
-    subject: `Munkalap kitöltése szükséges — ${data.vehiclePlate.toUpperCase()}`,
+    subject: `Jegyzőkönyv kitöltése szükséges — ${data.vehiclePlate.toUpperCase()}`,
     react: TechnicianNotificationEmail(data),
   })
 }

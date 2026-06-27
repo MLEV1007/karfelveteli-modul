@@ -3,6 +3,7 @@ import { prisma } from "./db"
 import { generateFullReportPDF, type FullPdfData } from "./pdf"
 import { sendFinalReportEmails } from "./email"
 import { uploadFinalPdf, urlToBase64 } from "./storage"
+import { getDefaultEquipmentChecklist } from "./equipment"
 
 // A tárolt Prisma rekordot a PDF-generátor által várt alakra hozza.
 // A signature mezőket a hívó már base64-re konvertálva adja át (réteg-szétválasztás:
@@ -65,13 +66,7 @@ function toFullPdfData(
     gdprConsent: true,
     vehicleCheckIn: report.vehicleCheckIn ? report.vehicleCheckIn.toISOString() : "",
     vehicleCheckOut: report.vehicleCheckOut ? report.vehicleCheckOut.toISOString() : "",
-    mileage: report.mileage ?? 0,
-    workType: (report.workType ?? []) as FullPdfData["workType"],
-    eurocode: report.eurocode ?? "",
-    materialsUsed: (report.materialsUsed ?? []) as FullPdfData["materialsUsed"],
-    materialCost: report.materialCost ?? 0,
-    laborCost: report.laborCost ?? 0,
-    paymentMethod: (report.paymentMethod ?? "CASH") as FullPdfData["paymentMethod"],
+    equipmentChecklist: (report.equipmentChecklist ?? getDefaultEquipmentChecklist()) as FullPdfData["equipmentChecklist"],
     damageNotes: report.damageNotes ?? "",
     technicianName: report.technicianName ?? "",
     technicianSignatureUrl: signatures.technician,

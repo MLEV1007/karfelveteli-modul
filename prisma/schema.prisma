@@ -22,25 +22,6 @@ enum InsuranceCompany {
   EGYEB
 }
 
-enum WorkType {
-  WINDSHIELD_REPLACE
-  WINDSHIELD_REPAIR
-  SIDE_GLASS
-  REAR_GLASS
-}
-
-enum MaterialUsed {
-  GLUE
-  FRAME
-  SENSOR
-}
-
-enum PaymentMethod {
-  CASH
-  TRANSFER
-  INSURANCE
-}
-
 // A bekuldesi folyamat allapota:
 // PENDING_TECHNICIAN — ugyfel beadta, technikusi munkalapra var
 // COMPLETED          — munkalap lezarva, vegleges PDF + email kikuldve
@@ -119,18 +100,12 @@ model DamageReport {
   accept8DayPayment Boolean           @default(false)
   knowsCascoTerms   Boolean           @default(false)
 
-  // Munkalap — átvétel/visszaadás időpontjai (technikus rögzíti)
+  // Jegyzőkönyv — átvétel/visszaadás időpontjai (technikus rögzíti)
   vehicleCheckIn  DateTime?
   vehicleCheckOut DateTime?
 
-  // Munkalap — technikusi adatok
-  mileage                 Int?
-  workType                WorkType[]
-  eurocode                String?
-  materialsUsed           MaterialUsed[]
-  materialCost            Int?
-  laborCost               Int?
-  paymentMethod           PaymentMethod?
+  // Jegyzőkönyv — technikusi adatok
+  equipmentChecklist      Json?
   damageNotes             String?
   technicianName          String?
   technicianSignatureUrl  String?

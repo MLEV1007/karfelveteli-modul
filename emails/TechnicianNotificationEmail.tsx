@@ -50,7 +50,7 @@ export default function TechnicianNotificationEmail({
           </Section>
 
           <Section style={alertBox}>
-            <Heading style={alertHeading}>ÚJ KÁRFELVÉTEL — MUNKALAP KITÖLTÉSE SZÜKSÉGES</Heading>
+            <Heading style={alertHeading}>ÚJ KÁRFELVÉTEL — JEGYZŐKÖNYV KITÖLTÉSE SZÜKSÉGES</Heading>
             <Text style={plateNumber}>{vehiclePlate.toUpperCase()}</Text>
             <Text style={alertSubtext}>{formatDate(createdAt)}</Text>
           </Section>
@@ -58,13 +58,14 @@ export default function TechnicianNotificationEmail({
           <Text style={text}>
             {ownerName} ügyfelünk beküldte a kárfelvételi adatait és a meghatalmazást aláírta. A
             kárügy lezárásához és a végleges dokumentumok (Kárbejelentő, Meghatalmazás,
-            Iratösszesítő, Munkalap) kiküldéséhez szükséges a technikusi munkalap kitöltése: km
-            óraállás, elvégzett munka, felhasznált anyagok, költségek és az átvevő aláírása.
+            Iratösszesítő, Jegyzőkönyv) kiküldéséhez szükséges a technikusi jegyzőkönyv
+            kitöltése: átvétel/visszaadás időpontjai, a gépjármű felszereltsége, az átvételkori
+            állapot és az átvevő aláírása.
           </Text>
 
           <Section style={buttonSection}>
             <Link href={munkalapUrl} style={button}>
-              Munkalap megnyitása →
+              Jegyzőkönyv megnyitása →
             </Link>
           </Section>
 

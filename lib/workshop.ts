@@ -7,7 +7,7 @@ export const WORKSHOP_BRAND = {
   website: "www.m1szerviztata.hu",
 }
 
-// Fix, jogi/számlázási entitás adatai — a Meghatalmazás és a Munkalap dokumentumokon
+// Fix, jogi/számlázási entitás adatai — a Meghatalmazás és a Jegyzőkönyv dokumentumokon
 // szerepelnek, mert ezek a dokumentumok a bejegyzett vállalkozást azonosítják, nem a brandet.
 export const WORKSHOP_LEGAL = {
   companyName: "AUTÓÜVEG SZERVIZ Szinak Gábor e.v.",

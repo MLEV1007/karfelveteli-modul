@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { equipmentChecklistSchema } from "./equipment"
 
 // ─────────────────────────────────────────────────────────────
 // Enum-szerű literál listák — Prisma enumokkal szinkronban tartva
@@ -33,43 +34,8 @@ export const INSURANCE_COMPANY_LABELS: Record<InsuranceCompanyValue, string> = {
   EGYEB: "Egyéb biztosító",
 }
 
-export const WORK_TYPES = [
-  "WINDSHIELD_REPLACE",
-  "WINDSHIELD_REPAIR",
-  "SIDE_GLASS",
-  "REAR_GLASS",
-] as const
-
-export const WORK_TYPE_LABELS: Record<(typeof WORK_TYPES)[number], string> = {
-  WINDSHIELD_REPLACE: "Szélvédő csere",
-  WINDSHIELD_REPAIR: "Szélvédő javítás (kőfelverődés)",
-  SIDE_GLASS: "Oldalüveg csere",
-  REAR_GLASS: "Hátsó üveg csere",
-}
-
-export const MATERIALS_USED = ["GLUE", "FRAME", "SENSOR"] as const
-
-export const MATERIAL_USED_LABELS: Record<(typeof MATERIALS_USED)[number], string> = {
-  GLUE: "Ragasztó",
-  FRAME: "Keret",
-  SENSOR: "Szenzor",
-}
-
-export const PAYMENT_METHODS = ["CASH", "TRANSFER", "INSURANCE"] as const
-
-export const PAYMENT_METHOD_LABELS: Record<(typeof PAYMENT_METHODS)[number], string> = {
-  CASH: "Készpénz",
-  TRANSFER: "Bankátutalás",
-  INSURANCE: "Biztosítói elszámolás",
-}
-
 const insuranceCompanySchema = z.enum(INSURANCE_COMPANIES, {
   errorMap: () => ({ message: "Válasszon biztosítót" }),
-})
-const workTypeSchema = z.enum(WORK_TYPES)
-const materialUsedSchema = z.enum(MATERIALS_USED)
-const paymentMethodSchema = z.enum(PAYMENT_METHODS, {
-  errorMap: () => ({ message: "Válasszon fizetési módot" }),
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -199,18 +165,12 @@ export const editReportSchema = damageReportSchema
 export type EditReportInput = z.infer<typeof editReportSchema>
 
 // ─────────────────────────────────────────────────────────────
-// Munkalap — technikusi adatok (csak a /admin/munkalap felületen)
+// Jegyzőkönyv — technikusi adatok (csak a /admin/munkalap felületen)
 // ─────────────────────────────────────────────────────────────
 const munkalapObjectSchema = z.object({
   vehicleCheckIn: z.string().min(1, "Az átvétel időpontja kötelező"),
   vehicleCheckOut: z.string().min(1, "A visszaadás időpontja kötelező"),
-  mileage: z.coerce.number().int().positive("A km óraállás pozitív egész szám legyen"),
-  workType: z.array(workTypeSchema).min(1, "Válasszon legalább egy munkatípust"),
-  eurocode: z.string().min(1, "Az eurocode megadása kötelező"),
-  materialsUsed: z.array(materialUsedSchema).default([]),
-  materialCost: z.coerce.number().int().min(0, "Az anyagköltség nem lehet negatív"),
-  laborCost: z.coerce.number().int().min(0, "A munkadíj nem lehet negatív"),
-  paymentMethod: paymentMethodSchema,
+  equipmentChecklist: equipmentChecklistSchema,
   damageNotes: z.string().min(1, "Az átvételkori állapot rögzítése kötelező"),
   technicianName: z.string().min(2, "A technikus neve kötelező"),
   technicianSignatureUrl: z.string().min(1, "A technikus (átvevő) aláírása kötelező"),
