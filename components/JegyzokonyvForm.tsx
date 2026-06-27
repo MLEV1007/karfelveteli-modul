@@ -1,7 +1,6 @@
 "use client"
 
 import { useRef, useState } from "react"
-import dynamic from "next/dynamic"
 import type { DamageReport } from "@prisma/client"
 import { INSURANCE_COMPANY_LABELS } from "@/lib/validation"
 import {
@@ -9,15 +8,13 @@ import {
   getDefaultEquipmentChecklist,
   type EquipmentItemDef,
 } from "@/lib/equipment"
-import type { SignaturePadHandle } from "@/components/ui/SignaturePad"
+import SignaturePad, { type SignaturePadHandle } from "@/components/ui/SignaturePad"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
 import Checkbox from "./ui/Checkbox"
 import Card from "./ui/Card"
 import Button from "./ui/Button"
-
-const SignaturePad = dynamic(() => import("@/components/ui/SignaturePad"), { ssr: false })
 
 interface JegyzokonyvFormProps {
   report: DamageReport
