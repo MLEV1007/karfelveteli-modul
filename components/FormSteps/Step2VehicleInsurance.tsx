@@ -3,20 +3,39 @@
 import { z } from "zod"
 import Input from "@/components/ui/Input"
 import RadioGroup from "@/components/ui/RadioGroup"
+import Select from "@/components/ui/Select"
+import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS, type InsuranceCompanyValue } from "@/lib/validation"
+
+const VIN_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/ // I, O, Q kizárva (ISO 3779)
 
 export const step2Schema = z.object({
   vehiclePlate: z.string().min(3, "Érvénytelen rendszám"),
   vehicleMake: z.string().min(1, "Kötelező mező"),
   vehicleModel: z.string().min(1, "Kötelező mező"),
   vehicleYear: z.coerce.number().min(1970).max(2026).optional(),
-  vehicleVin: z.string().optional(),
+  vehicleVin: z
+    .string()
+    .length(17, "A VIN szám pontosan 17 karakter hosszú")
+    .regex(VIN_REGEX, "A VIN szám nem tartalmazhat I, O vagy Q betűt"),
   hasCasco: z.boolean(),
   cascoInsurer: z.string().optional(),
   liabilityInsurer: z.string().optional(),
   relevantInsurer: z.string().optional(),
+  insuranceCompany: z.enum(INSURANCE_COMPANIES, {
+    errorMap: () => ({ message: "Válasszon biztosítót" }),
+  }),
 })
 
-export type Step2Data = z.infer<typeof step2Schema>
+const INSURANCE_COMPANY_OPTIONS = INSURANCE_COMPANIES.map((value) => ({
+  value,
+  label: INSURANCE_COMPANY_LABELS[value],
+}))
+
+// A komponens állapotában az insuranceCompany kezdetben "" (még nincs kiválasztva) —
+// a Select erre vár; a Zod séma (z.infer) a beküldéshez a szigorú enumot követeli meg.
+export type Step2Data = Omit<z.infer<typeof step2Schema>, "insuranceCompany"> & {
+  insuranceCompany: InsuranceCompanyValue | ""
+}
 
 interface Step2Props {
   data: Step2Data
@@ -28,7 +47,7 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
   const handleInput =
     (field: keyof Step2Data) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value
-      if (field === "vehiclePlate") {
+      if (field === "vehiclePlate" || field === "vehicleVin") {
         onChange(field, val.toUpperCase())
       } else {
         onChange(field, val)
@@ -87,7 +106,8 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
             value={data.vehicleVin ?? ""}
             onChange={handleInput("vehicleVin")}
             error={errors.vehicleVin}
-            placeholder="17 karakter"
+            required
+            placeholder="Pontosan 17 karakter, I/O/Q nélkül"
             maxLength={17}
           />
         </div>
@@ -98,6 +118,15 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
           Biztosítási adatok
         </h2>
+        <Select
+          label="Illetékes biztosító (meghatalmazáshoz)"
+          name="insuranceCompany"
+          value={data.insuranceCompany ?? ""}
+          onChange={(e) => onChange("insuranceCompany", e.target.value)}
+          options={INSURANCE_COMPANY_OPTIONS}
+          error={errors.insuranceCompany}
+          required
+        />
         <RadioGroup
           label="Van CASCO biztosítása?"
           name="hasCasco"

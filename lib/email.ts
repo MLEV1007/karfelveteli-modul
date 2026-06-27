@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import CustomerEmail from "@/emails/CustomerEmail"
 import WorkshopEmail from "@/emails/WorkshopEmail"
+import TechnicianNotificationEmail from "@/emails/TechnicianNotificationEmail"
 import type { DamageReportInput } from "./validation"
 
 interface EmailData extends DamageReportInput {
@@ -12,7 +13,26 @@ interface EmailData extends DamageReportInput {
 // Teszt mód: minden email ide megy, függetlenül a form/env beállításoktól
 const TEST_RECIPIENT_EMAIL = "manyilevente@gmail.com"
 
-export async function sendReportEmails(
+// Ügyfél beküldése után — a technikusnak szóló értesítés a munkalap linkkel.
+// Még NINCS végleges PDF (a technikus munkalapja hiányzik), ezért melléklet nélkül megy ki.
+export async function sendTechnicianNotification(data: {
+  vehiclePlate: string
+  ownerName: string
+  createdAt: Date
+  munkalapUrl: string
+}): Promise<void> {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  await resend.emails.send({
+    from: process.env.EMAIL_FROM!,
+    to: TEST_RECIPIENT_EMAIL,
+    subject: `Munkalap kitöltése szükséges — ${data.vehiclePlate.toUpperCase()}`,
+    react: TechnicianNotificationEmail(data),
+  })
+}
+
+// A technikus lezárása után — a végleges, összevont PDF-fel mindkét fél értesítést kap.
+export async function sendFinalReportEmails(
   data: EmailData,
   pdfBuffer: Buffer
 ): Promise<void> {

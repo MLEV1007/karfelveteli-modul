@@ -3,12 +3,19 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { DamageReport } from "@prisma/client"
+import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS } from "@/lib/validation"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
 import Checkbox from "./ui/Checkbox"
+import Select from "./ui/Select"
 import Card from "./ui/Card"
 import Button from "./ui/Button"
+
+const INSURANCE_COMPANY_OPTIONS = INSURANCE_COMPANIES.map((value) => ({
+  value,
+  label: INSURANCE_COMPANY_LABELS[value],
+}))
 
 interface EditFormProps {
   report: DamageReport
@@ -27,6 +34,7 @@ export default function EditForm({ report, token }: EditFormProps) {
     // Step 1
     ownerName: report.ownerName,
     ownerAddress: report.ownerAddress ?? "",
+    idOrTaxNumber: report.idOrTaxNumber ?? "",
     driverName: report.driverName ?? "",
     driverAddress: report.driverAddress ?? "",
     driverPhone: report.driverPhone ?? "",
@@ -43,6 +51,7 @@ export default function EditForm({ report, token }: EditFormProps) {
     cascoInsurer: report.cascoInsurer ?? "",
     liabilityInsurer: report.liabilityInsurer ?? "",
     relevantInsurer: report.relevantInsurer ?? "",
+    insuranceCompany: report.insuranceCompany ?? "",
 
     // Step 3
     accidentDate: report.accidentDate?.toISOString().split("T")[0] ?? "",
@@ -170,6 +179,13 @@ export default function EditForm({ report, token }: EditFormProps) {
             error={errors.ownerAddress}
           />
           <Input
+            label="Személyi igazolvány- vagy adószám"
+            name="idOrTaxNumber"
+            value={formData.idOrTaxNumber}
+            onChange={(e) => updateField("idOrTaxNumber", e.target.value)}
+            error={errors.idOrTaxNumber}
+          />
+          <Input
             label="Vezető neve"
             name="driverName"
             value={formData.driverName}
@@ -284,6 +300,14 @@ export default function EditForm({ report, token }: EditFormProps) {
             value={formData.relevantInsurer}
             onChange={(e) => updateField("relevantInsurer", e.target.value)}
             error={errors.relevantInsurer}
+          />
+          <Select
+            label="Illetékes biztosító (meghatalmazáshoz)"
+            name="insuranceCompany"
+            value={formData.insuranceCompany}
+            onChange={(e) => updateField("insuranceCompany", e.target.value)}
+            options={INSURANCE_COMPANY_OPTIONS}
+            error={errors.insuranceCompany}
           />
         </FormSection>
 

@@ -4,14 +4,17 @@ import { useState } from "react"
 import { z } from "zod"
 import Input from "@/components/ui/Input"
 
+const PHONE_REGEX = /^\+?[0-9\s-]{7,20}$/
+
 export const step1Schema = z.object({
   ownerName: z.string().min(2, "Legalább 2 karakter szükséges"),
-  ownerAddress: z.string().optional(),
+  ownerAddress: z.string().min(2, "A lakcím megadása kötelező"),
+  idOrTaxNumber: z.string().min(5, "Adjon meg érvényes személyi igazolvány- vagy adószámot"),
   driverName: z.string().optional(),
   driverAddress: z.string().optional(),
   driverPhone: z.string().optional(),
   customerEmail: z.string().email("Érvénytelen e-mail cím"),
-  customerPhone: z.string().optional(),
+  customerPhone: z.string().regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)"),
 })
 
 export type Step1Data = z.infer<typeof step1Schema>
@@ -59,7 +62,17 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
           value={data.ownerAddress ?? ""}
           onChange={handle("ownerAddress")}
           error={errors.ownerAddress}
+          required
           placeholder="Irányítószám, város, utca, házszám"
+        />
+        <Input
+          label="Személyi igazolvány- vagy adószám"
+          name="idOrTaxNumber"
+          value={data.idOrTaxNumber ?? ""}
+          onChange={handle("idOrTaxNumber")}
+          error={errors.idOrTaxNumber}
+          required
+          placeholder="pl. 123456AB vagy 12345678-1-12"
         />
       </section>
 
@@ -132,6 +145,7 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
           value={data.customerPhone ?? ""}
           onChange={handle("customerPhone")}
           error={errors.customerPhone}
+          required
           placeholder="+36 30 123 4567"
         />
       </section>

@@ -4,8 +4,7 @@ import { Redis } from "@upstash/redis"
 import { randomUUID } from "crypto"
 import { damageReportSchema } from "@/lib/validation"
 import { prisma } from "@/lib/db"
-import { generatePDF } from "@/lib/pdf"
-import { sendReportEmails } from "@/lib/email"
+import { sendTechnicianNotification } from "@/lib/email"
 import { uploadSignature } from "@/lib/storage"
 
 // Rate limiter: max 10 beküldés / IP / óra
@@ -42,7 +41,7 @@ export async function POST(req: NextRequest) {
     // 2. Request body parse
     const body = await req.json()
 
-    // 3. Zod validáció
+    // 3. Zod validáció — ügyfél oldali mezők (a munkalap technikusi mezői NEM részei)
     const result = damageReportSchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json(
@@ -56,31 +55,37 @@ export async function POST(req: NextRequest) {
 
     const data = result.data
 
-    // Token generálás szerkesztéshez (7 napos lejárat)
+    // Szerkesztési token (ügyfélnek, 7 napos lejárat)
     const editToken = randomUUID()
-    const tokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 nap
+    const tokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-    // 4. Prisma: rekord mentése (először base64 adatokkal)
+    // Technikusi (munkalap) token — egyedi e-mailes link, 30 napos lejárat
+    const technicianToken = randomUUID()
+    const technicianTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
+    // 4. Prisma: rekord mentése (PENDING_TECHNICIAN állapotban, base64 aláírásokkal)
     let report
     try {
       report = await prisma.damageReport.create({
         data: {
           ownerName: data.ownerName,
-          ownerAddress: data.ownerAddress ?? null,
+          ownerAddress: data.ownerAddress,
+          idOrTaxNumber: data.idOrTaxNumber,
           driverName: data.driverName ?? null,
           driverAddress: data.driverAddress ?? null,
           driverPhone: data.driverPhone ?? null,
           customerEmail: data.customerEmail,
-          customerPhone: data.customerPhone ?? null,
+          customerPhone: data.customerPhone,
           vehiclePlate: data.vehiclePlate,
           vehicleMake: data.vehicleMake,
           vehicleModel: data.vehicleModel,
           vehicleYear: data.vehicleYear ?? null,
-          vehicleVin: data.vehicleVin ?? null,
+          vehicleVin: data.vehicleVin,
           hasCasco: data.hasCasco,
           cascoInsurer: data.cascoInsurer ?? null,
           liabilityInsurer: data.liabilityInsurer ?? null,
           relevantInsurer: data.relevantInsurer ?? null,
+          insuranceCompany: data.insuranceCompany,
           accidentDate: data.accidentDate ? new Date(data.accidentDate) : null,
           accidentCountry: data.accidentCountry ?? null,
           accidentCity: data.accidentCity ?? null,
@@ -107,11 +112,16 @@ export async function POST(req: NextRequest) {
           cascoClaimRequest: data.cascoClaimRequest,
           vehicleEncumbrance: data.vehicleEncumbrance,
           encumbranceFinancier: data.encumbranceFinancier ?? null,
-          ownerSignatureUrl: null, // Will be updated after R2 upload
-          driverSignatureUrl: null, // Will be updated after R2 upload
+          accept8DayPayment: data.accept8DayPayment,
+          knowsCascoTerms: data.knowsCascoTerms,
+          ownerSignatureUrl: null, // Feltöltés után frissül
+          driverSignatureUrl: null, // Feltöltés után frissül
           gdprConsent: data.gdprConsent,
+          status: "PENDING_TECHNICIAN",
           editToken,
           tokenExpiresAt,
+          technicianToken,
+          technicianTokenExpiresAt,
         },
       })
     } catch (dbError) {
@@ -122,33 +132,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 4.5 Aláírások feltöltése R2-re
-    // Fotók már feltöltve a kliensen keresztül presigned URL-lel
-    const ownerSignatureBase64 = data.ownerSignatureUrl
-    const driverSignatureBase64 = data.driverSignatureUrl ?? ""
-
+    // 5. Aláírások feltöltése Supabase Storage-ba
     try {
-      // Upload owner signature
       const ownerSigUrl = data.ownerSignatureUrl
-        ? await uploadSignature(
-            data.ownerSignatureUrl,
-            data.vehiclePlate,
-            report.id,
-            "owner"
-          )
+        ? await uploadSignature(data.ownerSignatureUrl, data.vehiclePlate, report.id, "owner")
         : null
 
-      // Upload driver signature (if provided)
       const driverSigUrl = data.driverSignatureUrl
-        ? await uploadSignature(
-            data.driverSignatureUrl,
-            data.vehiclePlate,
-            report.id,
-            "driver"
-          )
+        ? await uploadSignature(data.driverSignatureUrl, data.vehiclePlate, report.id, "driver")
         : null
 
-      // Update database with signature URLs
       await prisma.damageReport.update({
         where: { id: report.id },
         data: {
@@ -156,67 +149,30 @@ export async function POST(req: NextRequest) {
           driverSignatureUrl: driverSigUrl,
         },
       })
-
-      data.ownerSignatureUrl = ownerSigUrl ?? ""
-      data.driverSignatureUrl = driverSigUrl ?? ""
     } catch (uploadError) {
-      console.error("R2 upload error:", uploadError)
+      console.error("Aláírás feltöltési hiba:", uploadError)
       return NextResponse.json(
         { error: "Aláírás feltöltési hiba. Kérjük próbálja újra később." },
         { status: 500 }
       )
     }
 
-    // 5. PDF generálás
-    // Aláírásokhoz base64 adatot használunk (react-pdf nem kell hálózati kérést küldjön)
-    let pdfBuffer: Buffer
+    // 6. Technikusi értesítő email — a munkalap linkkel (NEM a végleges, összevont PDF — az
+    // a technikus lezárása után készül el, lásd app/api/munkalap/[id]/route.ts)
     try {
-      pdfBuffer = await generatePDF({
-        ...data,
-        ownerSignatureUrl: ownerSignatureBase64,
-        driverSignatureUrl: driverSignatureBase64 || undefined,
-        id: report.id,
+      const munkalapUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/munkalap/${report.id}?token=${technicianToken}`
+      await sendTechnicianNotification({
+        vehiclePlate: data.vehiclePlate,
+        ownerName: data.ownerName,
         createdAt: report.createdAt,
+        munkalapUrl,
       })
-    } catch (pdfError) {
-      console.error("PDF hiba részletei:", pdfError)
-      console.error("PDF hiba stack:", (pdfError as Error)?.stack)
-      return NextResponse.json(
-        { error: "PDF generálási hiba. Kérjük próbálja újra később." },
-        { status: 500 }
-      )
-    }
-
-    // 6. Email küldés
-    try {
-      await sendReportEmails(
-        {
-          ...data,
-          id: report.id,
-          createdAt: report.createdAt,
-          editToken: report.editToken ?? undefined,
-        },
-        pdfBuffer
-      )
     } catch (emailError) {
-      // Email hiba esetén NEM rollback-eljük a DB rekordot
-      // A rekord megmarad, csak logoljuk a hibát
-      console.error("Email sending error:", emailError)
-      // Nem dobunk 500-at, mert a beküldés egyébként sikeres volt
+      // Email hiba esetén NEM rollback-eljük a DB rekordot — csak logoljuk
+      console.error("Technikusi értesítő email hiba:", emailError)
     }
 
-    // 7. DB frissítés: emailSentAt
-    try {
-      await prisma.damageReport.update({
-        where: { id: report.id },
-        data: { emailSentAt: new Date() },
-      })
-    } catch (updateError) {
-      // Ha az update sikertelen, nem gond, a fő rekord létrejött
-      console.error("Email timestamp update error:", updateError)
-    }
-
-    // 8. Sikeres válasz
+    // 7. Sikeres válasz
     return NextResponse.json(
       {
         success: true,

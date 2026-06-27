@@ -29,8 +29,9 @@ export default function SuccessPage() {
           Kárfelvétele sikeresen beérkezett.
         </p>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-8">
-          Visszaigazolást küldtünk a megadott e-mail címre. Munkatársunk hamarosan
-          felveszi Önnel a kapcsolatot.
+          A gépjármű átvételekor szervizünk technikusa rögzíti a munkalapot. A végleges
+          kárbejelentő lapot, meghatalmazást és munkalapot PDF formátumban e-mailben
+          küldjük el a megadott e-mail címre, amint a munkalap lezárásra kerül.
         </p>
 
         {/* Vissza gomb */}

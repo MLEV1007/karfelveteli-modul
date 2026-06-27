@@ -23,12 +23,16 @@ import Step5Declarations, {
   step5Schema,
   type Step5Data,
 } from "@/components/FormSteps/Step5Declarations"
+import Step6Authorization, {
+  authorizationSchema,
+  type AuthorizationData,
+} from "@/components/FormSteps/Step6Authorization"
 import dynamic from "next/dynamic"
 import {
-  step6Schema,
-  type Step6Data,
+  step6Schema as signatureSchema,
+  type Step6Data as SignatureData,
 } from "@/components/FormSteps/Step6Signature"
-const Step6Signature = dynamic(
+const Step7Signature = dynamic(
   () => import("@/components/FormSteps/Step6Signature"),
   { ssr: false }
 )
@@ -41,15 +45,25 @@ const STEP_LABELS = [
   "Baleset körülményei",
   "Kár és sérülés",
   "Nyilatkozatok",
+  "Meghatalmazás",
   "Aláírás",
 ]
 
-type FormData = Step1Data & Step2Data & Step3Data & Step4Data & Step5Data & Step6Data
+const TOTAL_STEPS = STEP_LABELS.length
+
+type FormData = Step1Data &
+  Step2Data &
+  Step3Data &
+  Step4Data &
+  Step5Data &
+  AuthorizationData &
+  SignatureData
 
 const initialData: FormData = {
   // Step 1
   ownerName: "",
   ownerAddress: "",
+  idOrTaxNumber: "",
   driverName: "",
   driverAddress: "",
   driverPhone: "",
@@ -65,6 +79,7 @@ const initialData: FormData = {
   cascoInsurer: "",
   liabilityInsurer: "",
   relevantInsurer: "",
+  insuranceCompany: "",
   // Step 3
   accidentDate: "",
   accidentCountry: "Magyarország",
@@ -94,7 +109,10 @@ const initialData: FormData = {
   cascoClaimRequest: false,
   vehicleEncumbrance: false,
   encumbranceFinancier: "",
-  // Step 6
+  // Step 6 — Meghatalmazás
+  accept8DayPayment: false,
+  knowsCascoTerms: false,
+  // Step 7 — Aláírás
   ownerSignatureUrl: "",
   driverSignatureUrl: "",
   gdprConsent: false,
@@ -128,6 +146,7 @@ export default function FormPage() {
       data = {
         ownerName: formData.ownerName,
         ownerAddress: formData.ownerAddress,
+        idOrTaxNumber: formData.idOrTaxNumber,
         driverName: formData.driverName,
         driverAddress: formData.driverAddress,
         driverPhone: formData.driverPhone,
@@ -146,6 +165,7 @@ export default function FormPage() {
         cascoInsurer: formData.cascoInsurer,
         liabilityInsurer: formData.liabilityInsurer,
         relevantInsurer: formData.relevantInsurer,
+        insuranceCompany: formData.insuranceCompany,
       }
     } else if (currentStep === 3) {
       schema = step3Schema
@@ -186,7 +206,13 @@ export default function FormPage() {
         encumbranceFinancier: formData.encumbranceFinancier,
       }
     } else if (currentStep === 6) {
-      schema = step6Schema
+      schema = authorizationSchema
+      data = {
+        accept8DayPayment: formData.accept8DayPayment,
+        knowsCascoTerms: formData.knowsCascoTerms,
+      }
+    } else if (currentStep === 7) {
+      schema = signatureSchema
       data = {
         ownerSignatureUrl: formData.ownerSignatureUrl,
         driverSignatureUrl: formData.driverSignatureUrl || undefined,
@@ -213,7 +239,7 @@ export default function FormPage() {
 
   const handleNext = () => {
     if (validateStep()) {
-      setCurrentStep((s) => Math.min(s + 1, 6))
+      setCurrentStep((s) => Math.min(s + 1, TOTAL_STEPS))
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
@@ -266,6 +292,7 @@ export default function FormPage() {
             data={{
               ownerName: formData.ownerName,
               ownerAddress: formData.ownerAddress,
+              idOrTaxNumber: formData.idOrTaxNumber,
               driverName: formData.driverName,
               driverAddress: formData.driverAddress,
               driverPhone: formData.driverPhone,
@@ -289,6 +316,7 @@ export default function FormPage() {
               cascoInsurer: formData.cascoInsurer,
               liabilityInsurer: formData.liabilityInsurer,
               relevantInsurer: formData.relevantInsurer,
+              insuranceCompany: formData.insuranceCompany,
             }}
             onChange={(field, value) => updateField(field, value)}
             errors={errors}
@@ -349,7 +377,26 @@ export default function FormPage() {
         )
       case 6:
         return (
-          <Step6Signature
+          <Step6Authorization
+            data={{
+              accept8DayPayment: formData.accept8DayPayment,
+              knowsCascoTerms: formData.knowsCascoTerms,
+            }}
+            summary={{
+              ownerName: formData.ownerName,
+              ownerAddress: formData.ownerAddress,
+              idOrTaxNumber: formData.idOrTaxNumber,
+              vehiclePlate: formData.vehiclePlate,
+              vehicleVin: formData.vehicleVin,
+              insuranceCompany: formData.insuranceCompany,
+            }}
+            onChange={(field, value) => updateField(field, value)}
+            errors={errors}
+          />
+        )
+      case 7:
+        return (
+          <Step7Signature
             data={{
               ownerSignatureUrl: formData.ownerSignatureUrl,
               driverSignatureUrl: formData.driverSignatureUrl,
@@ -391,7 +438,7 @@ export default function FormPage() {
               Vissza
             </Button>
 
-            {currentStep < 6 && (
+            {currentStep < TOTAL_STEPS && (
               <Button variant="primary" onClick={handleNext}>
                 Tovább
               </Button>

@@ -77,6 +77,7 @@ export async function PATCH(req: NextRequest) {
         // Step 1
         ownerName: validatedData.ownerName,
         ownerAddress: validatedData.ownerAddress ?? null,
+        idOrTaxNumber: validatedData.idOrTaxNumber ?? null,
         driverName: validatedData.driverName ?? null,
         driverAddress: validatedData.driverAddress ?? null,
         driverPhone: validatedData.driverPhone ?? null,
@@ -93,6 +94,7 @@ export async function PATCH(req: NextRequest) {
         cascoInsurer: validatedData.cascoInsurer ?? null,
         liabilityInsurer: validatedData.liabilityInsurer ?? null,
         relevantInsurer: validatedData.relevantInsurer ?? null,
+        insuranceCompany: validatedData.insuranceCompany ?? null,
 
         // Step 3
         accidentDate: validatedData.accidentDate

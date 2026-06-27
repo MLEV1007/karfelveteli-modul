@@ -1,25 +1,116 @@
 import { z } from "zod"
 
+// ─────────────────────────────────────────────────────────────
+// Enum-szerű literál listák — Prisma enumokkal szinkronban tartva
+// ─────────────────────────────────────────────────────────────
+export const INSURANCE_COMPANIES = [
+  "ALLIANZ",
+  "GENERALI",
+  "GROUPAMA",
+  "UNIQA",
+  "KH_BIZTOSITO",
+  "UNION",
+  "SIGNAL_IDUNA",
+  "WABERERS",
+  "GENERTEL",
+  "MAGYAR_POSTA_BIZTOSITO",
+  "EGYEB",
+] as const
+
+export type InsuranceCompanyValue = (typeof INSURANCE_COMPANIES)[number]
+
+export const INSURANCE_COMPANY_LABELS: Record<InsuranceCompanyValue, string> = {
+  ALLIANZ: "Allianz Hungária",
+  GENERALI: "Generali Biztosító",
+  GROUPAMA: "Groupama Biztosító",
+  UNIQA: "UNIQA Biztosító",
+  KH_BIZTOSITO: "K&H Biztosító",
+  UNION: "UNION Biztosító",
+  SIGNAL_IDUNA: "Signal Iduna Biztosító",
+  WABERERS: "Wáberer Hungária Biztosító",
+  GENERTEL: "Genertel Biztosító",
+  MAGYAR_POSTA_BIZTOSITO: "Magyar Posta Biztosító",
+  EGYEB: "Egyéb biztosító",
+}
+
+export const WORK_TYPES = [
+  "WINDSHIELD_REPLACE",
+  "WINDSHIELD_REPAIR",
+  "SIDE_GLASS",
+  "REAR_GLASS",
+] as const
+
+export const WORK_TYPE_LABELS: Record<(typeof WORK_TYPES)[number], string> = {
+  WINDSHIELD_REPLACE: "Szélvédő csere",
+  WINDSHIELD_REPAIR: "Szélvédő javítás (kőfelverődés)",
+  SIDE_GLASS: "Oldalüveg csere",
+  REAR_GLASS: "Hátsó üveg csere",
+}
+
+export const MATERIALS_USED = ["GLUE", "FRAME", "SENSOR"] as const
+
+export const MATERIAL_USED_LABELS: Record<(typeof MATERIALS_USED)[number], string> = {
+  GLUE: "Ragasztó",
+  FRAME: "Keret",
+  SENSOR: "Szenzor",
+}
+
+export const PAYMENT_METHODS = ["CASH", "TRANSFER", "INSURANCE"] as const
+
+export const PAYMENT_METHOD_LABELS: Record<(typeof PAYMENT_METHODS)[number], string> = {
+  CASH: "Készpénz",
+  TRANSFER: "Bankátutalás",
+  INSURANCE: "Biztosítói elszámolás",
+}
+
+const insuranceCompanySchema = z.enum(INSURANCE_COMPANIES, {
+  errorMap: () => ({ message: "Válasszon biztosítót" }),
+})
+const workTypeSchema = z.enum(WORK_TYPES)
+const materialUsedSchema = z.enum(MATERIALS_USED)
+const paymentMethodSchema = z.enum(PAYMENT_METHODS, {
+  errorMap: () => ({ message: "Válasszon fizetési módot" }),
+})
+
+// ─────────────────────────────────────────────────────────────
+// Mező-szintű validátorok újrahasználva
+// ─────────────────────────────────────────────────────────────
+const VIN_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/ // I, O, Q kizárva (ISO 3779)
+const vinSchema = z.preprocess(
+  (val) => (typeof val === "string" ? val.toUpperCase() : val),
+  z
+    .string()
+    .length(17, "A VIN szám pontosan 17 karakter hosszú")
+    .regex(VIN_REGEX, "A VIN szám nem tartalmazhat I, O vagy Q betűt")
+)
+
+const PHONE_REGEX = /^\+?[0-9\s-]{7,20}$/
+const phoneSchema = z
+  .string()
+  .regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)")
+
 export const damageReportSchema = z.object({
   // 1. lépés — Személyes adatok
   ownerName: z.string().min(2, "Legalább 2 karakter szükséges"),
-  ownerAddress: z.string().optional(),
+  ownerAddress: z.string().min(2, "A lakcím megadása kötelező"),
+  idOrTaxNumber: z.string().min(5, "Adjon meg érvényes személyi igazolvány- vagy adószámot"),
   driverName: z.string().optional(),
   driverAddress: z.string().optional(),
   driverPhone: z.string().optional(),
   customerEmail: z.string().email("Érvénytelen e-mail cím"),
-  customerPhone: z.string().optional(),
+  customerPhone: phoneSchema,
 
   // 2. lépés — Jármű és biztosítás
   vehiclePlate: z.string().min(3, "Rendszám minimum 3 karakter"),
   vehicleMake: z.string().min(1, "Gyártmány kötelező"),
   vehicleModel: z.string().min(1, "Típus kötelező"),
   vehicleYear: z.coerce.number().min(1970).max(2026).optional(),
-  vehicleVin: z.string().optional(),
+  vehicleVin: vinSchema,
   hasCasco: z.boolean(),
   cascoInsurer: z.string().optional(),
   liabilityInsurer: z.string().optional(),
   relevantInsurer: z.string().optional(),
+  insuranceCompany: insuranceCompanySchema,
 
   // 3. lépés — Baleset körülményei
   accidentDate: z.string().optional(),
@@ -65,7 +156,15 @@ export const damageReportSchema = z.object({
   vehicleEncumbrance: z.boolean(),
   encumbranceFinancier: z.string().optional(),
 
-  // 6. lépés — Aláírás
+  // 6. lépés — Meghatalmazás (jogi nyilatkozatok)
+  accept8DayPayment: z.literal(true, {
+    errorMap: () => ({ message: "A 8 napos fizetési záradék elfogadása kötelező" }),
+  }),
+  knowsCascoTerms: z.literal(true, {
+    errorMap: () => ({ message: "A CASCO feltételek tudomásul vétele kötelező" }),
+  }),
+
+  // 7. lépés — Aláírás
   ownerSignatureUrl: z.string().min(1, "Tulajdonos aláírása kötelező"),
   driverSignatureUrl: z.string().optional(),
   gdprConsent: z.literal(true, {
@@ -76,14 +175,61 @@ export const damageReportSchema = z.object({
 export type DamageReportInput = z.infer<typeof damageReportSchema>
 
 // Szerkesztési schema — csak a módosítható mezőket tartalmazza
-// Readonly: photoUrls, aláírások, gdprConsent, createdAt, emailSentAt
+// Readonly: photoUrls, aláírások, gdprConsent, meghatalmazás jognyilatkozatok, createdAt, emailSentAt
+// A VIN / biztosító / lakcím / igazolványszám / telefon mezőket lazítjuk, hogy a régebbi,
+// e mezők nélkül beküldött jelentések is továbbra is szerkeszthetők maradjanak.
 export const editReportSchema = damageReportSchema
   .omit({
     photoUrls: true,
     ownerSignatureUrl: true,
     driverSignatureUrl: true,
     gdprConsent: true,
+    accept8DayPayment: true,
+    knowsCascoTerms: true,
+  })
+  .extend({
+    ownerAddress: z.string().optional(),
+    idOrTaxNumber: z.string().optional(),
+    customerPhone: z.string().optional(),
+    vehicleVin: vinSchema.optional(),
+    insuranceCompany: insuranceCompanySchema.optional(),
   })
   .strict()
 
 export type EditReportInput = z.infer<typeof editReportSchema>
+
+// ─────────────────────────────────────────────────────────────
+// Munkalap — technikusi adatok (csak a /admin/munkalap felületen)
+// ─────────────────────────────────────────────────────────────
+const munkalapObjectSchema = z.object({
+  vehicleCheckIn: z.string().min(1, "Az átvétel időpontja kötelező"),
+  vehicleCheckOut: z.string().min(1, "A visszaadás időpontja kötelező"),
+  mileage: z.coerce.number().int().positive("A km óraállás pozitív egész szám legyen"),
+  workType: z.array(workTypeSchema).min(1, "Válasszon legalább egy munkatípust"),
+  eurocode: z.string().min(1, "Az eurocode megadása kötelező"),
+  materialsUsed: z.array(materialUsedSchema).default([]),
+  materialCost: z.coerce.number().int().min(0, "Az anyagköltség nem lehet negatív"),
+  laborCost: z.coerce.number().int().min(0, "A munkadíj nem lehet negatív"),
+  paymentMethod: paymentMethodSchema,
+  damageNotes: z.string().min(1, "Az átvételkori állapot rögzítése kötelező"),
+  technicianName: z.string().min(2, "A technikus neve kötelező"),
+  technicianSignatureUrl: z.string().min(1, "A technikus (átvevő) aláírása kötelező"),
+})
+
+function checkOutAfterCheckIn(data: { vehicleCheckIn: string; vehicleCheckOut: string }) {
+  return new Date(data.vehicleCheckOut) > new Date(data.vehicleCheckIn)
+}
+
+const checkOutRefinement = {
+  message: "A visszaadás időpontja az átvétel időpontja után kell legyen",
+  path: ["vehicleCheckOut"],
+}
+
+export const munkalapSchema = munkalapObjectSchema.refine(checkOutAfterCheckIn, checkOutRefinement)
+export type MunkalapInput = z.infer<typeof munkalapSchema>
+
+// A technikus lezáráskor a teljes, összevont rekordnak érvényesnek kell lennie
+export const fullReportSchema = damageReportSchema
+  .merge(munkalapObjectSchema)
+  .refine(checkOutAfterCheckIn, checkOutRefinement)
+export type FullReportInput = z.infer<typeof fullReportSchema>

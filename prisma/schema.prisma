@@ -8,6 +8,49 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum InsuranceCompany {
+  ALLIANZ
+  GENERALI
+  GROUPAMA
+  UNIQA
+  KH_BIZTOSITO
+  UNION
+  SIGNAL_IDUNA
+  WABERERS
+  GENERTEL
+  MAGYAR_POSTA_BIZTOSITO
+  EGYEB
+}
+
+enum WorkType {
+  WINDSHIELD_REPLACE
+  WINDSHIELD_REPAIR
+  SIDE_GLASS
+  REAR_GLASS
+}
+
+enum MaterialUsed {
+  GLUE
+  FRAME
+  SENSOR
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  INSURANCE
+}
+
+// A bekuldesi folyamat allapota:
+// PENDING_TECHNICIAN — ugyfel beadta, technikusi munkalapra var
+// COMPLETED          — munkalap lezarva, vegleges PDF + email kikuldve
+// FAILED_PDF         — a vegleges PDF/email lepes elhasalt, ujraprobalhato
+enum ReportStatus {
+  PENDING_TECHNICIAN
+  COMPLETED
+  FAILED_PDF
+}
+
 model DamageReport {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -69,6 +112,36 @@ model DamageReport {
   driverSignatureUrl String?
   gdprConsent        Boolean   @default(false)
   emailSentAt        DateTime?
+
+  // Meghatalmazás — ügyfél azonosítás és illetékes biztosító
+  idOrTaxNumber     String?
+  insuranceCompany  InsuranceCompany?
+  accept8DayPayment Boolean           @default(false)
+  knowsCascoTerms   Boolean           @default(false)
+
+  // Munkalap — átvétel/visszaadás időpontjai (technikus rögzíti)
+  vehicleCheckIn  DateTime?
+  vehicleCheckOut DateTime?
+
+  // Munkalap — technikusi adatok
+  mileage                 Int?
+  workType                WorkType[]
+  eurocode                String?
+  materialsUsed           MaterialUsed[]
+  materialCost            Int?
+  laborCost               Int?
+  paymentMethod           PaymentMethod?
+  damageNotes             String?
+  technicianName          String?
+  technicianSignatureUrl  String?
+
+  // Beküldési pipeline állapota
+  status                    ReportStatus @default(PENDING_TECHNICIAN)
+  technicianToken           String?      @unique
+  technicianTokenExpiresAt  DateTime?
+  finalPdfUrl               String?
+  munkalapClosedAt          DateTime?
+  pdfErrorMessage           String?
 
   // Szerkesztési token (magic link)
   editToken     String?   @unique
