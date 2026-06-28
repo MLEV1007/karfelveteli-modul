@@ -43,8 +43,8 @@ export default function TechnicianNotificationEmail({
             <Img
               src={`${process.env.NEXT_PUBLIC_APP_URL}/api/logo`}
               alt="M1 Szerviz Tata"
-              width={120}
-              height={60}
+              width={160}
+              height={38}
               style={logoStyle}
             />
           </Section>

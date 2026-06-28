@@ -6,7 +6,7 @@ const fontsDir = path.join(process.cwd(), "lib", "fonts")
 const robotoRegular = fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf"))
 const robotoBold = fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf"))
 
-const logoBuffer = fs.readFileSync(path.join(process.cwd(), "pictures", "0001_cropped.png"))
+const logoBuffer = fs.readFileSync(path.join(process.cwd(), "pictures", "logo.png"))
 export const logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`
 
 Font.register({
