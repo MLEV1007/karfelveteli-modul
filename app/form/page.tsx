@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import StepIndicator from "@/components/FormSteps/StepIndicator"
 import Step1PersonalData, {
@@ -128,6 +128,17 @@ export default function FormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
+  // Lépésváltás után görgetünk a lap tetejére — useEffect-ben, a currentStep-re
+  // kulcsolva, hogy a görgetés a következő lépés TÉNYLEGES (már kirenderelt és
+  // lemért magasságú) tartalmára fusson, ne a még előző lépést mutató DOM-ra.
+  // (Ha ezt a handleNext/handleBack-ben azonnal a setCurrentStep után hívnánk,
+  // a görgetés a régi, rövidebb tartalomhoz képest indulna el, és — főleg
+  // mobilon, a virtuális billentyűzet bezáródásával egy időben — a lap alján
+  // landolhat a 4. lépésnél, ami jóval magasabb a többinél.)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [currentStep])
+
   const updateField = (field: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) {
@@ -243,14 +254,12 @@ export default function FormPage() {
   const handleNext = () => {
     if (validateStep()) {
       setCurrentStep((s) => Math.min(s + 1, TOTAL_STEPS))
-      window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
 
   const handleBack = () => {
     setErrors({})
     setCurrentStep((s) => Math.max(s - 1, 1))
-    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   const handleSubmit = async () => {
