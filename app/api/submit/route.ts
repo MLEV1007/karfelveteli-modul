@@ -1,42 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Ratelimit } from "@upstash/ratelimit"
-import { Redis } from "@upstash/redis"
 import { randomUUID } from "crypto"
 import { damageReportSchema } from "@/lib/validation"
+import { enforceRateLimit } from "@/lib/ratelimit"
 import { prisma } from "@/lib/db"
 import { sendTechnicianNotification } from "@/lib/email"
 import { uploadSignature } from "@/lib/storage"
 
-// Rate limiter: max 10 beküldés / IP / óra
-// Ha nincs Redis konfig, kihagyjuk a rate limiting-et (dev mode)
-let ratelimit: Ratelimit | null = null
-
-try {
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    ratelimit = new Ratelimit({
-      redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(10, "1 h"),
-      analytics: true,
-    })
-  }
-} catch (error) {
-  console.warn("Rate limiting disabled - Redis configuration missing or invalid")
-}
-
 export async function POST(req: NextRequest) {
   try {
-    // 1. Rate limiting (ha elérhető)
-    if (ratelimit) {
-      const ip = req.ip ?? req.headers.get("x-forwarded-for") ?? "127.0.0.1"
-      const { success: rateLimitOk } = await ratelimit.limit(ip)
-
-      if (!rateLimitOk) {
-        return NextResponse.json(
-          { error: "Túl sok kérés. Kérjük várjon egy órát." },
-          { status: 429 }
-        )
-      }
-    }
+    // 1. Rate limiting
+    const rateLimitResponse = await enforceRateLimit(req)
+    if (rateLimitResponse) return rateLimitResponse
 
     // 2. Request body parse
     const body = await req.json()
@@ -161,7 +135,7 @@ export async function POST(req: NextRequest) {
     // 6. Technikusi értesítő email — a munkalap linkkel (NEM a végleges, összevont PDF — az
     // a technikus lezárása után készül el, lásd app/api/munkalap/[id]/route.ts)
     try {
-      const munkalapUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/munkalap/${report.id}?token=${technicianToken}`
+      const munkalapUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/munkalap/session?id=${report.id}&token=${technicianToken}`
       await sendTechnicianNotification({
         vehiclePlate: data.vehiclePlate,
         ownerName: data.ownerName,

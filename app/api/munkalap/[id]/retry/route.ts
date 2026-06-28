@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { validateTechnicianToken } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/ratelimit"
+import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
+import { prisma } from "@/lib/db"
 import { finalizeReport } from "@/lib/finalize"
 
 interface RouteParams {
@@ -10,14 +12,15 @@ interface RouteParams {
 // rekordon, anélkül hogy a technikusnak újra be kellene gépelnie a munkalap adatait.
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    const body = await req.json().catch(() => ({}))
-    const token = body?.token ?? req.nextUrl.searchParams.get("token")
+    const rateLimitResponse = await enforceRateLimit(req)
+    if (rateLimitResponse) return rateLimitResponse
 
-    if (!token) {
-      return NextResponse.json({ error: "Hiányzó token" }, { status: 400 })
+    const sessionCookie = req.cookies.get(sessionCookieName("munkalap", params.id))?.value
+    if (!verifySessionCookieValue(sessionCookie, params.id, "munkalap")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const report = await validateTechnicianToken(params.id, token)
+    const report = await prisma.damageReport.findUnique({ where: { id: params.id } })
     if (!report) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

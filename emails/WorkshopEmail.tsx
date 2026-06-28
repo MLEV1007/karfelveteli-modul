@@ -207,7 +207,7 @@ export default function WorkshopEmail({ data }: WorkshopEmailProps) {
                 kivételével). A link 7 napig érvényes a beküldéstől számítva.
               </Text>
               <Link
-                href={`${process.env.NEXT_PUBLIC_APP_URL}/edit/${data.id}?token=${data.editToken}`}
+                href={`${process.env.NEXT_PUBLIC_APP_URL}/api/edit/session?id=${data.id}&token=${data.editToken}`}
                 style={editButton}
               >
                 Szerkesztés megnyitása →

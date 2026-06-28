@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { munkalapSchema } from "@/lib/validation"
-import { validateTechnicianToken } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/ratelimit"
+import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
 import { prisma } from "@/lib/db"
 import { uploadSignature } from "@/lib/storage"
 import { finalizeReport } from "@/lib/finalize"
@@ -13,17 +14,20 @@ interface RouteParams {
 // PDF + email véglegesítési pipeline-t.
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
-    const body = await req.json()
-    const { token, ...munkalapFields } = body
+    const rateLimitResponse = await enforceRateLimit(req)
+    if (rateLimitResponse) return rateLimitResponse
 
-    if (!token) {
-      return NextResponse.json({ error: "Hiányzó token" }, { status: 400 })
+    const sessionCookie = req.cookies.get(sessionCookieName("munkalap", params.id))?.value
+    if (!verifySessionCookieValue(sessionCookie, params.id, "munkalap")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const report = await validateTechnicianToken(params.id, token)
+    const report = await prisma.damageReport.findUnique({ where: { id: params.id } })
     if (!report) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const munkalapFields = await req.json()
 
     if (report.status === "COMPLETED") {
       return NextResponse.json(

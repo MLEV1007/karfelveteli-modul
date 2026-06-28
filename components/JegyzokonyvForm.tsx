@@ -18,7 +18,6 @@ import Button from "./ui/Button"
 
 interface JegyzokonyvFormProps {
   report: DamageReport
-  token: string
 }
 
 type DamagePoint = { x: number; y: number; dx: number; dy: number; label: string }
@@ -145,7 +144,7 @@ function EquipmentItemRow({
   )
 }
 
-export default function JegyzokonyvForm({ report, token }: JegyzokonyvFormProps) {
+export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
   const sigRef = useRef<SignaturePadHandle>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
@@ -191,7 +190,6 @@ export default function JegyzokonyvForm({ report, token }: JegyzokonyvFormProps)
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token,
           vehicleCheckIn,
           vehicleCheckOut,
           equipmentChecklist: equipment,
@@ -242,8 +240,6 @@ export default function JegyzokonyvForm({ report, token }: JegyzokonyvFormProps)
     try {
       const response = await fetch(`/api/munkalap/${report.id}/retry`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
       })
       const result = await response.json()
 

@@ -32,10 +32,9 @@ const VEHICLE_TYPE_OPTIONS = [
 
 interface EditFormProps {
   report: DamageReport
-  token: string
 }
 
-export default function EditForm({ report, token }: EditFormProps) {
+export default function EditForm({ report }: EditFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -123,7 +122,6 @@ export default function EditForm({ report, token }: EditFormProps) {
         },
         body: JSON.stringify({
           id: report.id,
-          token,
           ...formData,
         }),
       })

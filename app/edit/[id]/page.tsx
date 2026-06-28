@@ -1,30 +1,30 @@
 import { redirect } from "next/navigation"
-import { validateEditToken } from "@/lib/auth"
+import { cookies } from "next/headers"
+import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
+import { prisma } from "@/lib/db"
 import EditForm from "@/components/EditForm"
 
 interface EditPageProps {
   params: { id: string }
-  searchParams: { token?: string }
 }
 
-export default async function EditPage({ params, searchParams }: EditPageProps) {
+export default async function EditPage({ params }: EditPageProps) {
   const { id } = params
-  const token = searchParams.token
 
-  // Token hiányzik
-  if (!token) {
-    redirect("/?error=missing_token")
+  // A nyers tokent a /api/edit/session csere-endpoint már beváltotta session
+  // cookie-ra — ide (és a böngésző URL-jébe) többé nem kerül token.
+  const sessionCookie = cookies().get(sessionCookieName("edit", id))?.value
+
+  if (!verifySessionCookieValue(sessionCookie, id, "edit")) {
+    redirect("/?error=invalid_token")
   }
 
-  // Token validálás szerver oldalon
-  const report = await validateEditToken(id, token)
+  const report = await prisma.damageReport.findUnique({ where: { id } })
 
-  // Ha invalid vagy lejárt
   if (!report) {
     redirect("/?error=invalid_token")
   }
 
-  // Token érvényes, átadjuk az adatokat a kliens komponensnek
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -38,7 +38,7 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
           </p>
         </div>
 
-        <EditForm report={report} token={token} />
+        <EditForm report={report} />
       </div>
     </main>
   )

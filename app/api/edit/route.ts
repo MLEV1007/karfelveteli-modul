@@ -1,58 +1,38 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Ratelimit } from "@upstash/ratelimit"
-import { Redis } from "@upstash/redis"
 import { editReportSchema } from "@/lib/validation"
-import { validateEditToken } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/ratelimit"
+import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
 import { prisma } from "@/lib/db"
-
-// Rate limiter: max 10 szerkesztés / IP / óra
-// IP alapú (NEM token alapú), hogy lejárt tokennel se lehessen spammelni
-let ratelimit: Ratelimit | null = null
-
-try {
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    ratelimit = new Ratelimit({
-      redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(10, "1 h"),
-      analytics: true,
-    })
-  }
-} catch (error) {
-  console.warn("Rate limiting disabled - Redis configuration missing or invalid")
-}
 
 export async function PATCH(req: NextRequest) {
   try {
-    // 1. Rate limiting (ha elérhető)
-    if (ratelimit) {
-      const ip = req.ip ?? req.headers.get("x-forwarded-for") ?? "127.0.0.1"
-      const { success: rateLimitOk } = await ratelimit.limit(ip)
-
-      if (!rateLimitOk) {
-        return NextResponse.json(
-          { error: "Túl sok kérés. Kérjük várjon egy órát." },
-          { status: 429 }
-        )
-      }
-    }
+    // 1. Rate limiting
+    const rateLimitResponse = await enforceRateLimit(req)
+    if (rateLimitResponse) return rateLimitResponse
 
     // 2. Request body parse
     const body = await req.json()
 
-    // Kinyerjük az id-t és tokent a body-ból
-    const { id, token, ...data } = body
+    // Kinyerjük az id-t a body-ból
+    const { id, ...data } = body
 
-    if (!id || !token) {
+    if (!id) {
       return NextResponse.json(
-        { error: "Hiányzó azonosító vagy token" },
+        { error: "Hiányzó azonosító" },
         { status: 400 }
       )
     }
 
-    // 3. Token validáció
-    const report = await validateEditToken(id, token)
-    if (!report) {
+    // 3. Session cookie validáció (a nyers tokent a /api/edit/session
+    // csere-endpoint már egyszer beváltotta cookie-ra — ide csak az kell)
+    const sessionCookie = req.cookies.get(sessionCookieName("edit", id))?.value
+    if (!verifySessionCookieValue(sessionCookie, id, "edit")) {
       // Egységes 401 — ne árulja el, hogy létezik-e vagy lejárt-e
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const report = await prisma.damageReport.findUnique({ where: { id } })
+    if (!report) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

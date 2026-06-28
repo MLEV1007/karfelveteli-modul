@@ -23,7 +23,13 @@ Supabase Storage bucket neve: signatures
 ## Környezeti változók (szükségesek)
 DATABASE_URL, RESEND_API_KEY, WORKSHOP_EMAIL, EMAIL_FROM,
 NEXT_PUBLIC_APP_URL, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN,
-NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY,
+SESSION_SECRET (edit/munkalap token → session cookie csere aláírásához, 32+ byte random hex)
+
+## Biztonság: token-csere session cookie-ra
+- Az e-mailben kiküldött `editToken`/`technicianToken` SOHA nem ér el a böngészőben renderelt oldalig URL-ben: a `/api/edit/session` és `/api/munkalap/session` route validálja egyszer a DB-tokent, majd aláírt, HttpOnly session cookie-t állít be és tiszta URL-re (`/edit/[id]`, `/admin/munkalap/[id]`) redirektel
+- A `/edit/[id]` és `/admin/munkalap/[id]` oldalak, illetve a hozzájuk tartozó PATCH/retry API-k kizárólag a session cookie-t fogadják el — nincs többé `token` a body-ban vagy query paraméterben
+- Lásd `lib/session.ts`
 
 ## Projekthatárok (v1)
 - NEM kell hiteles elektronikus aláírás (eIDAS)

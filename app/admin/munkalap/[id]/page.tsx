@@ -1,21 +1,25 @@
 import { redirect } from "next/navigation"
-import { validateTechnicianToken } from "@/lib/auth"
+import { cookies } from "next/headers"
+import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
+import { prisma } from "@/lib/db"
 import JegyzokonyvForm from "@/components/JegyzokonyvForm"
 
 interface MunkalapPageProps {
   params: { id: string }
-  searchParams: { token?: string }
 }
 
-export default async function MunkalapPage({ params, searchParams }: MunkalapPageProps) {
+export default async function MunkalapPage({ params }: MunkalapPageProps) {
   const { id } = params
-  const token = searchParams.token
 
-  if (!token) {
-    redirect("/?error=missing_token")
+  // A nyers tokent a /api/munkalap/session csere-endpoint már beváltotta
+  // session cookie-ra — ide (és a böngésző URL-jébe) többé nem kerül token.
+  const sessionCookie = cookies().get(sessionCookieName("munkalap", id))?.value
+
+  if (!verifySessionCookieValue(sessionCookie, id, "munkalap")) {
+    redirect("/?error=invalid_token")
   }
 
-  const report = await validateTechnicianToken(id, token)
+  const report = await prisma.damageReport.findUnique({ where: { id } })
 
   if (!report) {
     redirect("/?error=invalid_token")
@@ -32,7 +36,7 @@ export default async function MunkalapPage({ params, searchParams }: MunkalapPag
           </p>
         </div>
 
-        <JegyzokonyvForm report={report} token={token} />
+        <JegyzokonyvForm report={report} />
       </div>
     </main>
   )
