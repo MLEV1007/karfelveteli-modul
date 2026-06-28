@@ -23,11 +23,11 @@ export default function RadioGroup({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      <div className="flex flex-row gap-6">
+      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-6">
         {options.map((opt) => (
           <label
             key={opt.value}
-            className="flex items-center gap-2 min-h-[48px] cursor-pointer"
+            className="flex items-start gap-2 min-h-[48px] cursor-pointer"
           >
             <input
               type="radio"
