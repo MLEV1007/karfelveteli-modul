@@ -95,7 +95,6 @@ export async function POST(req: NextRequest) {
           roadNumber: data.roadNumber ?? null,
           kilometerMark: data.kilometerMark ?? null,
           policeInvolved: data.policeInvolved,
-          policeReportNo: data.policeReportNo ?? null,
           policeStation: data.policeStation ?? null,
           otherVehiclePlate: data.otherVehiclePlate ?? null,
           otherVehicleType: data.otherVehicleType ?? null,

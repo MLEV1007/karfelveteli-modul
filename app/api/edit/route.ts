@@ -108,7 +108,6 @@ export async function PATCH(req: NextRequest) {
         roadNumber: validatedData.roadNumber ?? null,
         kilometerMark: validatedData.kilometerMark ?? null,
         policeInvolved: validatedData.policeInvolved,
-        policeReportNo: validatedData.policeReportNo ?? null,
         policeStation: validatedData.policeStation ?? null,
         otherVehiclePlate: validatedData.otherVehiclePlate ?? null,
         otherVehicleType: validatedData.otherVehicleType ?? null,

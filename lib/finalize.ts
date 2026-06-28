@@ -42,7 +42,6 @@ function toFullPdfData(
     roadNumber: report.roadNumber ?? undefined,
     kilometerMark: report.kilometerMark ?? undefined,
     policeInvolved: report.policeInvolved,
-    policeReportNo: report.policeReportNo ?? undefined,
     policeStation: report.policeStation ?? undefined,
     otherVehiclePlate: report.otherVehiclePlate ?? undefined,
     otherVehicleType: report.otherVehicleType ?? undefined,

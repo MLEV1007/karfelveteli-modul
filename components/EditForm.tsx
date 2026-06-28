@@ -70,7 +70,6 @@ export default function EditForm({ report, token }: EditFormProps) {
     roadNumber: report.roadNumber ?? "",
     kilometerMark: report.kilometerMark ?? "",
     policeInvolved: report.policeInvolved,
-    policeReportNo: report.policeReportNo ?? "",
     policeStation: report.policeStation ?? "",
     otherVehiclePlate: report.otherVehiclePlate ?? "",
     otherVehicleType: report.otherVehicleType ?? "",
@@ -443,22 +442,13 @@ export default function EditForm({ report, token }: EditFormProps) {
             onChange={(e) => updateField("policeInvolved", e.target.checked)}
           />
           {formData.policeInvolved && (
-            <>
-              <Input
-                label="Jegyzőkönyv száma"
-                name="policeReportNo"
-                value={formData.policeReportNo}
-                onChange={(e) => updateField("policeReportNo", e.target.value)}
-                error={errors.policeReportNo}
-              />
-              <Input
-                label="Rendőrség megnevezése"
-                name="policeStation"
-                value={formData.policeStation}
-                onChange={(e) => updateField("policeStation", e.target.value)}
-                error={errors.policeStation}
-              />
-            </>
+            <Input
+              label="Rendőrség megnevezése"
+              name="policeStation"
+              value={formData.policeStation}
+              onChange={(e) => updateField("policeStation", e.target.value)}
+              error={errors.policeStation}
+            />
           )}
           <Input
             label="Másik jármű rendszáma"

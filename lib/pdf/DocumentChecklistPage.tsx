@@ -52,7 +52,7 @@ export default function DocumentChecklistPage({ data }: { data: FullPdfData }) {
     },
     {
       label: "Rendőrségi jegyzőkönyv (amennyiben volt rendőri intézkedés)",
-      note: data.policeReportNo ? `Jegyzőkönyv száma: ${data.policeReportNo}` : "Nem volt rendőri intézkedés",
+      note: data.policeInvolved && data.policeStation ? `Intézkedő kapitányság: ${data.policeStation}` : data.policeInvolved ? undefined : "Nem volt rendőri intézkedés",
       done: data.policeInvolved,
     },
     {

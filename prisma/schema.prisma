@@ -65,7 +65,6 @@ model DamageReport {
   roadNumber                String?
   kilometerMark             String?
   policeInvolved            Boolean   @default(false)
-  policeReportNo            String?
   policeStation             String?
   otherVehiclePlate         String?
   otherVehicleType          String?

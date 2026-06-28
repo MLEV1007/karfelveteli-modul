@@ -138,10 +138,7 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
           <View style={{ flex: 1 }}>
             <SectionHeader title="RENDŐRI INTÉZKEDÉS" />
             <View style={s.row}>
-              <CheckCell label="Rendőrség intézkedett" checked={data.policeInvolved} flex={1} />
-              {data.policeReportNo && (
-                <Cell label="Jkv. száma" value={data.policeReportNo} flex={1} noBorderRight />
-              )}
+              <CheckCell label="Rendőrség intézkedett" checked={data.policeInvolved} flex={1} noBorderRight />
             </View>
             {data.policeStation && (
               <View style={s.row}>

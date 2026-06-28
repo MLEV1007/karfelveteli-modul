@@ -15,7 +15,6 @@ export const step3Schema = z.object({
   roadNumber: z.string().optional(),
   kilometerMark: z.string().optional(),
   policeInvolved: z.boolean(),
-  policeReportNo: z.string().optional(),
   policeStation: z.string().optional(),
   otherVehiclePlate: z.string().optional(),
   otherVehicleType: z.string().optional(),
@@ -191,24 +190,14 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
           error={errors.policeInvolved}
         />
         {data.policeInvolved && (
-          <>
-            <Input
-              label="R-kap. száma"
-              name="policeReportNo"
-              value={data.policeReportNo ?? ""}
-              onChange={handleInput("policeReportNo")}
-              error={errors.policeReportNo}
-              placeholder="Rendőrségi kapásszám"
-            />
-            <Input
-              label="Intézkedő kapitányság"
-              name="policeStation"
-              value={data.policeStation ?? ""}
-              onChange={handleInput("policeStation")}
-              error={errors.policeStation}
-              placeholder="pl. Tatai Rendőrkapitányság"
-            />
-          </>
+          <Input
+            label="Intézkedő kapitányság"
+            name="policeStation"
+            value={data.policeStation ?? ""}
+            onChange={handleInput("policeStation")}
+            error={errors.policeStation}
+            placeholder="pl. Tatai Rendőrkapitányság"
+          />
         )}
       </section>
 

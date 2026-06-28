@@ -117,7 +117,6 @@ const damageReportObjectSchema = z.object({
   roadNumber: z.string().optional(),
   kilometerMark: z.string().optional(),
   policeInvolved: z.boolean(),
-  policeReportNo: z.string().optional(),
   policeStation: z.string().optional(),
   otherVehiclePlate: z.string().optional(),
   otherVehicleType: z.string().optional(),

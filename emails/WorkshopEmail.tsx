@@ -126,8 +126,8 @@ export default function WorkshopEmail({ data }: WorkshopEmailProps) {
               label="Rendőrség részvétele"
               value={data.policeInvolved ? "Igen" : "Nem"}
             />
-            {data.policeReportNo && (
-              <DataRow label="Jegyzőkönyv száma" value={data.policeReportNo} />
+            {data.policeStation && (
+              <DataRow label="Intézkedő kapitányság" value={data.policeStation} />
             )}
             {data.otherVehiclePlate && (
               <DataRow label="Másik jármű rendszáma" value={data.otherVehiclePlate} />
