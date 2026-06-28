@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import CustomerEmail from "@/emails/CustomerEmail"
+import CustomerSubmissionEmail from "@/emails/CustomerSubmissionEmail"
 import WorkshopEmail from "@/emails/WorkshopEmail"
 import TechnicianNotificationEmail from "@/emails/TechnicianNotificationEmail"
 import type { DamageReportInput } from "./validation"
@@ -28,6 +29,27 @@ export async function sendTechnicianNotification(data: {
     to: TEST_RECIPIENT_EMAIL,
     subject: `Jegyzőkönyv kitöltése szükséges — ${data.vehiclePlate.toUpperCase()}`,
     react: TechnicianNotificationEmail(data),
+  })
+}
+
+// Ügyfél beküldése után azonnal — visszaigazolás, még a jegyzőkönyv lezárása előtt
+// (nincs végleges PDF, nincs szerkesztési link — az ügyfél szándékosan nem szerkeszthet önállóan).
+export async function sendCustomerSubmissionEmail(data: {
+  ownerName: string
+  vehiclePlate: string
+  vehicleMake: string
+  vehicleModel: string
+  id: string
+  createdAt: Date
+  photoUrls?: string[]
+}): Promise<void> {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  await resend.emails.send({
+    from: process.env.EMAIL_FROM!,
+    to: TEST_RECIPIENT_EMAIL,
+    subject: `Kárfelvétel beérkezett — ${data.vehiclePlate.toUpperCase()}`,
+    react: CustomerSubmissionEmail(data),
   })
 }
 

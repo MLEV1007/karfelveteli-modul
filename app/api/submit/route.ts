@@ -3,7 +3,7 @@ import { randomUUID } from "crypto"
 import { damageReportSchema } from "@/lib/validation"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { prisma } from "@/lib/db"
-import { sendTechnicianNotification } from "@/lib/email"
+import { sendCustomerSubmissionEmail, sendTechnicianNotification } from "@/lib/email"
 import { uploadSignature } from "@/lib/storage"
 
 export async function POST(req: NextRequest) {
@@ -28,10 +28,6 @@ export async function POST(req: NextRequest) {
     }
 
     const data = result.data
-
-    // Szerkesztési token (ügyfélnek, 7 napos lejárat)
-    const editToken = randomUUID()
-    const tokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     // Technikusi (munkalap) token — egyedi e-mailes link, 30 napos lejárat
     const technicianToken = randomUUID()
@@ -93,8 +89,6 @@ export async function POST(req: NextRequest) {
           driverSignatureUrl: null, // Feltöltés után frissül
           gdprConsent: data.gdprConsent,
           status: "PENDING_TECHNICIAN",
-          editToken,
-          tokenExpiresAt,
           technicianToken,
           technicianTokenExpiresAt,
         },
@@ -147,7 +141,23 @@ export async function POST(req: NextRequest) {
       console.error("Technikusi értesítő email hiba:", emailError)
     }
 
-    // 7. Sikeres válasz
+    // 7. Ügyfél visszaigazoló email — még a jegyzőkönyv lezárása előtt, PDF nélkül
+    // (a végleges, összevont PDF a technikus lezárása után megy ki, lásd lib/finalize.ts)
+    try {
+      await sendCustomerSubmissionEmail({
+        ownerName: data.ownerName,
+        vehiclePlate: data.vehiclePlate,
+        vehicleMake: data.vehicleMake,
+        vehicleModel: data.vehicleModel,
+        id: report.id,
+        createdAt: report.createdAt,
+        photoUrls: data.photoUrls,
+      })
+    } catch (emailError) {
+      console.error("Ügyfél visszaigazoló email hiba:", emailError)
+    }
+
+    // 8. Sikeres válasz
     return NextResponse.json(
       {
         success: true,

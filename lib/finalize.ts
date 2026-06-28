@@ -1,4 +1,5 @@
 import type { DamageReport } from "@prisma/client"
+import { randomUUID } from "crypto"
 import { prisma } from "./db"
 import { generateFullReportPDF, type FullPdfData } from "./pdf"
 import { sendFinalReportEmails } from "./email"
@@ -76,18 +77,43 @@ function toFullPdfData(
 
 export type FinalizeResult = { ok: true } | { ok: false; error: string }
 
-// A technikus lezárása (vagy egy újrapróbálkozás) után lefutó teljes pipeline:
-// aláírások base64-esítése -> végleges PDF -> Storage feltöltés -> email kiküldés -> állapot frissítés.
-// Idempotens: ha a rekord már COMPLETED, nem csinál semmit (nem küldi ki duplán az emaileket).
-export async function finalizeReport(reportId: string): Promise<FinalizeResult> {
+const EDIT_TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000 // 14 nap
+
+interface FinalizeOptions {
+  // Egy már COMPLETED rekordot is újra végigfuttat a pipeline-on (új PDF + email) —
+  // a műhelyi szerkesztés utáni dokumentum-frissítéshez használja az /api/edit route.
+  force?: boolean
+}
+
+// A technikus lezárása (vagy egy újrapróbálkozás, vagy egy utólagos szerkesztés) után lefutó
+// teljes pipeline: aláírások base64-esítése -> végleges PDF -> Storage feltöltés -> email
+// kiküldés -> állapot frissítés.
+// Idempotens: ha a rekord már COMPLETED és nincs force, nem csinál semmit (nem küldi ki duplán az emaileket).
+export async function finalizeReport(
+  reportId: string,
+  options?: FinalizeOptions
+): Promise<FinalizeResult> {
   const report = await prisma.damageReport.findUnique({ where: { id: reportId } })
   if (!report) return { ok: false, error: "A jelentés nem található" }
 
-  if (report.status === "COMPLETED") {
+  if (report.status === "COMPLETED" && !options?.force) {
     return { ok: true }
   }
 
   try {
+    // Szerkesztési token (csak a műhelynek) — a jegyzőkönyv lezárásakor jön létre,
+    // 14 napig érvényes a lezárástól (nem a beküldéstől) számítva. Egy utólagos
+    // szerkesztés/újraküldés a már meglévő tokent használja, nem generál újat.
+    let editToken = report.editToken
+    if (!editToken) {
+      editToken = randomUUID()
+      const tokenExpiresAt = new Date(Date.now() + EDIT_TOKEN_TTL_MS)
+      await prisma.damageReport.update({
+        where: { id: report.id },
+        data: { editToken, tokenExpiresAt },
+      })
+    }
+
     const ownerSigBase64 = report.ownerSignatureUrl
       ? await downloadSignatureAsBase64(report.ownerSignatureUrl)
       : ""
@@ -107,17 +133,15 @@ export async function finalizeReport(reportId: string): Promise<FinalizeResult> 
     const pdfBuffer = await generateFullReportPDF(pdfData)
     const finalPdfUrl = await uploadFinalPdf(pdfBuffer, report.vehiclePlate, report.id)
 
-    await sendFinalReportEmails(
-      { ...pdfData, editToken: report.editToken ?? undefined },
-      pdfBuffer
-    )
+    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer)
 
     await prisma.damageReport.update({
       where: { id: report.id },
       data: {
         status: "COMPLETED",
         finalPdfUrl,
-        munkalapClosedAt: new Date(),
+        // Az első lezárás időpontját egy utólagos szerkesztés/újraküldés nem írja felül.
+        munkalapClosedAt: report.munkalapClosedAt ?? new Date(),
         pdfErrorMessage: null,
       },
     })
@@ -128,7 +152,12 @@ export async function finalizeReport(reportId: string): Promise<FinalizeResult> 
     const message = error instanceof Error ? error.message : "Ismeretlen hiba a véglegesítés során"
     await prisma.damageReport.update({
       where: { id: report.id },
-      data: { status: "FAILED_PDF", pdfErrorMessage: message },
+      // Egy már lezárt jelentés szerkesztés utáni újraküldési hibája nem fokozza le
+      // a státuszt — a korábban kiküldött PDF/email továbbra is érvényes marad.
+      data:
+        report.status === "COMPLETED"
+          ? { pdfErrorMessage: message }
+          : { status: "FAILED_PDF", pdfErrorMessage: message },
     })
     return { ok: false, error: message }
   }

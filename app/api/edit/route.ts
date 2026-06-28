@@ -3,6 +3,7 @@ import { editReportSchema } from "@/lib/validation"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
 import { prisma } from "@/lib/db"
+import { finalizeReport } from "@/lib/finalize"
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -114,7 +115,24 @@ export async function PATCH(req: NextRequest) {
       },
     })
 
-    // 6. Sikeres válasz
+    // 6. Ha a jegyzőkönyv már lezárva volt (COMPLETED), a szerkesztés miatt a korábban
+    // kiküldött PDF/email elavulttá vált — újrageneráljuk és újraküldjük mindkét félnek.
+    if (report.status === "COMPLETED") {
+      const outcome = await finalizeReport(id, { force: true })
+      if (!outcome.ok) {
+        return NextResponse.json(
+          {
+            success: false,
+            retryable: true,
+            error:
+              "A módosítások elmentve, de a frissített PDF/email kiküldése sikertelen volt. Próbálja újra később.",
+          },
+          { status: 207 }
+        )
+      }
+    }
+
+    // 7. Sikeres válasz
     return NextResponse.json(
       {
         success: true,

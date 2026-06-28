@@ -128,10 +128,15 @@ export default function EditForm({ report }: EditFormProps) {
 
       const data = await response.json()
 
+      if (response.status === 401) {
+        throw new Error("A szerkesztési link lejárt vagy érvénytelen.")
+      }
+      if (response.status === 207) {
+        // Az adatok elmentve, de a frissített PDF/email kiküldése sikertelen volt —
+        // a "Mentés" gomb újbóli megnyomása újrapróbálja (a mentett adatokkal).
+        throw new Error(data.error || "A frissített dokumentumok kiküldése sikertelen volt.")
+      }
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("A szerkesztési link lejárt vagy érvénytelen.")
-        }
         throw new Error(data.error || "Sikertelen mentés")
       }
 
