@@ -145,6 +145,7 @@ export async function POST(req: NextRequest) {
     // (a végleges, összevont PDF a technikus lezárása után megy ki, lásd lib/finalize.ts)
     try {
       await sendCustomerSubmissionEmail({
+        customerEmail: data.customerEmail,
         ownerName: data.ownerName,
         vehiclePlate: data.vehiclePlate,
         vehicleMake: data.vehicleMake,

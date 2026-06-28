@@ -11,9 +11,6 @@ interface EmailData extends DamageReportInput {
   editToken?: string
 }
 
-// Teszt mód: minden email ide megy, függetlenül a form/env beállításoktól
-const TEST_RECIPIENT_EMAIL = "manyilevente@gmail.com"
-
 // Ügyfél beküldése után — a technikusnak szóló értesítés a jegyzőkönyv linkkel.
 // Még NINCS végleges PDF (a technikus jegyzőkönyve hiányzik), ezért melléklet nélkül megy ki.
 export async function sendTechnicianNotification(data: {
@@ -26,7 +23,7 @@ export async function sendTechnicianNotification(data: {
 
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
-    to: TEST_RECIPIENT_EMAIL,
+    to: process.env.WORKSHOP_EMAIL!,
     subject: `Jegyzőkönyv kitöltése szükséges — ${data.vehiclePlate.toUpperCase()}`,
     react: TechnicianNotificationEmail(data),
   })
@@ -35,6 +32,7 @@ export async function sendTechnicianNotification(data: {
 // Ügyfél beküldése után azonnal — visszaigazolás, még a jegyzőkönyv lezárása előtt
 // (nincs végleges PDF, nincs szerkesztési link — az ügyfél szándékosan nem szerkeszthet önállóan).
 export async function sendCustomerSubmissionEmail(data: {
+  customerEmail: string
   ownerName: string
   vehiclePlate: string
   vehicleMake: string
@@ -47,7 +45,7 @@ export async function sendCustomerSubmissionEmail(data: {
 
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
-    to: TEST_RECIPIENT_EMAIL,
+    to: data.customerEmail,
     subject: `Kárfelvétel beérkezett — ${data.vehiclePlate.toUpperCase()}`,
     react: CustomerSubmissionEmail(data),
   })
@@ -69,7 +67,7 @@ export async function sendFinalReportEmails(
   // 1. Email az ügyfélnek
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
-    to: TEST_RECIPIENT_EMAIL,
+    to: data.customerEmail,
     subject: `Kárfelvételi visszaigazolás — ${data.vehiclePlate.toUpperCase()}`,
     react: CustomerEmail({ data }),
     attachments: [pdfAttachment],
@@ -78,7 +76,7 @@ export async function sendFinalReportEmails(
   // 2. Email a műhelynek
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
-    to: TEST_RECIPIENT_EMAIL,
+    to: process.env.WORKSHOP_EMAIL!,
     subject: `Új kárfelvétel — ${data.vehiclePlate.toUpperCase()} — ${new Intl.DateTimeFormat("hu-HU", {
       year: "numeric",
       month: "2-digit",

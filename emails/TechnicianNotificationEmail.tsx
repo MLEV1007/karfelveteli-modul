@@ -8,7 +8,7 @@ import {
   Heading,
   Hr,
   Img,
-  Link,
+  Button,
 } from "@react-email/components"
 
 interface TechnicianNotificationEmailProps {
@@ -49,10 +49,12 @@ export default function TechnicianNotificationEmail({
             />
           </Section>
 
-          <Section style={alertBox}>
-            <Heading style={alertHeading}>ÚJ KÁRFELVÉTEL — JEGYZŐKÖNYV KITÖLTÉSE SZÜKSÉGES</Heading>
-            <Text style={plateNumber}>{vehiclePlate.toUpperCase()}</Text>
-            <Text style={alertSubtext}>{formatDate(createdAt)}</Text>
+          <Section style={alertBoxWrapper}>
+            <Section style={alertBox}>
+              <Heading style={alertHeading}>ÚJ KÁRFELVÉTEL — JEGYZŐKÖNYV KITÖLTÉSE SZÜKSÉGES</Heading>
+              <Text style={plateNumber}>{vehiclePlate.toUpperCase()}</Text>
+              <Text style={alertSubtext}>{formatDate(createdAt)}</Text>
+            </Section>
           </Section>
 
           <Text style={text}>
@@ -64,9 +66,9 @@ export default function TechnicianNotificationEmail({
           </Text>
 
           <Section style={buttonSection}>
-            <Link href={munkalapUrl} style={button}>
+            <Button href={munkalapUrl} style={button}>
               Jegyzőkönyv megnyitása →
-            </Link>
+            </Button>
           </Section>
 
           <Text style={smallText}>
@@ -112,13 +114,20 @@ const container = {
   maxWidth: "600px",
 }
 
+// A vízszintes 40px térközt a tartalomhoz a wrapper PADDING-je adja, nem a
+// belső doboz margin-ja — táblázat-alapú (Section) elemeken a margin
+// levelezőkliensenként eltérően (vagy egyáltalán nem) érvényesül, és a navy
+// háttér ilyenkor túllóghat a kártya szélén. A padding ugyanezt megbízhatóan adja.
+const alertBoxWrapper = {
+  padding: "0 40px",
+}
+
 const alertBox = {
   backgroundColor: "#1e3a5f",
   color: "#ffffff",
   padding: "24px",
   textAlign: "center" as const,
   borderRadius: "8px",
-  margin: "0 40px",
 }
 
 const alertHeading = {

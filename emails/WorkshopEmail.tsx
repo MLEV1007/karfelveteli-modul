@@ -10,6 +10,7 @@ import {
   Row,
   Column,
   Link,
+  Button,
   Img,
 } from "@react-email/components"
 import type { DamageReportInput } from "@/lib/validation"
@@ -204,14 +205,14 @@ export default function WorkshopEmail({ data }: WorkshopEmailProps) {
               </Heading>
               <Text style={editDescription}>
                 Az alábbi linkkel szerkesztheti a beküldött adatokat (fotók és aláírások
-                kivételével). A link 7 napig érvényes a beküldéstől számítva.
+                kivételével). A link 14 napig érvényes a jegyzőkönyv lezárásától számítva.
               </Text>
-              <Link
+              <Button
                 href={`${process.env.NEXT_PUBLIC_APP_URL}/api/edit/session?id=${data.id}&token=${data.editToken}`}
                 style={editButton}
               >
                 Szerkesztés megnyitása →
-              </Link>
+              </Button>
             </Section>
           )}
 
