@@ -95,9 +95,10 @@ model DamageReport {
   emailSentAt        DateTime?
 
   // Meghatalmazás — ügyfél azonosítás és illetékes biztosító
-  idOrTaxNumber     String?
-  insuranceCompany  InsuranceCompany?
-  accept8DayPayment Boolean           @default(false)
+  idOrTaxNumber        String?
+  insuranceCompany     InsuranceCompany?
+  insuranceCompanyOther String?
+  accept8DayPayment    Boolean           @default(false)
   knowsCascoTerms   Boolean           @default(false)
 
   // Jegyzőkönyv — átvétel/visszaadás időpontjai (technikus rögzíti)

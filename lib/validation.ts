@@ -38,6 +38,20 @@ const insuranceCompanySchema = z.enum(INSURANCE_COMPANIES, {
   errorMap: () => ({ message: "Válasszon biztosítót" }),
 })
 
+// Az "Egyéb biztosító" választásnál a tényleges nevet az insuranceCompanyOther
+// szabadszöveges mező tartalmazza — ez adja a megjelenítendő biztosító-nevet mindenhol
+// (PDF, email, admin felületek), hogy az "Egyéb biztosító" placeholder helyett a valós név jelenjen meg.
+export function getInsuranceCompanyLabel(
+  insuranceCompany?: InsuranceCompanyValue | null,
+  insuranceCompanyOther?: string | null
+): string {
+  if (!insuranceCompany) return "—"
+  if (insuranceCompany === "EGYEB") {
+    return insuranceCompanyOther?.trim() || INSURANCE_COMPANY_LABELS.EGYEB
+  }
+  return INSURANCE_COMPANY_LABELS[insuranceCompany]
+}
+
 // ─────────────────────────────────────────────────────────────
 // Mező-szintű validátorok újrahasználva
 // ─────────────────────────────────────────────────────────────
@@ -55,7 +69,19 @@ const phoneSchema = z
   .string()
   .regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)")
 
-export const damageReportSchema = z.object({
+// Ha az "EGYEB" (egyéb biztosító) opciót választja a felhasználó, a konkrét nevet
+// szabadszöveges mezőben kell megadnia — ezt a damageReportObjectSchema-ra épülő
+// sémák mindegyikén (damageReportSchema, editReportSchema, fullReportSchema) kikényszerítjük.
+function insuranceOtherRequired(data: { insuranceCompany?: string; insuranceCompanyOther?: string }) {
+  return data.insuranceCompany !== "EGYEB" || !!data.insuranceCompanyOther?.trim()
+}
+
+const insuranceOtherRefinement = {
+  message: "Adja meg az egyéb biztosító nevét",
+  path: ["insuranceCompanyOther"],
+}
+
+const damageReportObjectSchema = z.object({
   // 1. lépés — Személyes adatok
   ownerName: z.string().min(2, "Legalább 2 karakter szükséges"),
   ownerAddress: z.string().min(2, "A lakcím megadása kötelező"),
@@ -66,17 +92,21 @@ export const damageReportSchema = z.object({
   customerEmail: z.string().email("Érvénytelen e-mail cím"),
   customerPhone: phoneSchema,
 
-  // 2. lépés — Jármű és biztosítás
+  // 2. lépés — Jármű, biztosítás és felelősség (ki okozta a kárt?)
   vehiclePlate: z.string().min(3, "Rendszám minimum 3 karakter"),
   vehicleMake: z.string().min(1, "Gyártmány kötelező"),
   vehicleModel: z.string().min(1, "Típus kötelező"),
   vehicleYear: z.coerce.number().min(1970).max(2026).optional(),
   vehicleVin: vinSchema,
+  liableParty: z.enum(["own", "other", "both"], {
+    errorMap: () => ({ message: "Válasszon felelős felet" }),
+  }),
   hasCasco: z.boolean(),
   cascoInsurer: z.string().optional(),
   liabilityInsurer: z.string().optional(),
   relevantInsurer: z.string().optional(),
   insuranceCompany: insuranceCompanySchema,
+  insuranceCompanyOther: z.string().optional(),
 
   // 3. lépés — Baleset körülményei
   accidentDate: z.string().optional(),
@@ -111,9 +141,6 @@ export const damageReportSchema = z.object({
   photoUrls: z.array(z.string()).optional(),
 
   // 5. lépés — Nyilatkozatok
-  liableParty: z.enum(["own", "other", "both"], {
-    errorMap: () => ({ message: "Válasszon felelős felet" }),
-  }),
   underInfluence: z.boolean(),
   licenseValid: z.boolean(),
   taxNumber: z.string().optional(),
@@ -138,13 +165,18 @@ export const damageReportSchema = z.object({
   }),
 })
 
-export type DamageReportInput = z.infer<typeof damageReportSchema>
+export const damageReportSchema = damageReportObjectSchema.refine(
+  insuranceOtherRequired,
+  insuranceOtherRefinement
+)
+
+export type DamageReportInput = z.infer<typeof damageReportObjectSchema>
 
 // Szerkesztési schema — csak a módosítható mezőket tartalmazza
 // Readonly: photoUrls, aláírások, gdprConsent, meghatalmazás jognyilatkozatok, createdAt, emailSentAt
 // A VIN / biztosító / lakcím / igazolványszám / telefon mezőket lazítjuk, hogy a régebbi,
 // e mezők nélkül beküldött jelentések is továbbra is szerkeszthetők maradjanak.
-export const editReportSchema = damageReportSchema
+export const editReportSchema = damageReportObjectSchema
   .omit({
     photoUrls: true,
     ownerSignatureUrl: true,
@@ -161,6 +193,7 @@ export const editReportSchema = damageReportSchema
     insuranceCompany: insuranceCompanySchema.optional(),
   })
   .strict()
+  .refine(insuranceOtherRequired, insuranceOtherRefinement)
 
 export type EditReportInput = z.infer<typeof editReportSchema>
 
@@ -189,7 +222,8 @@ export const munkalapSchema = munkalapObjectSchema.refine(checkOutAfterCheckIn, 
 export type MunkalapInput = z.infer<typeof munkalapSchema>
 
 // A technikus lezáráskor a teljes, összevont rekordnak érvényesnek kell lennie
-export const fullReportSchema = damageReportSchema
+export const fullReportSchema = damageReportObjectSchema
   .merge(munkalapObjectSchema)
   .refine(checkOutAfterCheckIn, checkOutRefinement)
+  .refine(insuranceOtherRequired, insuranceOtherRefinement)
 export type FullReportInput = z.infer<typeof fullReportSchema>

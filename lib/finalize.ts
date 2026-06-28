@@ -33,6 +33,7 @@ function toFullPdfData(
     liabilityInsurer: report.liabilityInsurer ?? undefined,
     relevantInsurer: report.relevantInsurer ?? undefined,
     insuranceCompany: (report.insuranceCompany ?? "EGYEB") as FullPdfData["insuranceCompany"],
+    insuranceCompanyOther: report.insuranceCompanyOther ?? undefined,
     accidentDate: report.accidentDate ? report.accidentDate.toISOString() : undefined,
     accidentCountry: report.accidentCountry ?? undefined,
     accidentCity: report.accidentCity ?? undefined,

@@ -79,11 +79,11 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
             {(data.liabilityInsurer || data.relevantInsurer) && (
               <View style={s.row}>
                 {data.liabilityInsurer && (
-                  <Cell label="Kötelező biztosító" value={data.liabilityInsurer} flex={1} />
+                  <Cell label="Saját kötelező biztosító" value={data.liabilityInsurer} flex={1} />
                 )}
                 {data.relevantInsurer && (
                   <Cell
-                    label="Illetékes biztosító"
+                    label="Károkozó / másik fél biztosítója"
                     value={data.relevantInsurer}
                     flex={1}
                     noBorderRight={!data.liabilityInsurer}

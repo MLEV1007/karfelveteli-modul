@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
           liabilityInsurer: data.liabilityInsurer ?? null,
           relevantInsurer: data.relevantInsurer ?? null,
           insuranceCompany: data.insuranceCompany,
+          insuranceCompanyOther: data.insuranceCompanyOther ?? null,
           accidentDate: data.accidentDate ? new Date(data.accidentDate) : null,
           accidentCountry: data.accidentCountry ?? null,
           accidentCity: data.accidentCity ?? null,

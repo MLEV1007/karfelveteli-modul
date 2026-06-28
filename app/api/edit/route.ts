@@ -95,6 +95,7 @@ export async function PATCH(req: NextRequest) {
         liabilityInsurer: validatedData.liabilityInsurer ?? null,
         relevantInsurer: validatedData.relevantInsurer ?? null,
         insuranceCompany: validatedData.insuranceCompany ?? null,
+        insuranceCompanyOther: validatedData.insuranceCompanyOther ?? null,
 
         // Step 3
         accidentDate: validatedData.accidentDate

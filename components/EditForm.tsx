@@ -3,12 +3,12 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { DamageReport } from "@prisma/client"
-import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS } from "@/lib/validation"
+import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS, type InsuranceCompanyValue } from "@/lib/validation"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
 import Checkbox from "./ui/Checkbox"
-import Select from "./ui/Select"
+import SelectWithOther from "./ui/SelectWithOther"
 import Card from "./ui/Card"
 import Button from "./ui/Button"
 
@@ -16,6 +16,12 @@ const INSURANCE_COMPANY_OPTIONS = INSURANCE_COMPANIES.map((value) => ({
   value,
   label: INSURANCE_COMPANY_LABELS[value],
 }))
+
+// A "Saját kötelező biztosító" / "Károkozó fél biztosítója" mezők szabad szöveget tárolnak —
+// a választható nevek innen jönnek, "Egyéb biztosító" nélkül (azt a SelectWithOther adja hozzá).
+const INSURER_NAME_OPTIONS = (Object.entries(INSURANCE_COMPANY_LABELS) as [InsuranceCompanyValue, string][])
+  .filter(([key]) => key !== "EGYEB")
+  .map(([, label]) => ({ value: label, label }))
 
 interface EditFormProps {
   report: DamageReport
@@ -47,11 +53,13 @@ export default function EditForm({ report, token }: EditFormProps) {
     vehicleModel: report.vehicleModel,
     vehicleYear: report.vehicleYear ?? undefined,
     vehicleVin: report.vehicleVin ?? "",
+    liableParty: (report.liableParty ?? "") as "own" | "other" | "both" | "",
     hasCasco: report.hasCasco,
     cascoInsurer: report.cascoInsurer ?? "",
     liabilityInsurer: report.liabilityInsurer ?? "",
     relevantInsurer: report.relevantInsurer ?? "",
     insuranceCompany: report.insuranceCompany ?? "",
+    insuranceCompanyOther: report.insuranceCompanyOther ?? "",
 
     // Step 3
     accidentDate: report.accidentDate?.toISOString().split("T")[0] ?? "",
@@ -75,7 +83,6 @@ export default function EditForm({ report, token }: EditFormProps) {
     damagePoints: report.damagePoints as any[] ?? [],
 
     // Step 5
-    liableParty: (report.liableParty ?? "") as "own" | "other" | "both" | "",
     underInfluence: report.underInfluence,
     licenseValid: report.licenseValid,
     taxNumber: report.taxNumber ?? "",
@@ -272,42 +279,102 @@ export default function EditForm({ report, token }: EditFormProps) {
             onChange={(e) => updateField("vehicleVin", e.target.value.toUpperCase())}
             error={errors.vehicleVin}
           />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Ki okozta a kárt? <span className="text-red-500">*</span>
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="liableParty"
+                  value="own"
+                  checked={formData.liableParty === "own"}
+                  onChange={(e) => updateField("liableParty", e.target.value)}
+                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Én okoztam a kárt (saját felelősség)
+                </span>
+              </label>
+              <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="liableParty"
+                  value="other"
+                  checked={formData.liableParty === "other"}
+                  onChange={(e) => updateField("liableParty", e.target.value)}
+                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  A másik fél okozta (én vagyok a sértett)
+                </span>
+              </label>
+              <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="liableParty"
+                  value="both"
+                  checked={formData.liableParty === "both"}
+                  onChange={(e) => updateField("liableParty", e.target.value)}
+                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Megosztott a felelősség (mindkét fél)
+                </span>
+              </label>
+            </div>
+            {errors.liableParty && (
+              <p className="text-xs text-red-500">{errors.liableParty}</p>
+            )}
+          </div>
+
           <Checkbox
-            label="Van CASCO biztosítás"
+            label="Van saját CASCO biztosítás"
             name="hasCasco"
             checked={formData.hasCasco}
             onChange={(e) => updateField("hasCasco", e.target.checked)}
           />
           {formData.hasCasco && (
-            <Input
-              label="CASCO biztosító neve"
+            <SelectWithOther
+              label="Saját CASCO biztosítója"
               name="cascoInsurer"
               value={formData.cascoInsurer}
-              onChange={(e) => updateField("cascoInsurer", e.target.value)}
+              onChange={(val) => updateField("cascoInsurer", val)}
+              options={INSURER_NAME_OPTIONS}
               error={errors.cascoInsurer}
             />
           )}
-          <Input
-            label="Kötelező biztosító neve"
+          <SelectWithOther
+            label="Saját kötelező felelősségbiztosítója"
             name="liabilityInsurer"
             value={formData.liabilityInsurer}
-            onChange={(e) => updateField("liabilityInsurer", e.target.value)}
+            onChange={(val) => updateField("liabilityInsurer", val)}
+            options={INSURER_NAME_OPTIONS}
             error={errors.liabilityInsurer}
+            helperText="Akkor releváns, ha Önt terheli a felelősség a kárért."
           />
-          <Input
-            label="Releváns biztosító"
+          <SelectWithOther
+            label="A károkozó / másik fél felelősségbiztosítója"
             name="relevantInsurer"
             value={formData.relevantInsurer}
-            onChange={(e) => updateField("relevantInsurer", e.target.value)}
+            onChange={(val) => updateField("relevantInsurer", val)}
+            options={INSURER_NAME_OPTIONS}
             error={errors.relevantInsurer}
+            helperText="Akkor releváns, ha (részben) a másik felet terheli a felelősség."
           />
-          <Select
+          <SelectWithOther
             label="Illetékes biztosító (meghatalmazáshoz)"
             name="insuranceCompany"
+            mode="companion"
             value={formData.insuranceCompany}
-            onChange={(e) => updateField("insuranceCompany", e.target.value)}
+            onChange={(val) => updateField("insuranceCompany", val)}
+            otherValue={formData.insuranceCompanyOther}
+            onOtherChange={(val) => updateField("insuranceCompanyOther", val)}
+            otherTriggerValue="EGYEB"
             options={INSURANCE_COMPANY_OPTIONS}
             error={errors.insuranceCompany}
+            otherError={errors.insuranceCompanyOther}
           />
         </FormSection>
 
@@ -464,59 +531,9 @@ export default function EditForm({ report, token }: EditFormProps) {
 
         {/* 5. Nyilatkozatok */}
         <FormSection
-          title="5. Nyilatkozatok és felelősség"
-          description="Jogi és biztosítási adatok"
+          title="5. Nyilatkozatok"
+          description="Jogi nyilatkozatok — a felelős fél megjelölése a 2. szakaszban található"
         >
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Felelős fél <span className="text-red-500">*</span>
-            </label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="liableParty"
-                  value="own"
-                  checked={formData.liableParty === "own"}
-                  onChange={(e) => updateField("liableParty", e.target.value)}
-                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Saját felelősség
-                </span>
-              </label>
-              <label className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="liableParty"
-                  value="other"
-                  checked={formData.liableParty === "other"}
-                  onChange={(e) => updateField("liableParty", e.target.value)}
-                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Másik fél felelőssége
-                </span>
-              </label>
-              <label className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="liableParty"
-                  value="both"
-                  checked={formData.liableParty === "both"}
-                  onChange={(e) => updateField("liableParty", e.target.value)}
-                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Mindkét fél felelőssége
-                </span>
-              </label>
-            </div>
-            {errors.liableParty && (
-              <p className="text-xs text-red-500">{errors.liableParty}</p>
-            )}
-          </div>
-
           <Checkbox
             label="A baleset alkohol vagy kábítószer befolyása alatt történt"
             name="underInfluence"

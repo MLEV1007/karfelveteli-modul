@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import type { DamageReport } from "@prisma/client"
-import { INSURANCE_COMPANY_LABELS } from "@/lib/validation"
+import { getInsuranceCompanyLabel } from "@/lib/validation"
 import {
   EQUIPMENT_CHECKLIST_ITEMS,
   getDefaultEquipmentChecklist,
@@ -178,7 +178,7 @@ export default function JegyzokonyvForm({ report, token }: JegyzokonyvFormProps)
   }
 
   const damagePoints = (report.damagePoints as DamagePoint[] | null) ?? []
-  const insurerLabel = report.insuranceCompany ? INSURANCE_COMPANY_LABELS[report.insuranceCompany] : "—"
+  const insurerLabel = getInsuranceCompanyLabel(report.insuranceCompany, report.insuranceCompanyOther)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

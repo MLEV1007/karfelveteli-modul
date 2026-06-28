@@ -1,12 +1,12 @@
 import { Page, View, Text } from "@react-pdf/renderer"
 import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, SignatureBlock, formatDate } from "./shared"
-import { INSURANCE_COMPANY_LABELS } from "@/lib/validation"
+import { getInsuranceCompanyLabel } from "@/lib/validation"
 import { WORKSHOP_LEGAL } from "@/lib/workshop"
 import type { FullPdfData } from "./types"
 
 // 2. oldal — Meghatalmazás
 export default function AuthorizationPage({ data }: { data: FullPdfData }) {
-  const insurerLabel = INSURANCE_COMPANY_LABELS[data.insuranceCompany]
+  const insurerLabel = getInsuranceCompanyLabel(data.insuranceCompany, data.insuranceCompanyOther)
 
   return (
     <Page size="A4" style={s.page}>

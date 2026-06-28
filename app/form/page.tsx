@@ -75,11 +75,13 @@ const initialData: FormData = {
   vehicleModel: "",
   vehicleYear: undefined,
   vehicleVin: "",
+  liableParty: "",
   hasCasco: false,
   cascoInsurer: "",
   liabilityInsurer: "",
   relevantInsurer: "",
   insuranceCompany: "",
+  insuranceCompanyOther: "",
   // Step 3
   accidentDate: "",
   accidentCountry: "Magyarország",
@@ -101,7 +103,6 @@ const initialData: FormData = {
   damagePoints: [],
   photoUrls: [],
   // Step 5
-  liableParty: "",
   underInfluence: false,
   licenseValid: true,
   taxNumber: "",
@@ -161,11 +162,13 @@ export default function FormPage() {
         vehicleModel: formData.vehicleModel,
         vehicleYear: formData.vehicleYear,
         vehicleVin: formData.vehicleVin,
+        liableParty: formData.liableParty,
         hasCasco: formData.hasCasco,
         cascoInsurer: formData.cascoInsurer,
         liabilityInsurer: formData.liabilityInsurer,
         relevantInsurer: formData.relevantInsurer,
         insuranceCompany: formData.insuranceCompany,
+        insuranceCompanyOther: formData.insuranceCompanyOther,
       }
     } else if (currentStep === 3) {
       schema = step3Schema
@@ -196,7 +199,6 @@ export default function FormPage() {
     } else if (currentStep === 5) {
       schema = step5Schema
       data = {
-        liableParty: formData.liableParty,
         underInfluence: formData.underInfluence,
         licenseValid: formData.licenseValid,
         taxNumber: formData.taxNumber,
@@ -312,11 +314,13 @@ export default function FormPage() {
               vehicleModel: formData.vehicleModel,
               vehicleYear: formData.vehicleYear,
               vehicleVin: formData.vehicleVin,
+              liableParty: formData.liableParty,
               hasCasco: formData.hasCasco,
               cascoInsurer: formData.cascoInsurer,
               liabilityInsurer: formData.liabilityInsurer,
               relevantInsurer: formData.relevantInsurer,
               insuranceCompany: formData.insuranceCompany,
+              insuranceCompanyOther: formData.insuranceCompanyOther,
             }}
             onChange={(field, value) => updateField(field, value)}
             errors={errors}
@@ -362,7 +366,6 @@ export default function FormPage() {
         return (
           <Step5Declarations
             data={{
-              liableParty: formData.liableParty,
               underInfluence: formData.underInfluence,
               licenseValid: formData.licenseValid,
               taxNumber: formData.taxNumber,
@@ -389,6 +392,7 @@ export default function FormPage() {
               vehiclePlate: formData.vehiclePlate,
               vehicleVin: formData.vehicleVin,
               insuranceCompany: formData.insuranceCompany,
+              insuranceCompanyOther: formData.insuranceCompanyOther ?? "",
             }}
             onChange={(field, value) => updateField(field, value)}
             errors={errors}

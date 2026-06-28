@@ -2,7 +2,7 @@
 
 import { z } from "zod"
 import Checkbox from "@/components/ui/Checkbox"
-import { INSURANCE_COMPANY_LABELS, type InsuranceCompanyValue } from "@/lib/validation"
+import { getInsuranceCompanyLabel, type InsuranceCompanyValue } from "@/lib/validation"
 import { WORKSHOP_LEGAL } from "@/lib/workshop"
 
 export const authorizationSchema = z.object({
@@ -26,6 +26,7 @@ interface AuthorizationSummary {
   vehiclePlate: string
   vehicleVin: string
   insuranceCompany: InsuranceCompanyValue | ""
+  insuranceCompanyOther: string
 }
 
 interface Props {
@@ -36,7 +37,7 @@ interface Props {
 }
 
 export default function Step6Authorization({ data, summary, onChange, errors }: Props) {
-  const insurerLabel = summary.insuranceCompany ? INSURANCE_COMPANY_LABELS[summary.insuranceCompany] : "—"
+  const insurerLabel = getInsuranceCompanyLabel(summary.insuranceCompany || null, summary.insuranceCompanyOther)
 
   return (
     <div className="flex flex-col gap-6">

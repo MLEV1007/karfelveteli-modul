@@ -1,14 +1,10 @@
 "use client"
 
 import { z } from "zod"
-import RadioGroup from "@/components/ui/RadioGroup"
 import Checkbox from "@/components/ui/Checkbox"
 import Input from "@/components/ui/Input"
 
 export const step5Schema = z.object({
-  liableParty: z.enum(["own", "other", "both"], {
-    errorMap: () => ({ message: "Kérjük válasszon" }),
-  }),
   underInfluence: z.boolean(),
   licenseValid: z.boolean(),
   taxNumber: z.string().optional(),
@@ -19,7 +15,6 @@ export const step5Schema = z.object({
 })
 
 export type Step5Data = {
-  liableParty: "own" | "other" | "both" | ""
   underInfluence: boolean
   licenseValid: boolean
   taxNumber: string
@@ -35,30 +30,12 @@ type Props = {
   errors: Record<string, string>
 }
 
-const liablePartyOptions = [
-  { value: "own", label: "Én / saját gépjárművem vezetője" },
-  { value: "other", label: "A másik fél" },
-  { value: "both", label: "Mindkét résztvevő" },
-]
-
 export default function Step5Declarations({ data, onChange, errors }: Props) {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         Nyilatkozatok
       </h2>
-
-      {/* Felelősség */}
-      <div>
-        <RadioGroup
-          label="Ön szerint ki a felelős a kárért?"
-          name="liableParty"
-          value={data.liableParty}
-          onChange={(val) => onChange("liableParty", val)}
-          options={liablePartyOptions}
-          error={errors.liableParty}
-        />
-      </div>
 
       {/* Nyilatkozatok */}
       <div>
