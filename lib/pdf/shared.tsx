@@ -196,8 +196,11 @@ export const s = StyleSheet.create({
     gap: 16,
   },
   signatureBox: {
-    flex: 1,
-    minHeight: 90,
+    // Fix méret (nem flex:1!) — flex:1 egy auto-magasságú szülőben (pl. a Kárbejelentő
+    // lap táblázat-cellájában) Yoga-szinten 0 flex-basis-re eshet vissza, és a doboz
+    // a tényleges tartalmánál alacsonyabbra zsugorodik, miközben a kép a doboz alján
+    // (justifyContent: flex-end) a keretvonalon túlra csúszik.
+    height: 90,
     justifyContent: "flex-end",
   },
   signatureImage: {
