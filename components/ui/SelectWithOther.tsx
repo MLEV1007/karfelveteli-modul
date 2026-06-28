@@ -25,6 +25,7 @@ interface SelectWithOtherProps {
   otherError?: string
   /** A választósorban az "egyéb" opciót jelölő érték. Companion módban ennek már szerepelnie kell az options listában. */
   otherTriggerValue?: string
+  otherPlaceholder?: string
 }
 
 export default function SelectWithOther({
@@ -41,6 +42,7 @@ export default function SelectWithOther({
   onOtherChange,
   otherError,
   otherTriggerValue = "__EGYEB__",
+  otherPlaceholder = "Írja be a biztosító nevét",
 }: SelectWithOtherProps) {
   const knownValues = options.map((opt) => opt.value)
   const isCustomInline = mode === "inline" && !!value && !knownValues.includes(value)
@@ -87,7 +89,7 @@ export default function SelectWithOther({
         <input
           type="text"
           autoFocus
-          placeholder="Írja be a biztosító nevét"
+          placeholder={otherPlaceholder}
           value={mode === "companion" ? otherValue ?? "" : value}
           onChange={(e) =>
             mode === "companion" ? onOtherChange?.(e.target.value) : onChange(e.target.value)

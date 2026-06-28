@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input"
 export const step5Schema = z.object({
   underInfluence: z.boolean(),
   licenseValid: z.boolean(),
+  vatReclaimEligible: z.boolean(),
   taxNumber: z.string().optional(),
   consentToPhotocopy: z.boolean(),
   cascoClaimRequest: z.boolean(),
@@ -17,6 +18,7 @@ export const step5Schema = z.object({
 export type Step5Data = {
   underInfluence: boolean
   licenseValid: boolean
+  vatReclaimEligible: boolean
   taxNumber: string
   consentToPhotocopy: boolean
   cascoClaimRequest: boolean
@@ -59,7 +61,7 @@ export default function Step5Declarations({ data, onChange, errors }: Props) {
           </div>
 
           <Checkbox
-            label="A hatályos szabályok értelmében a bejelentett jármű vonatkozásában ÁFA visszaigénylésre jogosult vagyok."
+            label="A gépjárművet a káresemény időpontjában vezető személy jogosítványa érvényes volt."
             name="licenseValid"
             checked={data.licenseValid}
             onChange={(e) => onChange("licenseValid", e.target.checked)}
@@ -73,6 +75,28 @@ export default function Step5Declarations({ data, onChange, errors }: Props) {
             onChange={(e) => onChange("consentToPhotocopy", e.target.checked)}
             error={errors.consentToPhotocopy}
           />
+
+          <div>
+            <Checkbox
+              label="A hatályos szabályok értelmében a bejelentett jármű vonatkozásában ÁFA visszaigénylésre jogosult vagyok."
+              name="vatReclaimEligible"
+              checked={data.vatReclaimEligible}
+              onChange={(e) => onChange("vatReclaimEligible", e.target.checked)}
+              error={errors.vatReclaimEligible}
+            />
+            {data.vatReclaimEligible && (
+              <div className="mt-2 ml-7">
+                <Input
+                  label="Adószám"
+                  name="taxNumber"
+                  value={data.taxNumber}
+                  onChange={(e) => onChange("taxNumber", e.target.value)}
+                  error={errors.taxNumber}
+                  placeholder="12345678-1-12"
+                />
+              </div>
+            )}
+          </div>
 
           <Checkbox
             label="Kérem a kárrendezést saját CASCO biztosítás alapján."
@@ -104,21 +128,6 @@ export default function Step5Declarations({ data, onChange, errors }: Props) {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Adószám */}
-      <div>
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          Jogosultság esetén
-        </p>
-        <Input
-          label="Adószám (jogosultság esetén)"
-          name="taxNumber"
-          value={data.taxNumber}
-          onChange={(e) => onChange("taxNumber", e.target.value)}
-          error={errors.taxNumber}
-          placeholder="12345678-1-12"
-        />
       </div>
     </div>
   )

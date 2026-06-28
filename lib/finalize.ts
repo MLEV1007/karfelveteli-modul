@@ -54,6 +54,7 @@ function toFullPdfData(
     liableParty: (report.liableParty ?? "own") as FullPdfData["liableParty"],
     underInfluence: report.underInfluence,
     licenseValid: report.licenseValid,
+    vatReclaimEligible: report.vatReclaimEligible,
     taxNumber: report.taxNumber ?? undefined,
     consentToPhotocopy: report.consentToPhotocopy,
     cascoClaimRequest: report.cascoClaimRequest,

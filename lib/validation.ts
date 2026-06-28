@@ -142,6 +142,7 @@ const damageReportObjectSchema = z.object({
   // 5. lépés — Nyilatkozatok
   underInfluence: z.boolean(),
   licenseValid: z.boolean(),
+  vatReclaimEligible: z.boolean(),
   taxNumber: z.string().optional(),
   consentToPhotocopy: z.boolean(),
   cascoClaimRequest: z.boolean(),

@@ -26,6 +26,7 @@ type Props = {
   errors: Record<string, string>
   onSubmit: () => void
   isSubmitting: boolean
+  driverSameAsOwner?: boolean
 }
 
 export default function Step6Signature({
@@ -34,6 +35,7 @@ export default function Step6Signature({
   errors,
   onSubmit,
   isSubmitting,
+  driverSameAsOwner,
 }: Props) {
   const ownerSigRef = useRef<SignaturePadHandle>(null)
   const driverSigRef = useRef<SignaturePadHandle>(null)
@@ -94,29 +96,28 @@ export default function Step6Signature({
         </div>
       </div>
 
-      {/* Vezető aláírása */}
-      <div>
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-          Vezető aláírása
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-          Ha azonos a tulajdonossal, elegendő csak felül aláírni
-        </p>
-        <div className="border rounded-lg overflow-hidden bg-white">
-          <SignaturePad
-            ref={driverSigRef}
-            penColor={penColor}
-            backgroundColor="white"
-            height={180}
-            onEnd={handleDriverEnd}
-          />
+      {/* Vezető aláírása — csak akkor kell, ha a vezető nem azonos a tulajdonossal */}
+      {!driverSameAsOwner && (
+        <div>
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Vezető aláírása
+          </p>
+          <div className="border rounded-lg overflow-hidden bg-white">
+            <SignaturePad
+              ref={driverSigRef}
+              penColor={penColor}
+              backgroundColor="white"
+              height={180}
+              onEnd={handleDriverEnd}
+            />
+          </div>
+          <div className="mt-2">
+            <Button variant="secondary" onClick={clearDriver} type="button">
+              Törlés
+            </Button>
+          </div>
         </div>
-        <div className="mt-2">
-          <Button variant="secondary" onClick={clearDriver} type="button">
-            Törlés
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* GDPR */}
       <Checkbox

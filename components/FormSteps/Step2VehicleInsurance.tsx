@@ -3,6 +3,7 @@
 import { z } from "zod"
 import Input from "@/components/ui/Input"
 import RadioGroup from "@/components/ui/RadioGroup"
+import Checkbox from "@/components/ui/Checkbox"
 import SelectWithOther from "@/components/ui/SelectWithOther"
 import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS, type InsuranceCompanyValue } from "@/lib/validation"
 
@@ -87,6 +88,7 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
 
   const isAtFault = data.liableParty === "own"
   const otherIsAtFault = data.liableParty === "other" || data.liableParty === "both"
+  const showOwnLiability = isAtFault || data.liableParty === "both"
 
   // Gyors kitöltés: a meghatalmazáshoz tartozó "Illetékes biztosító" mezőt a kontextus alapján
   // legrelevánsabb, már megadott biztosítóval töltjük ki, hogy ne kelljen kétszer beírni a nevet.
@@ -186,15 +188,11 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
           Biztosítási adatok
         </h2>
 
-        <RadioGroup
-          label="Van saját CASCO biztosítása?"
+        <Checkbox
+          label="Van saját CASCO biztosítása"
           name="hasCasco"
-          value={data.hasCasco ? "true" : "false"}
-          onChange={(val) => onChange("hasCasco", val === "true")}
-          options={[
-            { value: "true", label: "Igen" },
-            { value: "false", label: "Nem" },
-          ]}
+          checked={data.hasCasco}
+          onChange={(e) => onChange("hasCasco", e.target.checked)}
           error={errors.hasCasco}
         />
         {data.hasCasco && (
@@ -220,40 +218,40 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
           </div>
         )}
 
-        <SelectWithOther
-          label="Saját kötelező felelősségbiztosítója"
-          name="liabilityInsurer"
-          value={data.liabilityInsurer ?? ""}
-          onChange={(val) => onChange("liabilityInsurer", val)}
-          options={INSURER_NAME_OPTIONS}
-          error={errors.liabilityInsurer}
-          helperText="Akkor releváns, ha Önt (vagy az Ön gépjárművét vezető személyt) terheli a felelősség."
-        />
-
-        <div className="flex flex-col gap-2">
+        {showOwnLiability && (
           <SelectWithOther
-            label="A károkozó / másik fél felelősségbiztosítója"
-            name="relevantInsurer"
-            value={data.relevantInsurer ?? ""}
-            onChange={(val) => onChange("relevantInsurer", val)}
+            label="Saját kötelező felelősségbiztosítója"
+            name="liabilityInsurer"
+            value={data.liabilityInsurer ?? ""}
+            onChange={(val) => onChange("liabilityInsurer", val)}
             options={INSURER_NAME_OPTIONS}
-            error={errors.relevantInsurer}
-            helperText={
-              otherIsAtFault
-                ? "Ez a biztosító fogja fedezni a kárt, mivel (részben) a másik felet terheli a felelősség."
-                : "Ha ismeri, itt rögzítheti a másik fél biztosítóját is — erre a kárügy nyilvántartásához lehet szükség."
-            }
+            error={errors.liabilityInsurer}
+            helperText="Ez fizet a károkozásért, mivel Ön (is) felelős a kárért."
           />
-          {otherIsAtFault && data.relevantInsurer && (
-            <button
-              type="button"
-              onClick={() => applyInsurerFrom(data.relevantInsurer!)}
-              className="text-xs text-blue-600 dark:text-blue-400 underline self-start"
-            >
-              Ugyanezt használom a meghatalmazáshoz lent ↓
-            </button>
-          )}
-        </div>
+        )}
+
+        {otherIsAtFault && (
+          <div className="flex flex-col gap-2">
+            <SelectWithOther
+              label="A károkozó / másik fél felelősségbiztosítója"
+              name="relevantInsurer"
+              value={data.relevantInsurer ?? ""}
+              onChange={(val) => onChange("relevantInsurer", val)}
+              options={INSURER_NAME_OPTIONS}
+              error={errors.relevantInsurer}
+              helperText="Ez a biztosító fogja fedezni a kárt, mivel (részben) a másik felet terheli a felelősség."
+            />
+            {data.relevantInsurer && (
+              <button
+                type="button"
+                onClick={() => applyInsurerFrom(data.relevantInsurer!)}
+                className="text-xs text-blue-600 dark:text-blue-400 underline self-start"
+              >
+                Ugyanezt használom a meghatalmazáshoz lent ↓
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
           <SelectWithOther

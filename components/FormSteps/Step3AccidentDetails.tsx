@@ -4,7 +4,8 @@ import { z } from "zod"
 import { useState } from "react"
 import Input from "@/components/ui/Input"
 import Textarea from "@/components/ui/Textarea"
-import RadioGroup from "@/components/ui/RadioGroup"
+import Checkbox from "@/components/ui/Checkbox"
+import SelectWithOther from "@/components/ui/SelectWithOther"
 
 export const step3Schema = z.object({
   accidentDate: z.string().optional(),
@@ -49,6 +50,13 @@ const COUNTRIES = [
   "Svájc",
   "Bulgária",
   "Görögország",
+]
+
+const VEHICLE_TYPE_OPTIONS = [
+  { value: "Személygépkocsi", label: "Személygépkocsi" },
+  { value: "Tehergépkocsi", label: "Tehergépkocsi" },
+  { value: "Motorkerékpár", label: "Motorkerékpár" },
+  { value: "Autóbusz", label: "Autóbusz" },
 ]
 
 export default function Step3AccidentDetails({ data, onChange, errors }: Step3Props) {
@@ -140,15 +148,11 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
           error={errors.accidentStreet}
           placeholder="pl. Kossuth u. 12."
         />
-        <RadioGroup
-          label="Lakott területen kívül történt?"
+        <Checkbox
+          label="Lakott területen kívül történt"
           name="outsideSettlement"
-          value={data.outsideSettlement ? "true" : "false"}
-          onChange={(val) => onChange("outsideSettlement", val === "true")}
-          options={[
-            { value: "false", label: "Nem (lakott terület)" },
-            { value: "true", label: "Igen (lakott területen kívül)" },
-          ]}
+          checked={data.outsideSettlement}
+          onChange={(e) => onChange("outsideSettlement", e.target.checked)}
           error={errors.outsideSettlement}
         />
         {data.outsideSettlement && (
@@ -178,15 +182,11 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
           Rendőri intézkedés
         </h2>
-        <RadioGroup
-          label="Volt rendőri intézkedés?"
+        <Checkbox
+          label="Volt rendőri intézkedés"
           name="policeInvolved"
-          value={data.policeInvolved ? "true" : "false"}
-          onChange={(val) => onChange("policeInvolved", val === "true")}
-          options={[
-            { value: "false", label: "Nem" },
-            { value: "true", label: "Igen" },
-          ]}
+          checked={data.policeInvolved}
+          onChange={(e) => onChange("policeInvolved", e.target.checked)}
           error={errors.policeInvolved}
         />
         {data.policeInvolved && (
@@ -220,13 +220,14 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
             error={errors.otherVehiclePlate}
             placeholder="pl. XYZ-456"
           />
-          <Input
+          <SelectWithOther
             label="Típus"
             name="otherVehicleType"
             value={data.otherVehicleType ?? ""}
-            onChange={handleInput("otherVehicleType")}
+            onChange={(val) => onChange("otherVehicleType", val)}
+            options={VEHICLE_TYPE_OPTIONS}
             error={errors.otherVehicleType}
-            placeholder="pl. személyautó"
+            otherPlaceholder="Írja be a jármű típusát"
           />
           <Input
             label="Szín"

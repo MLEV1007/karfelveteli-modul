@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
           liableParty: data.liableParty ?? null,
           underInfluence: data.underInfluence,
           licenseValid: data.licenseValid,
+          vatReclaimEligible: data.vatReclaimEligible,
           taxNumber: data.taxNumber ?? null,
           consentToPhotocopy: data.consentToPhotocopy,
           cascoClaimRequest: data.cascoClaimRequest,

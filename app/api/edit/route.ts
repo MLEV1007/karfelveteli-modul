@@ -123,6 +123,7 @@ export async function PATCH(req: NextRequest) {
         liableParty: validatedData.liableParty ?? null,
         underInfluence: validatedData.underInfluence,
         licenseValid: validatedData.licenseValid,
+        vatReclaimEligible: validatedData.vatReclaimEligible,
         taxNumber: validatedData.taxNumber ?? null,
         consentToPhotocopy: validatedData.consentToPhotocopy,
         cascoClaimRequest: validatedData.cascoClaimRequest,

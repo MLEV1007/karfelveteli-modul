@@ -81,6 +81,7 @@ model DamageReport {
   liableParty        String?
   underInfluence     Boolean @default(false)
   licenseValid       Boolean @default(true)
+  vatReclaimEligible    Boolean @default(false)
   taxNumber          String?
   consentToPhotocopy    Boolean @default(false)
   cascoClaimRequest     Boolean @default(false)

@@ -67,6 +67,7 @@ const initialData: FormData = {
   driverName: "",
   driverAddress: "",
   driverPhone: "",
+  driverSameAsOwner: false,
   customerEmail: "",
   customerPhone: "",
   // Step 2
@@ -104,6 +105,7 @@ const initialData: FormData = {
   // Step 5
   underInfluence: false,
   licenseValid: true,
+  vatReclaimEligible: false,
   taxNumber: "",
   consentToPhotocopy: false,
   cascoClaimRequest: false,
@@ -199,6 +201,7 @@ export default function FormPage() {
       data = {
         underInfluence: formData.underInfluence,
         licenseValid: formData.licenseValid,
+        vatReclaimEligible: formData.vatReclaimEligible,
         taxNumber: formData.taxNumber,
         consentToPhotocopy: formData.consentToPhotocopy,
         cascoClaimRequest: formData.cascoClaimRequest,
@@ -296,6 +299,7 @@ export default function FormPage() {
               driverName: formData.driverName,
               driverAddress: formData.driverAddress,
               driverPhone: formData.driverPhone,
+              driverSameAsOwner: formData.driverSameAsOwner,
               customerEmail: formData.customerEmail,
               customerPhone: formData.customerPhone,
             }}
@@ -365,6 +369,7 @@ export default function FormPage() {
             data={{
               underInfluence: formData.underInfluence,
               licenseValid: formData.licenseValid,
+              vatReclaimEligible: formData.vatReclaimEligible,
               taxNumber: formData.taxNumber,
               consentToPhotocopy: formData.consentToPhotocopy,
               cascoClaimRequest: formData.cascoClaimRequest,
@@ -407,6 +412,7 @@ export default function FormPage() {
             errors={errors}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
+            driverSameAsOwner={formData.driverSameAsOwner}
           />
         )
     }

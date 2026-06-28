@@ -23,6 +23,13 @@ const INSURER_NAME_OPTIONS = (Object.entries(INSURANCE_COMPANY_LABELS) as [Insur
   .filter(([key]) => key !== "EGYEB")
   .map(([, label]) => ({ value: label, label }))
 
+const VEHICLE_TYPE_OPTIONS = [
+  { value: "Személygépkocsi", label: "Személygépkocsi" },
+  { value: "Tehergépkocsi", label: "Tehergépkocsi" },
+  { value: "Motorkerékpár", label: "Motorkerékpár" },
+  { value: "Autóbusz", label: "Autóbusz" },
+]
+
 interface EditFormProps {
   report: DamageReport
   token: string
@@ -84,6 +91,7 @@ export default function EditForm({ report, token }: EditFormProps) {
     // Step 5
     underInfluence: report.underInfluence,
     licenseValid: report.licenseValid,
+    vatReclaimEligible: report.vatReclaimEligible,
     taxNumber: report.taxNumber ?? "",
     consentToPhotocopy: report.consentToPhotocopy,
     cascoClaimRequest: report.cascoClaimRequest,
@@ -457,12 +465,14 @@ export default function EditForm({ report, token }: EditFormProps) {
             onChange={(e) => updateField("otherVehiclePlate", e.target.value.toUpperCase())}
             error={errors.otherVehiclePlate}
           />
-          <Input
+          <SelectWithOther
             label="Másik jármű típusa"
             name="otherVehicleType"
             value={formData.otherVehicleType}
-            onChange={(e) => updateField("otherVehicleType", e.target.value)}
+            onChange={(val) => updateField("otherVehicleType", val)}
+            options={VEHICLE_TYPE_OPTIONS}
             error={errors.otherVehicleType}
+            otherPlaceholder="Írja be a jármű típusát"
           />
           <Input
             label="Másik jármű színe"
@@ -536,13 +546,21 @@ export default function EditForm({ report, token }: EditFormProps) {
             checked={formData.licenseValid}
             onChange={(e) => updateField("licenseValid", e.target.checked)}
           />
-          <Input
-            label="Adószám (ha van)"
-            name="taxNumber"
-            value={formData.taxNumber}
-            onChange={(e) => updateField("taxNumber", e.target.value)}
-            error={errors.taxNumber}
+          <Checkbox
+            label="ÁFA visszaigénylésre jogosult"
+            name="vatReclaimEligible"
+            checked={formData.vatReclaimEligible}
+            onChange={(e) => updateField("vatReclaimEligible", e.target.checked)}
           />
+          {formData.vatReclaimEligible && (
+            <Input
+              label="Adószám"
+              name="taxNumber"
+              value={formData.taxNumber}
+              onChange={(e) => updateField("taxNumber", e.target.value)}
+              error={errors.taxNumber}
+            />
+          )}
           <Checkbox
             label="Hozzájárulok a dokumentumok fotómásolásához"
             name="consentToPhotocopy"
