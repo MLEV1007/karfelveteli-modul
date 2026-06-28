@@ -72,14 +72,25 @@ export async function uploadFinalPdf(
   return data.publicUrl
 }
 
-// Server-side only: letölti egy tárolt aláírás-PNG-t és base64 data URI-vá alakítja.
-// A react-pdf renderelés közben nem indíthat hálózati kérést, ezért a PDF összeállítása előtt
-// minden Supabase Storage URL-t base64-re kell konvertálni.
-export async function urlToBase64(url: string, contentType = "image/png"): Promise<string> {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Nem sikerült letölteni: ${url} (${res.status})`)
-  const buffer = Buffer.from(await res.arrayBuffer())
-  return `data:${contentType};base64,${buffer.toString("base64")}`
+// Server-side only: letölt egy tárolt aláírás-PNG-t és base64 data URI-vá alakítja.
+// A "signatures" bucket SZÁNDÉKOSAN privát (az aláírások nem nyilvánosak), ezért a DB-ben
+// tárolt getPublicUrl()-lal képzett URL-t sima fetch-csel nem lehet elérni — a service role
+// kulccsal hitelesített .download()-t kell használni, ami privát bucketnél is működik.
+export async function downloadSignatureAsBase64(signatureUrl: string): Promise<string> {
+  const marker = "/object/public/signatures/"
+  const idx = signatureUrl.indexOf(marker)
+  if (idx === -1) {
+    throw new Error(`Ismeretlen formátumú aláírás URL: ${signatureUrl}`)
+  }
+  const path = signatureUrl.slice(idx + marker.length)
+
+  const { data, error } = await supabaseAdmin.storage.from("signatures").download(path)
+  if (error || !data) {
+    throw new Error(`Nem sikerült letölteni az aláírást (${path}): ${error?.message ?? "ismeretlen hiba"}`)
+  }
+
+  const buffer = Buffer.from(await data.arrayBuffer())
+  return `data:image/png;base64,${buffer.toString("base64")}`
 }
 
 // Client-side: convert file to base64 for transport to API

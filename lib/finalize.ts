@@ -2,7 +2,7 @@ import type { DamageReport } from "@prisma/client"
 import { prisma } from "./db"
 import { generateFullReportPDF, type FullPdfData } from "./pdf"
 import { sendFinalReportEmails } from "./email"
-import { uploadFinalPdf, urlToBase64 } from "./storage"
+import { uploadFinalPdf, downloadSignatureAsBase64 } from "./storage"
 import { getDefaultEquipmentChecklist } from "./equipment"
 
 // A tárolt Prisma rekordot a PDF-generátor által várt alakra hozza.
@@ -87,12 +87,14 @@ export async function finalizeReport(reportId: string): Promise<FinalizeResult> 
   }
 
   try {
-    const ownerSigBase64 = report.ownerSignatureUrl ? await urlToBase64(report.ownerSignatureUrl) : ""
+    const ownerSigBase64 = report.ownerSignatureUrl
+      ? await downloadSignatureAsBase64(report.ownerSignatureUrl)
+      : ""
     const driverSigBase64 = report.driverSignatureUrl
-      ? await urlToBase64(report.driverSignatureUrl)
+      ? await downloadSignatureAsBase64(report.driverSignatureUrl)
       : undefined
     const technicianSigBase64 = report.technicianSignatureUrl
-      ? await urlToBase64(report.technicianSignatureUrl)
+      ? await downloadSignatureAsBase64(report.technicianSignatureUrl)
       : ""
 
     const pdfData = toFullPdfData(report, {

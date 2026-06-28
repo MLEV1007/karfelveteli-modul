@@ -151,6 +151,7 @@ export default function JegyzokonyvForm({ report, token }: JegyzokonyvFormProps)
   const [isRetrying, setIsRetrying] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(report.status === "COMPLETED")
+  const [currentStatus, setCurrentStatus] = useState(report.status)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const [vehicleCheckIn, setVehicleCheckIn] = useState(toLocalDateTimeInput(report.vehicleCheckIn))
@@ -220,6 +221,7 @@ export default function JegyzokonyvForm({ report, token }: JegyzokonyvFormProps)
         throw new Error(result.error || "Sikertelen mentés")
       }
       if (response.status === 207) {
+        setCurrentStatus("FAILED_PDF")
         throw new Error(result.error || "A dokumentumok kiküldése sikertelen volt.")
       }
 
@@ -277,7 +279,7 @@ export default function JegyzokonyvForm({ report, token }: JegyzokonyvFormProps)
         {submitError && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start justify-between gap-4">
             <p className="text-red-800 dark:text-red-200 text-sm">{submitError}</p>
-            {report.status === "FAILED_PDF" && (
+            {currentStatus === "FAILED_PDF" && (
               <Button type="button" variant="secondary" onClick={handleRetry} loading={isRetrying}>
                 Újrapróbálás
               </Button>
