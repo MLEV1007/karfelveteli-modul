@@ -18,7 +18,7 @@ interface CustomerSubmissionEmailProps {
   vehiclePlate: string
   vehicleMake: string
   vehicleModel: string
-  id: string
+  referenceNumber: string
   createdAt: Date
   photoUrls?: string[]
 }
@@ -30,7 +30,7 @@ export default function CustomerSubmissionEmail({
   vehiclePlate,
   vehicleMake,
   vehicleModel,
-  id,
+  referenceNumber,
   createdAt,
   photoUrls,
 }: CustomerSubmissionEmailProps) {
@@ -110,7 +110,7 @@ export default function CustomerSubmissionEmail({
                 <Text style={label}>Azonosító:</Text>
               </Column>
               <Column style={valueColumn}>
-                <Text style={value}>{id.slice(-8).toUpperCase()}</Text>
+                <Text style={value}>{referenceNumber}</Text>
               </Column>
             </Row>
           </Section>

@@ -266,13 +266,13 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle: strin
   )
 }
 
-export function PageFooter({ id, note }: { id: string; note: string }) {
+export function PageFooter({ referenceNumber, note }: { referenceNumber: string; note: string }) {
   return (
     <View style={s.footer} fixed>
       <Text style={s.footerText}>{note}</Text>
       <Text style={s.footerRight}>
         M1 Szerviz Tata • www.m1szerviztata.hu{"\n"}
-        Azonosító: {id.slice(-8).toUpperCase()}
+        Azonosító: {referenceNumber}
       </Text>
     </View>
   )

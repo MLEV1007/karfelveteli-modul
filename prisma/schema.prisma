@@ -33,8 +33,9 @@ enum ReportStatus {
 }
 
 model DamageReport {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  referenceNumber String   @unique
+  createdAt       DateTime @default(now())
 
   // 1. lépés — Személyes adatok
   ownerName     String

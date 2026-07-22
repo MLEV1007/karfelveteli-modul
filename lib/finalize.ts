@@ -15,6 +15,7 @@ function toFullPdfData(
 ): FullPdfData {
   return {
     id: report.id,
+    referenceNumber: report.referenceNumber,
     createdAt: report.createdAt,
     ownerName: report.ownerName,
     ownerAddress: report.ownerAddress ?? "",

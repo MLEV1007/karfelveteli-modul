@@ -26,7 +26,7 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
     <Page size="A4" style={s.page}>
       <PageHeader
         title="GÉPJÁRMŰ KÁRBEJELENTŐ LAP"
-        subtitle={`Azonosító: ${data.id.slice(-8).toUpperCase()} • Kitöltés időpontja: ${formatDate(data.createdAt)}`}
+        subtitle={`Azonosító: ${data.referenceNumber} • Kitöltés időpontja: ${formatDate(data.createdAt)}`}
       />
 
       {/* 1. SZEMÉLYES ADATOK + JÁRMŰ ÉS BIZTOSÍTÁS */}
@@ -252,7 +252,7 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
       </View>
 
       <PageFooter
-        id={data.id}
+        referenceNumber={data.referenceNumber}
         note="Jelen dokumentum az Ön által megadott adatok alapján digitálisan rögzítésre került. Az adatokat a GDPR előírásainak megfelelően kezeljük. A bejelentett adatok valódiságáért az ügyfél felelős."
       />
     </Page>

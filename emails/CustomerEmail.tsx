@@ -15,7 +15,7 @@ import {
 import type { DamageReportInput } from "@/lib/validation"
 
 interface CustomerEmailProps {
-  data: DamageReportInput & { id: string; createdAt: Date }
+  data: DamageReportInput & { id: string; referenceNumber: string; createdAt: Date }
 }
 
 export default function CustomerEmail({ data }: CustomerEmailProps) {
@@ -95,7 +95,7 @@ export default function CustomerEmail({ data }: CustomerEmailProps) {
                 <Text style={label}>Azonosító:</Text>
               </Column>
               <Column style={valueColumn}>
-                <Text style={value}>{data.id.slice(-8).toUpperCase()}</Text>
+                <Text style={value}>{data.referenceNumber}</Text>
               </Column>
             </Row>
           </Section>

@@ -69,6 +69,19 @@ const phoneSchema = z
   .string()
   .regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)")
 
+// A "YYYY-MM-DDTHH:mm" datetime-local érték év részét korlátozzuk 4 számjegyre —
+// egyes böngészők (pl. Chrome) a natív dátumválasztóban gépeléskor ennél többet is
+// elfogadnak, ezért ezt a szerver oldalon is ki kell kényszeríteni.
+const accidentDateSchema = z
+  .string()
+  .optional()
+  .refine((val) => {
+    if (!val) return true
+    const yearDigits = val.split("-")[0]
+    const year = Number(yearDigits)
+    return yearDigits.length <= 4 && year >= 1900 && year <= 2099
+  }, "Érvénytelen év a baleset időpontjában (max. 4 számjegy, 1900–2099 között)")
+
 // Ha az "EGYEB" (egyéb biztosító) opciót választja a felhasználó, a konkrét nevet
 // szabadszöveges mezőben kell megadnia — ezt a damageReportObjectSchema-ra épülő
 // sémák mindegyikén (damageReportSchema, editReportSchema, fullReportSchema) kikényszerítjük.
@@ -109,7 +122,7 @@ const damageReportObjectSchema = z.object({
   insuranceCompanyOther: z.string().optional(),
 
   // 3. lépés — Baleset körülményei
-  accidentDate: z.string().optional(),
+  accidentDate: accidentDateSchema,
   accidentCountry: z.string().optional(),
   accidentCity: z.string().optional(),
   accidentStreet: z.string().optional(),

@@ -3,7 +3,7 @@
 import { z } from "zod"
 import Checkbox from "@/components/ui/Checkbox"
 import { getInsuranceCompanyLabel, type InsuranceCompanyValue } from "@/lib/validation"
-import { WORKSHOP_LEGAL } from "@/lib/workshop"
+import { WORKSHOP_LEGAL_M1 } from "@/lib/workshop"
 
 export const authorizationSchema = z.object({
   accept8DayPayment: z.literal(true, {
@@ -56,7 +56,7 @@ export default function Step6Authorization({ data, summary, onChange, errors }: 
       <div className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed space-y-3">
         <p>
           A fent megnevezett gépjármű tulajdonosaként/üzembentartójaként meghatalmazom a{" "}
-          <strong>{WORKSHOP_LEGAL.companyName}</strong>-t (adószám: {WORKSHOP_LEGAL.taxNumber}), hogy a
+          <strong>{WORKSHOP_LEGAL_M1.companyName}</strong>-t (adószám: {WORKSHOP_LEGAL_M1.taxNumber}), hogy a
           megjelölt biztosítónál a kárügyemet teljes körűen képviselje, a szükséges nyilatkozatokat
           nevemben aláírja, és a javítás díját a biztosító felé közvetlenül benyújtsa.
         </p>

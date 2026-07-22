@@ -16,7 +16,7 @@ import {
 import type { DamageReportInput } from "@/lib/validation"
 
 interface WorkshopEmailProps {
-  data: DamageReportInput & { id: string; createdAt: Date; editToken?: string }
+  data: DamageReportInput & { id: string; referenceNumber: string; createdAt: Date; editToken?: string }
 }
 
 export default function WorkshopEmail({ data }: WorkshopEmailProps) {
@@ -223,7 +223,7 @@ export default function WorkshopEmail({ data }: WorkshopEmailProps) {
               A teljes kárfelvételi lapot PDF formátumban csatoltan küldjük.
             </Text>
             <Text style={footerNote}>
-              Azonosító: <strong>{data.id.slice(-8).toUpperCase()}</strong>
+              Azonosító: <strong>{data.referenceNumber}</strong>
             </Text>
           </Section>
         </Container>

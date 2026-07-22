@@ -5,6 +5,7 @@ import { enforceRateLimit } from "@/lib/ratelimit"
 import { prisma } from "@/lib/db"
 import { sendCustomerSubmissionEmail, sendTechnicianNotification } from "@/lib/email"
 import { uploadSignature } from "@/lib/storage"
+import { nextReferenceNumber } from "@/lib/referenceNumber"
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,11 +34,15 @@ export async function POST(req: NextRequest) {
     const technicianToken = randomUUID()
     const technicianTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 
+    // Ügyfél felé megjelenő azonosító — sorban növekvő "BIZTxxxx" formátum (nem a belső cuid)
+    const referenceNumber = await nextReferenceNumber()
+
     // 4. Prisma: rekord mentése (PENDING_TECHNICIAN állapotban, base64 aláírásokkal)
     let report
     try {
       report = await prisma.damageReport.create({
         data: {
+          referenceNumber,
           ownerName: data.ownerName,
           ownerAddress: data.ownerAddress,
           idOrTaxNumber: data.idOrTaxNumber,
@@ -150,7 +155,7 @@ export async function POST(req: NextRequest) {
         vehiclePlate: data.vehiclePlate,
         vehicleMake: data.vehicleMake,
         vehicleModel: data.vehicleModel,
-        id: report.id,
+        referenceNumber: report.referenceNumber,
         createdAt: report.createdAt,
         photoUrls: data.photoUrls,
       })

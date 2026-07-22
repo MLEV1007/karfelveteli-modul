@@ -71,7 +71,7 @@ export default function DocumentChecklistPage({ data }: { data: FullPdfData }) {
     <Page size="A4" style={s.page}>
       <PageHeader
         title="IRATÖSSZESÍTŐ"
-        subtitle={`Azonosító: ${data.id.slice(-8).toUpperCase()} • Kelt: ${formatDate(data.createdAt)}`}
+        subtitle={`Azonosító: ${data.referenceNumber} • Kelt: ${formatDate(data.createdAt)}`}
       />
 
       <Text style={[s.docTitle, { marginTop: 8 }]}>A KÁRÜGY INTÉZÉSÉHEZ SZÜKSÉGES MELLÉKLETEK</Text>
@@ -90,7 +90,7 @@ export default function DocumentChecklistPage({ data }: { data: FullPdfData }) {
       </View>
 
       <PageFooter
-        id={data.id}
+        referenceNumber={data.referenceNumber}
         note="Az iratösszesítő tájékoztató jellegű; a tényleges kárrendezéshez a biztosító további dokumentumokat is kérhet."
       />
     </Page>

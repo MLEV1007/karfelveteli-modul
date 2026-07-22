@@ -34,7 +34,7 @@ export default async function EditPage({ params }: EditPageProps) {
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             Rendszám: <strong>{report.vehiclePlate.toUpperCase()}</strong> •
-            Azonosító: <strong>{report.id.slice(-8).toUpperCase()}</strong>
+            Azonosító: <strong>{report.referenceNumber}</strong>
           </p>
         </div>
 

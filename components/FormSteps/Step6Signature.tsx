@@ -125,7 +125,8 @@ export default function Step6Signature({
           <span>
             Hozzájárulok, hogy a megadott személyes adataimat (név, e-mail,
             rendszám, jármű adatai) a szerviz szervizdokumentációs célból
-            kezelje. Az adatokat harmadik félnek nem adják át.{" "}
+            kezelje. Az adatkezelés a dokumentáció elkészítése és a biztosítási
+            ügyintézés céljából történik.{" "}
             <a
               href="/adatkezeles"
               className="text-blue-600 hover:underline dark:text-blue-400"

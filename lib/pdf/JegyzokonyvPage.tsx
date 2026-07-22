@@ -52,7 +52,7 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
     <Page size="A4" style={s.page}>
       <PageHeader
         title="JEGYZŐKÖNYV"
-        subtitle={`Azonosító: ${data.id.slice(-8).toUpperCase()} • Lezárva: ${formatDate(data.createdAt)}`}
+        subtitle={`Azonosító: ${data.referenceNumber} • Lezárva: ${formatDate(data.createdAt)}`}
       />
 
       <View style={[s.outerBorder, { marginTop: 4 }]}>
@@ -142,7 +142,7 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
       </View>
 
       <PageFooter
-        id={data.id}
+        referenceNumber={data.referenceNumber}
         note="A jelen jegyzőkönyv a gépjármű átvételkori állapotát, felszereltségét és a sérülés helyét rögzíti. Az aláírások a jármű átadását-átvételét igazolják."
       />
     </Page>

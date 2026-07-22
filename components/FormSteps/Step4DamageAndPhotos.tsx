@@ -446,7 +446,7 @@ export default function Step4DamageAndPhotos({ data, onChange, errors }: Props) 
       {/* Képfeltöltés */}
       <div>
         <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Fotók a kárról (max. 5)
+          Fotók a kárról (nem kötelező, max. 5)
         </p>
 
         {data.photoUrls.length < 5 && (
