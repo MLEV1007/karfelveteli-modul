@@ -108,7 +108,7 @@ export default function Home() {
         <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
           <span>© {new Date().getFullYear()} M1 Szerviz Tata — 2890 Tata, Kalapács utca 1.</span>
           <a
-            href="https://m1szerviztata.buildmysite.hu/adatkezeles/"
+            href="https://www.m1szerviztata.hu/adatkezeles/"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-gray-600 transition-colors underline underline-offset-2"

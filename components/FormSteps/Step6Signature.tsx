@@ -128,7 +128,7 @@ export default function Step6Signature({
             kezelje. Az adatkezelés a dokumentáció elkészítése és a biztosítási
             ügyintézés céljából történik.{" "}
             <a
-              href="https://m1szerviztata.buildmysite.hu/adatkezeles/"
+              href="https://www.m1szerviztata.hu/adatkezeles/"
               className="text-blue-600 hover:underline dark:text-blue-400"
               target="_blank"
               rel="noopener noreferrer"
