@@ -1,9 +1,9 @@
 import type { DamageReport } from "@prisma/client"
 import { randomUUID } from "crypto"
 import { prisma } from "./db"
-import { generateFullReportPDF, type FullPdfData } from "./pdf"
+import { generateMainReportPDF, generateAuthorizationPdfs, type FullPdfData } from "./pdf"
 import { sendFinalReportEmails } from "./email"
-import { uploadFinalPdf, downloadSignatureAsBase64 } from "./storage"
+import { uploadFinalPdf, uploadAuthorizationPdfs, downloadSignatureAsBase64 } from "./storage"
 import { getDefaultEquipmentChecklist } from "./equipment"
 
 // A tárolt Prisma rekordot a PDF-generátor által várt alakra hozza.
@@ -131,16 +131,24 @@ export async function finalizeReport(
       technician: technicianSigBase64,
     })
 
-    const pdfBuffer = await generateFullReportPDF(pdfData)
-    const finalPdfUrl = await uploadFinalPdf(pdfBuffer, report.vehiclePlate, report.id)
+    // A fő, összevont PDF (Kárbejelentő + Iratösszesítő + Jegyzőkönyv) és a 3 önálló
+    // Meghatalmazás-PDF (M1 / Autóüveg / Bodrogi Róbert) együtt, egy pipeline lépésként
+    // készül el — vagy mind a 4 dokumentum sikeresen elkészül, feltöltésre és kiküldésre
+    // kerül, vagy a rekord FAILED_PDF marad és egy Retry mindet újra megpróbálja.
+    const pdfBuffer = await generateMainReportPDF(pdfData)
+    const authorizationPdfs = await generateAuthorizationPdfs(pdfData)
 
-    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer)
+    const finalPdfUrl = await uploadFinalPdf(pdfBuffer, report.vehiclePlate, report.id)
+    const authorizationPdfUrls = await uploadAuthorizationPdfs(authorizationPdfs, report.vehiclePlate, report.id)
+
+    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer, authorizationPdfs)
 
     await prisma.damageReport.update({
       where: { id: report.id },
       data: {
         status: "COMPLETED",
         finalPdfUrl,
+        authorizationPdfUrls,
         // Az első lezárás időpontját egy utólagos szerkesztés/újraküldés nem írja felül.
         munkalapClosedAt: report.munkalapClosedAt ?? new Date(),
         pdfErrorMessage: null,

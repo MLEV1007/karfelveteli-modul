@@ -7,28 +7,46 @@ export const WORKSHOP_BRAND = {
   website: "www.m1szerviztata.hu",
 }
 
-// Fix, jogi/számlázási entitások adatai — a Meghatalmazás dokumentumon szerepelnek,
-// mert ez a dokumentum a bejegyzett vállalkozásokat azonosítja, nem a brandet.
+// Fix, jogi/számlázási entitások adatai — mindhárom önálló Meghatalmazás-dokumentumon
+// szerepelnek, mert ez a dokumentum a bejegyzett vállalkozásokat azonosítja, nem a brandet.
 //
-// WORKSHOP_LEGAL_M1 az elsődleges, ügyfél felé megjelenő meghatalmazott. A másik két
-// egyéni vállalkozás közreműködőként van jelen a kárügyintézésben (lásd Meghatalmazás
-// dokumentum záradéka) — ők csak a PDF jogi szövegében szerepelnek, az ügyfél felé
-// megjelenő fő szöveg és a kitöltési lépés kizárólag az M1 Szerviz Tata Kft.-t nevezi meg.
-export const WORKSHOP_LEGAL_M1 = {
+// Minden entitáshoz külön, egymástól független Meghatalmazás-PDF készül (lásd
+// lib/pdf/AuthorizationPage.tsx és lib/pdf/index.tsx generateAuthorizationPdfs) — egyik
+// dokumentum sem hivatkozik a másik két cégre.
+export interface LegalEntity {
+  key: string // pl. "m1", "autouveg", "bodrogi" — fájlnevekhez és PDF/UI listákhoz
+  companyName: string
+  taxNumber: string
+  bankAccount: string
+  location?: string
+}
+
+export const WORKSHOP_LEGAL_M1: LegalEntity = {
+  key: "m1",
   companyName: "M1 Szerviz Tata Kft.",
   taxNumber: "14169931-2-11",
   bankAccount: "10918001-00000055-61630008",
   location: "Tata",
 }
 
-export const WORKSHOP_LEGAL_AUTOUVEG = {
+export const WORKSHOP_LEGAL_AUTOUVEG: LegalEntity = {
+  key: "autouveg",
   companyName: "Autóüveg Szerviz Szinak Gábor e.v.",
   taxNumber: "66894892-1-31",
   bankAccount: "11600006-00000000-30165030",
 }
 
-export const WORKSHOP_LEGAL_KAROSSZERIA = {
+export const WORKSHOP_LEGAL_KAROSSZERIA: LegalEntity = {
+  key: "bodrogi",
   companyName: "MI Karosszéria Tata: Bodrogi Róbert e.v.",
   taxNumber: "55744157-1-31",
   bankAccount: "11600006-00000000-85487385",
 }
+
+// A 3 jogi entitás listája — ebből dolgozik a PDF-generálás (3 önálló meghatalmazás-PDF)
+// és a Step6Authorization online űrlap-lépés is, hogy egy helyen kelljen karbantartani.
+export const WORKSHOP_LEGAL_ENTITIES: LegalEntity[] = [
+  WORKSHOP_LEGAL_M1,
+  WORKSHOP_LEGAL_AUTOUVEG,
+  WORKSHOP_LEGAL_KAROSSZERIA,
+]

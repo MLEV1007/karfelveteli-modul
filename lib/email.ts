@@ -70,9 +70,13 @@ export async function sendCustomerSubmissionEmail(data: {
 }
 
 // A technikus lezárása után — a végleges, összevont PDF-fel mindkét fél értesítést kap.
+// A `authorizationPdfs` a 3 önálló Meghatalmazás-PDF-et tartalmazza (M1 / Autóüveg / Bodrogi
+// Róbert) — ezeket CSAK a műhely kapja meg mellékletként, az ügyfél emailje (CustomerEmail)
+// változatlan marad, továbbra is csak az összevont PDF-et kapja.
 export async function sendFinalReportEmails(
   data: EmailData,
-  pdfBuffer: Buffer
+  pdfBuffer: Buffer,
+  authorizationPdfs: { filename: string; buffer: Buffer }[] = []
 ): Promise<void> {
   // Lazy initialization - csak runtime-ban inicializálunk
   const resend = new Resend(process.env.RESEND_API_KEY)
@@ -82,7 +86,12 @@ export async function sendFinalReportEmails(
     content: pdfBuffer,
   }
 
-  // 1. Email az ügyfélnek
+  const authorizationAttachments = authorizationPdfs.map((pdf) => ({
+    filename: pdf.filename,
+    content: pdf.buffer,
+  }))
+
+  // 1. Email az ügyfélnek — nem kap meghatalmazás-PDF-et
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
     to: resolveRecipients(data.customerEmail),
@@ -91,7 +100,7 @@ export async function sendFinalReportEmails(
     attachments: [pdfAttachment],
   })
 
-  // 2. Email a műhelynek
+  // 2. Email a műhelynek — az összevont PDF mellett mind a 3 meghatalmazás-PDF is megy
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
     to: resolveRecipients(getWorkshopRecipients()),
@@ -101,6 +110,6 @@ export async function sendFinalReportEmails(
       day: "2-digit",
     }).format(data.createdAt)}`,
     react: WorkshopEmail({ data }),
-    attachments: [pdfAttachment],
+    attachments: [pdfAttachment, ...authorizationAttachments],
   })
 }

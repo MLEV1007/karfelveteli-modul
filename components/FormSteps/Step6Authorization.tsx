@@ -3,7 +3,7 @@
 import { z } from "zod"
 import Checkbox from "@/components/ui/Checkbox"
 import { getInsuranceCompanyLabel, type InsuranceCompanyValue } from "@/lib/validation"
-import { WORKSHOP_LEGAL_M1 } from "@/lib/workshop"
+import { WORKSHOP_LEGAL_ENTITIES } from "@/lib/workshop"
 
 export const authorizationSchema = z.object({
   accept8DayPayment: z.literal(true, {
@@ -53,13 +53,33 @@ export default function Step6Authorization({ data, summary, onChange, errors }: 
         <p><strong>Illetékes biztosító:</strong> {insurerLabel}</p>
       </div>
 
-      <div className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed space-y-3">
-        <p>
-          A fent megnevezett gépjármű tulajdonosaként/üzembentartójaként meghatalmazom a{" "}
-          <strong>{WORKSHOP_LEGAL_M1.companyName}</strong>-t (adószám: {WORKSHOP_LEGAL_M1.taxNumber}), hogy a
-          megjelölt biztosítónál a kárügyemet teljes körűen képviselje, a szükséges nyilatkozatokat
-          nevemben aláírja, és a javítás díját a biztosító felé közvetlenül benyújtsa.
-        </p>
+      <p className="text-sm text-gray-600 dark:text-gray-400">
+        Az aláírás előtt kérjük, olvassa el mind a 3, egymástól független meghatalmazás szövegét — az Ön
+        egyetlen aláírása mindhárom külön dokumentumra felkerül.
+      </p>
+
+      {/* Mindhárom jogi entitáshoz (M1 / Autóüveg / Bodrogi Róbert) önálló, teljes szövegű
+          meghatalmazás jelenik meg — ezek egymástól függetlenek, egyik sem hivatkozik a
+          másik két cégre (lásd lib/pdf/AuthorizationPage.tsx, ugyanez a szöveg PDF-en). */}
+      <div className="space-y-4">
+        {WORKSHOP_LEGAL_ENTITIES.map((entity) => (
+          <div
+            key={entity.key}
+            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2"
+          >
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Meghatalmazás — {entity.companyName}
+            </h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              A fent megnevezett gépjármű tulajdonosaként/üzembentartójaként meghatalmazom a{" "}
+              <strong>{entity.companyName}</strong>-t (adószám: {entity.taxNumber}), hogy a megjelölt
+              biztosítónál a kárügyemet teljes körűen képviselje, a szükséges nyilatkozatokat nevemben
+              aláírja, a javítás díját a biztosító felé közvetlenül benyújtsa, és a kárrendezés
+              eredményeként megítélt összeget — kifejezett hozzájárulásommal — közvetlenül a
+              Meghatalmazott bankszámlájára (számlaszám: {entity.bankAccount}) kérje folyósítani.
+            </p>
+          </div>
+        ))}
       </div>
 
       <div className="space-y-4">
@@ -97,7 +117,8 @@ export default function Step6Authorization({ data, summary, onChange, errors }: 
       </div>
 
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        A meghatalmazást és a fenti nyilatkozatokat az aláírás lépésben rögzített aláírásával erősíti meg.
+        A fenti mindhárom meghatalmazást és a nyilatkozatokat az aláírás lépésben rögzített egyetlen
+        aláírásával erősíti meg.
       </p>
     </div>
   )

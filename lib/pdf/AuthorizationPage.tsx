@@ -1,11 +1,18 @@
 import { Page, View, Text } from "@react-pdf/renderer"
 import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, SignatureBlock, formatDate } from "./shared"
 import { getInsuranceCompanyLabel } from "@/lib/validation"
-import { WORKSHOP_LEGAL_M1, WORKSHOP_LEGAL_AUTOUVEG, WORKSHOP_LEGAL_KAROSSZERIA } from "@/lib/workshop"
+import type { LegalEntity } from "@/lib/workshop"
 import type { FullPdfData } from "./types"
 
-// 2. oldal — Meghatalmazás
-export default function AuthorizationPage({ data }: { data: FullPdfData }) {
+// Az M1 Szerviz Tata Kft.-n kívüli entitásoknak nincs saját `location` mezőjük — a "Kelt:" sor
+// esetükben is a székhely szerinti várost, Tatát mutatja (mindhárom cég tatai bejegyzésű).
+const WORKSHOP_LOCATION_FALLBACK = "Tata"
+
+// Meghatalmazás — önálló, entitásfüggő dokumentum. A `grantee` paraméter határozza meg,
+// melyik vállalkozás részére szól ez a példány; a 3 entitáshoz 3 külön, egymástól
+// FÜGGETLEN PDF készül (lásd lib/pdf/index.tsx generateAuthorizationPdfs) — egyik
+// dokumentum sem hivatkozik a másik két cégre.
+export default function AuthorizationPage({ data, grantee }: { data: FullPdfData; grantee: LegalEntity }) {
   const insurerLabel = getInsuranceCompanyLabel(data.insuranceCompany, data.insuranceCompanyOther)
 
   return (
@@ -46,23 +53,13 @@ export default function AuthorizationPage({ data }: { data: FullPdfData }) {
         Alulírott <Text style={s.bold}>{data.ownerName}</Text> (lakcím: {data.ownerAddress}, személyi
         igazolvány- vagy adószám: {data.idOrTaxNumber}), mint a fent megjelölt gépjármű tulajdonosa/üzembentartója
         (a továbbiakban: Meghatalmazó), ezúton meghatalmazom a{" "}
-        <Text style={s.bold}>{WORKSHOP_LEGAL_M1.companyName}</Text>-t (adószám: {WORKSHOP_LEGAL_M1.taxNumber},
+        <Text style={s.bold}>{grantee.companyName}</Text>-t (adószám: {grantee.taxNumber},
         a továbbiakban: Meghatalmazott), hogy a fent megjelölt gépjárművön bekövetkezett káreseménnyel
         kapcsolatban a {insurerLabel} biztosítónál a kárügyet teljes körűen képviselje, a kárrendezéshez
         szükséges nyilatkozatokat, dokumentumokat a Meghatalmazó nevében aláírja, a javítással kapcsolatos
         számlát a biztosító felé közvetlenül benyújtsa, és a kárrendezés eredményeként megítélt összeget —
         a Meghatalmazó kifejezett hozzájárulásával — közvetlenül a Meghatalmazott bankszámlájára
-        (számlaszám: {WORKSHOP_LEGAL_M1.bankAccount}) kérje folyósítani.
-      </Text>
-
-      <Text style={s.paragraph}>
-        A Meghatalmazó tudomásul veszi és hozzájárul ahhoz, hogy a Meghatalmazott a kárügyintézésbe és a
-        javítási munkálatokba közreműködőként bevonja az alábbi vállalkozásokat:{" "}
-        <Text style={s.bold}>{WORKSHOP_LEGAL_AUTOUVEG.companyName}</Text> (adószám:{" "}
-        {WORKSHOP_LEGAL_AUTOUVEG.taxNumber}) és{" "}
-        <Text style={s.bold}>{WORKSHOP_LEGAL_KAROSSZERIA.companyName}</Text> (adószám:{" "}
-        {WORKSHOP_LEGAL_KAROSSZERIA.taxNumber}). A jelen meghatalmazás e közreműködők tekintetében is a
-        Meghatalmazottéval megegyező jogkört biztosít a kárügy vitelére.
+        (számlaszám: {grantee.bankAccount}) kérje folyósítani.
       </Text>
 
       <Text style={s.paragraph}>
@@ -104,30 +101,16 @@ export default function AuthorizationPage({ data }: { data: FullPdfData }) {
       <View style={s.outerBorder}>
         <SectionHeader title="MEGHATALMAZOTT ADATAI" />
         <View style={s.row}>
-          <Cell label="Cégnév" value={WORKSHOP_LEGAL_M1.companyName} flex={1} />
-          <Cell label="Adószám" value={WORKSHOP_LEGAL_M1.taxNumber} flex={1} />
-          <Cell label="Bankszámlaszám" value={WORKSHOP_LEGAL_M1.bankAccount} flex={1} noBorderRight />
-        </View>
-      </View>
-
-      <View style={s.outerBorder}>
-        <SectionHeader title="KÖZREMŰKÖDŐK (A MEGHATALMAZOTT ÁLTAL BEVONT VÁLLALKOZÁSOK)" />
-        <View style={s.row}>
-          <Cell label="Cégnév" value={WORKSHOP_LEGAL_AUTOUVEG.companyName} flex={1} />
-          <Cell label="Adószám" value={WORKSHOP_LEGAL_AUTOUVEG.taxNumber} flex={1} />
-          <Cell label="Bankszámlaszám" value={WORKSHOP_LEGAL_AUTOUVEG.bankAccount} flex={1} noBorderRight />
-        </View>
-        <View style={s.row}>
-          <Cell label="Cégnév" value={WORKSHOP_LEGAL_KAROSSZERIA.companyName} flex={1} />
-          <Cell label="Adószám" value={WORKSHOP_LEGAL_KAROSSZERIA.taxNumber} flex={1} />
-          <Cell label="Bankszámlaszám" value={WORKSHOP_LEGAL_KAROSSZERIA.bankAccount} flex={1} noBorderRight />
+          <Cell label="Cégnév" value={grantee.companyName} flex={1} />
+          <Cell label="Adószám" value={grantee.taxNumber} flex={1} />
+          <Cell label="Bankszámlaszám" value={grantee.bankAccount} flex={1} noBorderRight />
         </View>
       </View>
 
       <View style={s.signatureRow}>
         <SignatureBlock label="Meghatalmazó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
         <View style={{ flex: 1 }}>
-          <Text style={[s.label, { marginBottom: 20 }]}>Kelt: {formatDate(data.createdAt)}, {WORKSHOP_LEGAL_M1.location}</Text>
+          <Text style={[s.label, { marginBottom: 20 }]}>Kelt: {formatDate(data.createdAt)}, {grantee.location ?? WORKSHOP_LOCATION_FALLBACK}</Text>
         </View>
       </View>
 

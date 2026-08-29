@@ -117,6 +117,9 @@ model DamageReport {
   technicianToken           String?      @unique
   technicianTokenExpiresAt  DateTime?
   finalPdfUrl               String?
+  // A 3 önálló Meghatalmazás-PDF Supabase Storage URL-jei, LegalEntity.key szerinti kulcsokkal
+  // ({ m1, autouveg, bodrogi }) — csak a műhely kapja meg emailben, lásd lib/finalize.ts.
+  authorizationPdfUrls       Json?
   munkalapClosedAt          DateTime?
   pdfErrorMessage           String?
 
