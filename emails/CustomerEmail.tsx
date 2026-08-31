@@ -101,7 +101,8 @@ export default function CustomerEmail({ data }: CustomerEmailProps) {
           </Section>
 
           <Text style={text}>
-            A részletes kárfelvételi lapot PDF formátumban csatoltan küldjük.
+            A részletes kárfelvételi lapot, valamint az Ön által aláírt meghatalmazásokat
+            (egy összesített PDF formátumban) csatoltan küldjük.
           </Text>
 
           {data.photoUrls && data.photoUrls.length > 0 && (

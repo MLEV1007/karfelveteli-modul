@@ -38,7 +38,7 @@ export const WORKSHOP_LEGAL_AUTOUVEG: LegalEntity = {
 
 export const WORKSHOP_LEGAL_KAROSSZERIA: LegalEntity = {
   key: "bodrogi",
-  companyName: "MI Karosszéria Tata: Bodrogi Róbert e.v.",
+  companyName: "M1 Karosszéria Tata: Bodrogi Róbert e.v.",
   taxNumber: "55744157-1-31",
   bankAccount: "11600006-00000000-85487385",
 }

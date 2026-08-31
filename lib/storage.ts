@@ -105,6 +105,31 @@ export async function uploadAuthorizationPdfs(
   return urls
 }
 
+// Server-side only: az ügyfélnek szánt, 1 összesített Meghatalmazás-PDF feltöltése a "reports"
+// bucketbe, a fő összevont PDF-fel és a műhelynek szánt 3 önálló Meghatalmazás-PDF-fel azonos
+// {rendszám}/{dátum}_{reportId}/ mappába (lásd lib/pdf/index.tsx generateCombinedAuthorizationPdf).
+export async function uploadCombinedAuthorizationPdf(
+  pdfBuffer: Buffer,
+  vehiclePlate: string,
+  reportId: string
+): Promise<string> {
+  const dateStr = formatDateForFolder()
+  const sanitizedPlate = sanitizeVehiclePlate(vehiclePlate)
+  const path = `${sanitizedPlate}/${dateStr}_${reportId}/meghatalmazasok-osszevont.pdf`
+
+  const { error } = await supabaseAdmin.storage
+    .from("reports")
+    .upload(path, pdfBuffer, {
+      contentType: "application/pdf",
+      upsert: true,
+    })
+
+  if (error) throw new Error(`Supabase Storage hiba (Meghatalmazás összesített PDF): ${error.message}`)
+
+  const { data } = supabaseAdmin.storage.from("reports").getPublicUrl(path)
+  return data.publicUrl
+}
+
 // Server-side only: letölt egy tárolt aláírás-PNG-t és base64 data URI-vá alakítja.
 // A "signatures" bucket SZÁNDÉKOSAN privát (az aláírások nem nyilvánosak), ezért a DB-ben
 // tárolt getPublicUrl()-lal képzett URL-t sima fetch-csel nem lehet elérni — a service role
