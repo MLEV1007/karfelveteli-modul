@@ -8,11 +8,17 @@ import {
   getDefaultEquipmentChecklist,
   type EquipmentItemDef,
 } from "@/lib/equipment"
+import {
+  VEHICLE_CATEGORY_OPTIONS,
+  WORK_PROCESS_OPTIONS,
+  VEHICLE_CONDITION_OPTIONS,
+} from "@/lib/protocolChoices"
 import SignaturePad, { type SignaturePadHandle } from "@/components/ui/SignaturePad"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
 import Checkbox from "./ui/Checkbox"
+import RadioGroup from "./ui/RadioGroup"
 import Card from "./ui/Card"
 import Button from "./ui/Button"
 
@@ -155,6 +161,9 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
 
   const [vehicleCheckIn, setVehicleCheckIn] = useState(toLocalDateTimeInput(report.vehicleCheckIn))
   const [vehicleCheckOut, setVehicleCheckOut] = useState(toLocalDateTimeInput(report.vehicleCheckOut))
+  const [vehicleCategory, setVehicleCategory] = useState(report.vehicleCategory ?? "")
+  const [workProcess, setWorkProcess] = useState(report.workProcess ?? "")
+  const [vehicleCondition, setVehicleCondition] = useState(report.vehicleCondition ?? "")
   const [damageNotes, setDamageNotes] = useState(report.damageNotes ?? "")
   const [technicianName, setTechnicianName] = useState(report.technicianName ?? "")
   const [technicianSignatureUrl, setTechnicianSignatureUrl] = useState("")
@@ -192,6 +201,9 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
         body: JSON.stringify({
           vehicleCheckIn,
           vehicleCheckOut,
+          vehicleCategory,
+          workProcess,
+          vehicleCondition,
           equipmentChecklist: equipment,
           damageNotes,
           technicianName,
@@ -294,6 +306,22 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
             <p><strong>Rendszám:</strong> {report.vehiclePlate.toUpperCase()}</p>
             <p><strong>Jármű:</strong> {report.vehicleMake} {report.vehicleModel}</p>
             <p><strong>VIN:</strong> {report.vehicleVin}</p>
+            <p><strong>Forgalomba helyezés / Műszaki érvényesség:</strong>{" "}
+              {report.vehicleRegistrationDate
+                ? new Intl.DateTimeFormat("hu-HU", { dateStyle: "medium" }).format(new Date(report.vehicleRegistrationDate))
+                : "—"}
+              {" / "}
+              {report.vehicleInspectionValidUntil
+                ? new Intl.DateTimeFormat("hu-HU", { dateStyle: "medium" }).format(new Date(report.vehicleInspectionValidUntil))
+                : "—"}
+            </p>
+            <p><strong>Hengerűrtartalom / Teljesítmény / Szín:</strong>{" "}
+              {report.vehicleEngineCapacity ? `${report.vehicleEngineCapacity} cm³` : "—"}
+              {" / "}
+              {report.vehiclePowerKw ? `${report.vehiclePowerKw} kW` : "—"}
+              {" / "}
+              {report.vehicleColor || "—"}
+            </p>
             <p><strong>Illetékes biztosító:</strong> {insurerLabel}</p>
             <p>
               <strong>Baleset időpontja:</strong>{" "}
@@ -334,6 +362,38 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
             error={errors.vehicleCheckOut}
             required
           />
+        </FormSection>
+
+        <FormSection
+          title="Jármű kategória, munkafolyamat, állapot"
+          description="Mindhárom csoportban pontosan egy választ kell megjelölni"
+        >
+          <div className="flex flex-col gap-4">
+            <RadioGroup
+              label="Jármű kategória"
+              name="vehicleCategory"
+              value={vehicleCategory}
+              onChange={(val) => setVehicleCategory(val as typeof vehicleCategory)}
+              options={[...VEHICLE_CATEGORY_OPTIONS]}
+              error={errors.vehicleCategory}
+            />
+            <RadioGroup
+              label="Munkafolyamat"
+              name="workProcess"
+              value={workProcess}
+              onChange={(val) => setWorkProcess(val as typeof workProcess)}
+              options={[...WORK_PROCESS_OPTIONS]}
+              error={errors.workProcess}
+            />
+            <RadioGroup
+              label="Jármű állapota"
+              name="vehicleCondition"
+              value={vehicleCondition}
+              onChange={(val) => setVehicleCondition(val as typeof vehicleCondition)}
+              options={[...VEHICLE_CONDITION_OPTIONS]}
+              error={errors.vehicleCondition}
+            />
+          </div>
         </FormSection>
 
         <FormSection title="A gépjármű felszereltsége" description="Jelölje be a gépjárműn található felszereléseket">

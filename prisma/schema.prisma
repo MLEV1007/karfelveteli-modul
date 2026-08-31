@@ -32,6 +32,21 @@ enum ReportStatus {
   FAILED_PDF
 }
 
+enum VehicleCategory {
+  SZEMELYGEPKOCSI
+  TEHERGEPKOCSI
+}
+
+enum WorkProcess {
+  CSERE
+  JAVITAS
+}
+
+enum VehicleCondition {
+  MEGBONTATLAN
+  MOZGASKEPES
+}
+
 model DamageReport {
   id              String   @id @default(cuid())
   referenceNumber String   @unique
@@ -56,6 +71,12 @@ model DamageReport {
   cascoInsurer     String?
   liabilityInsurer String?
   relevantInsurer  String?
+  // Jármű alapadatok (a felhasználó tölti ki, 2. lépés)
+  vehicleRegistrationDate     DateTime?
+  vehicleInspectionValidUntil DateTime?
+  vehicleEngineCapacity       Int?
+  vehiclePowerKw               Int?
+  vehicleColor                 String?
 
   // 3. lépés — Baleset körülményei
   accidentDate              DateTime?
@@ -107,6 +128,9 @@ model DamageReport {
   vehicleCheckOut DateTime?
 
   // Jegyzőkönyv — technikusi adatok
+  vehicleCategory          VehicleCategory?
+  workProcess              WorkProcess?
+  vehicleCondition         VehicleCondition?
   equipmentChecklist      Json?
   damageNotes             String?
   technicianName          String?

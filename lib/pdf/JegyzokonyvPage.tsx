@@ -11,9 +11,15 @@ import {
   SignatureBlock,
   DamageDiagram,
   formatDate,
+  formatDateOnly,
   formatDateTimeShort,
 } from "./shared"
 import { EQUIPMENT_CHECKLIST_ITEMS, isEquipmentChecked, formatEquipmentDetail, type EquipmentItemDef } from "@/lib/equipment"
+import {
+  VEHICLE_CATEGORY_OPTIONS,
+  WORK_PROCESS_OPTIONS,
+  VEHICLE_CONDITION_OPTIONS,
+} from "@/lib/protocolChoices"
 import type { FullPdfData } from "./types"
 
 function formatAccidentDate(raw: string): string {
@@ -42,6 +48,35 @@ function chunk<T>(items: T[], columns: number): T[][] {
   return Array.from({ length: columns }, (_, i) => items.slice(i * size, i * size + size))
 }
 
+// Egy kizárólagos-választós (2 elemű) mezőcsoport sora — checkBox/checkBoxFilled stílussal,
+// a kiválasztott opció kitöltve, egymás alatt (nem szabadon kombinálható, mint a felszereltség).
+function ExclusiveChoiceGroup({
+  title,
+  options,
+  selected,
+}: {
+  title: string
+  options: readonly { value: string; label: string }[]
+  selected?: string | null
+}) {
+  return (
+    <View style={{ flex: 1, padding: 4 }}>
+      <Text style={[s.label, { marginBottom: 2 }]}>{title}</Text>
+      {options.map((opt) => {
+        const checked = opt.value === selected
+        return (
+          <View key={opt.value} style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 1.5 }}>
+            <View style={checked ? s.checkBoxFilled : s.checkBox}>
+              {checked && <Text style={{ fontSize: 5, color: "#ffffff", fontWeight: "bold" }}>✓</Text>}
+            </View>
+            <Text style={{ fontSize: 6, color: "#111827" }}>{opt.label}</Text>
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
 // 4. oldal — Jegyzőkönyv (átadás-átvétel + felszereltségi állapotfelmérés)
 export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
   const hasDamagePoints = !!(data.damagePoints && data.damagePoints.length > 0)
@@ -65,6 +100,20 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
         <View style={s.row}>
           <Cell label="Lakcím" value={data.ownerAddress} flex={1} />
           <Cell label="Alvázszám (VIN)" value={data.vehicleVin} flex={1} noBorderRight />
+        </View>
+        <View style={s.row}>
+          <Cell label="Forgalomba helyezés dátuma" value={formatDateOnly(data.vehicleRegistrationDate)} flex={1} />
+          <Cell label="Műszaki érvényesség" value={formatDateOnly(data.vehicleInspectionValidUntil)} flex={1} />
+          <Cell
+            label="Hengerűrtartalom / Teljesítmény"
+            value={
+              data.vehicleEngineCapacity || data.vehiclePowerKw
+                ? `${data.vehicleEngineCapacity ? `${data.vehicleEngineCapacity} cm³` : "—"} / ${data.vehiclePowerKw ? `${data.vehiclePowerKw} kW` : "—"}`
+                : undefined
+            }
+            flex={1}
+          />
+          <Cell label="Szín" value={data.vehicleColor} width={70} noBorderRight />
         </View>
       </View>
 
@@ -103,6 +152,15 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
         <View style={s.row}>
           <Cell label="Átvétel időpontja" value={formatDateTimeShort(data.vehicleCheckIn)} flex={1} />
           <Cell label="Visszaadás időpontja" value={formatDateTimeShort(data.vehicleCheckOut)} flex={1} noBorderRight />
+        </View>
+      </View>
+
+      <View style={s.outerBorder}>
+        <SectionHeader title="JÁRMŰ KATEGÓRIA / MUNKAFOLYAMAT / ÁLLAPOT" />
+        <View style={[s.row, { padding: 2 }]}>
+          <ExclusiveChoiceGroup title="Jármű kategória" options={VEHICLE_CATEGORY_OPTIONS} selected={data.vehicleCategory} />
+          <ExclusiveChoiceGroup title="Munkafolyamat" options={WORK_PROCESS_OPTIONS} selected={data.workProcess} />
+          <ExclusiveChoiceGroup title="Jármű állapota" options={VEHICLE_CONDITION_OPTIONS} selected={data.vehicleCondition} />
         </View>
       </View>
 

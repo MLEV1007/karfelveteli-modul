@@ -36,6 +36,15 @@ function toFullPdfData(
     relevantInsurer: report.relevantInsurer ?? undefined,
     insuranceCompany: (report.insuranceCompany ?? "EGYEB") as FullPdfData["insuranceCompany"],
     insuranceCompanyOther: report.insuranceCompanyOther ?? undefined,
+    vehicleRegistrationDate: report.vehicleRegistrationDate
+      ? report.vehicleRegistrationDate.toISOString()
+      : undefined,
+    vehicleInspectionValidUntil: report.vehicleInspectionValidUntil
+      ? report.vehicleInspectionValidUntil.toISOString()
+      : undefined,
+    vehicleEngineCapacity: report.vehicleEngineCapacity ?? undefined,
+    vehiclePowerKw: report.vehiclePowerKw ?? undefined,
+    vehicleColor: report.vehicleColor ?? undefined,
     accidentDate: report.accidentDate ? report.accidentDate.toISOString() : undefined,
     accidentCountry: report.accidentCountry ?? undefined,
     accidentCity: report.accidentCity ?? undefined,
@@ -69,6 +78,9 @@ function toFullPdfData(
     gdprConsent: true,
     vehicleCheckIn: report.vehicleCheckIn ? report.vehicleCheckIn.toISOString() : "",
     vehicleCheckOut: report.vehicleCheckOut ? report.vehicleCheckOut.toISOString() : "",
+    vehicleCategory: (report.vehicleCategory ?? undefined) as FullPdfData["vehicleCategory"],
+    workProcess: (report.workProcess ?? undefined) as FullPdfData["workProcess"],
+    vehicleCondition: (report.vehicleCondition ?? undefined) as FullPdfData["vehicleCondition"],
     equipmentChecklist: (report.equipmentChecklist ?? getDefaultEquipmentChecklist()) as FullPdfData["equipmentChecklist"],
     damageNotes: report.damageNotes ?? "",
     technicianName: report.technicianName ?? "",

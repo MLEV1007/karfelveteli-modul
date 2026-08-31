@@ -19,6 +19,11 @@ export const step2Schema = z
       .string()
       .length(17, "A VIN szám pontosan 17 karakter hosszú")
       .regex(VIN_REGEX, "A VIN szám nem tartalmazhat I, O vagy Q betűt"),
+    vehicleRegistrationDate: z.string().optional(),
+    vehicleInspectionValidUntil: z.string().optional(),
+    vehicleEngineCapacity: z.coerce.number().int().min(0).optional(),
+    vehiclePowerKw: z.coerce.number().int().min(0).optional(),
+    vehicleColor: z.string().optional(),
     liableParty: z.enum(["own", "other", "both"], {
       errorMap: () => ({ message: "Válasszon felelős felet" }),
     }),
@@ -159,6 +164,52 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
             required
             placeholder="Pontosan 17 karakter, I/O/Q nélkül"
             maxLength={17}
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
+            label="Forgalomba helyezés dátuma"
+            name="vehicleRegistrationDate"
+            type="date"
+            value={data.vehicleRegistrationDate ?? ""}
+            onChange={handleInput("vehicleRegistrationDate")}
+            error={errors.vehicleRegistrationDate}
+          />
+          <Input
+            label="Műszaki érvényesség"
+            name="vehicleInspectionValidUntil"
+            type="date"
+            value={data.vehicleInspectionValidUntil ?? ""}
+            onChange={handleInput("vehicleInspectionValidUntil")}
+            error={errors.vehicleInspectionValidUntil}
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Input
+            label="Hengerűrtartalom (cm³)"
+            name="vehicleEngineCapacity"
+            type="number"
+            value={data.vehicleEngineCapacity?.toString() ?? ""}
+            onChange={handleInput("vehicleEngineCapacity")}
+            error={errors.vehicleEngineCapacity}
+            placeholder="pl. 1598"
+          />
+          <Input
+            label="Teljesítmény (kW)"
+            name="vehiclePowerKw"
+            type="number"
+            value={data.vehiclePowerKw?.toString() ?? ""}
+            onChange={handleInput("vehiclePowerKw")}
+            error={errors.vehiclePowerKw}
+            placeholder="pl. 85"
+          />
+          <Input
+            label="Szín"
+            name="vehicleColor"
+            value={data.vehicleColor ?? ""}
+            onChange={handleInput("vehicleColor")}
+            error={errors.vehicleColor}
+            placeholder="pl. Fekete"
           />
         </div>
       </section>

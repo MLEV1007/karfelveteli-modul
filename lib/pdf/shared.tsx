@@ -231,6 +231,18 @@ export function formatDate(date: Date): string {
   }).format(date)
 }
 
+export function formatDateOnly(value?: string | Date | null): string {
+  if (!value) return "—"
+  const d = typeof value === "string" ? new Date(value) : value
+  if (Number.isNaN(d.getTime())) return "—"
+  return new Intl.DateTimeFormat("hu-HU", {
+    timeZone: "Europe/Budapest",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d)
+}
+
 export function formatDateTimeShort(value?: string | Date | null): string {
   if (!value) return "—"
   const d = typeof value === "string" ? new Date(value) : value

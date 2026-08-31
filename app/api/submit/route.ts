@@ -56,6 +56,13 @@ export async function POST(req: NextRequest) {
           vehicleModel: data.vehicleModel,
           vehicleYear: data.vehicleYear ?? null,
           vehicleVin: data.vehicleVin,
+          vehicleRegistrationDate: data.vehicleRegistrationDate ? new Date(data.vehicleRegistrationDate) : null,
+          vehicleInspectionValidUntil: data.vehicleInspectionValidUntil
+            ? new Date(data.vehicleInspectionValidUntil)
+            : null,
+          vehicleEngineCapacity: data.vehicleEngineCapacity ?? null,
+          vehiclePowerKw: data.vehiclePowerKw ?? null,
+          vehicleColor: data.vehicleColor ?? null,
           hasCasco: data.hasCasco,
           cascoInsurer: data.cascoInsurer ?? null,
           liabilityInsurer: data.liabilityInsurer ?? null,

@@ -1,5 +1,10 @@
 import { z } from "zod"
 import { equipmentChecklistSchema } from "./equipment"
+import {
+  VEHICLE_CATEGORY_VALUES,
+  WORK_PROCESS_VALUES,
+  VEHICLE_CONDITION_VALUES,
+} from "./protocolChoices"
 
 // ─────────────────────────────────────────────────────────────
 // Enum-szerű literál listák — Prisma enumokkal szinkronban tartva
@@ -65,6 +70,22 @@ const vinSchema = z.preprocess(
 )
 
 const PHONE_REGEX = /^\+?[0-9\s-]{7,20}$/
+// YYYY-MM-DD dátum-only mező (forgalomba helyezés / műszaki érvényesség) — a natív
+// <input type="date"> ezt a formátumot adja.
+const dateOnlySchema = z
+  .string()
+  .optional()
+  .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), "Érvénytelen dátum formátum")
+
+const vehicleCategorySchema = z.enum(VEHICLE_CATEGORY_VALUES, {
+  errorMap: () => ({ message: "Válassza ki a jármű kategóriáját" }),
+})
+const workProcessSchema = z.enum(WORK_PROCESS_VALUES, {
+  errorMap: () => ({ message: "Válassza ki a munkafolyamatot" }),
+})
+const vehicleConditionSchema = z.enum(VEHICLE_CONDITION_VALUES, {
+  errorMap: () => ({ message: "Válassza ki a jármű állapotát" }),
+})
 const phoneSchema = z
   .string()
   .regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)")
@@ -120,6 +141,11 @@ const damageReportObjectSchema = z.object({
   relevantInsurer: z.string().optional(),
   insuranceCompany: insuranceCompanySchema,
   insuranceCompanyOther: z.string().optional(),
+  vehicleRegistrationDate: dateOnlySchema,
+  vehicleInspectionValidUntil: dateOnlySchema,
+  vehicleEngineCapacity: z.coerce.number().int().min(0).optional(),
+  vehiclePowerKw: z.coerce.number().int().min(0).optional(),
+  vehicleColor: z.string().optional(),
 
   // 3. lépés — Baleset körülményei
   accidentDate: accidentDateSchema,
@@ -216,6 +242,9 @@ export type EditReportInput = z.infer<typeof editReportSchema>
 const munkalapObjectSchema = z.object({
   vehicleCheckIn: z.string().min(1, "Az átvétel időpontja kötelező"),
   vehicleCheckOut: z.string().min(1, "A visszaadás időpontja kötelező"),
+  vehicleCategory: vehicleCategorySchema,
+  workProcess: workProcessSchema,
+  vehicleCondition: vehicleConditionSchema,
   equipmentChecklist: equipmentChecklistSchema,
   damageNotes: z.string().min(1, "Az átvételkori állapot rögzítése kötelező"),
   technicianName: z.string().min(2, "A technikus neve kötelező"),
