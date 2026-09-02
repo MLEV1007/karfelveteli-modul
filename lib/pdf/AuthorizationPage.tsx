@@ -98,21 +98,25 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
         </View>
       </View>
 
-      <View style={s.outerBorder}>
-        <SectionHeader title="MEGHATALMAZOTT ADATAI" />
-        <View style={s.row}>
-          <Cell label="Cégnév" value={grantee.companyName} flex={1} />
-          <Cell label="Adószám" value={grantee.taxNumber} flex={1} />
-          <Cell label="Bankszámlaszám" value={grantee.bankAccount} flex={1} noBorderRight />
+      {/* wrap={false} az utolsó tartalmi szekció + az aláírás-sor közös külső blokkján:
+          így az aláírás SOHA nem kerülhet egyedül egy (majdnem) üres oldal tetejére —
+          ha a kettő együtt nem fér ki az aktuális oldalon, az egész blokk (a
+          "Meghatalmazott adatai" szekcióval együtt) egyben csúszik a következő oldalra. */}
+      <View wrap={false}>
+        <View style={s.outerBorder}>
+          <SectionHeader title="MEGHATALMAZOTT ADATAI" />
+          <View style={s.row}>
+            <Cell label="Cégnév" value={grantee.companyName} flex={1} />
+            <Cell label="Adószám" value={grantee.taxNumber} flex={1} />
+            <Cell label="Bankszámlaszám" value={grantee.bankAccount} flex={1} noBorderRight />
+          </View>
         </View>
-      </View>
 
-      {/* wrap={false}: az aláírás-sor egyben marad, nem hasad ketté oldaltörésnél
-          (különben az aláírás levágva / üresen jelenne meg a következő oldalon). */}
-      <View style={s.signatureRow} wrap={false}>
-        <SignatureBlock label="Meghatalmazó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
-        <View style={{ flex: 1 }}>
-          <Text style={[s.label, { marginBottom: 20 }]}>Kelt: {formatDate(data.createdAt)}, {grantee.location ?? WORKSHOP_LOCATION_FALLBACK}</Text>
+        <View style={s.signatureRow}>
+          <SignatureBlock label="Meghatalmazó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.label, { marginBottom: 20 }]}>Kelt: {formatDate(data.createdAt)}, {grantee.location ?? WORKSHOP_LOCATION_FALLBACK}</Text>
+          </View>
         </View>
       </View>
 

@@ -198,56 +198,59 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
         </View>
       </View>
 
-      {/* 6. NYILATKOZATOK */}
-      <View style={s.outerBorder}>
-        <SectionHeader title="NYILATKOZATOK" />
-        <View style={s.row}>
-          <View style={{ flex: 1, borderRight: BORDER }}>
-            <View style={s.row}>
-              <Cell label="Felelős fél megjelölése" value={formatLiableParty(data.liableParty)} flex={1} noBorderRight />
-            </View>
-            {data.taxNumber && (
+      {/* 6-7. NYILATKOZATOK + ALÁÍRÁSOK — közös wrap={false} külső blokk: így az
+          aláírás SOHA nem kerülhet egyedül egy (majdnem) üres oldal tetejére — ha a kettő
+          együtt nem fér ki az aktuális oldalon, az egész blokk (a Nyilatkozatok szekcióval
+          együtt) egyben csúszik a következő oldalra. */}
+      <View wrap={false}>
+        <View style={s.outerBorder}>
+          <SectionHeader title="NYILATKOZATOK" />
+          <View style={s.row}>
+            <View style={{ flex: 1, borderRight: BORDER }}>
               <View style={s.row}>
-                <Cell label="Adószám (ÁFA visszaigénylés esetén)" value={data.taxNumber} flex={1} noBorderRight />
+                <Cell label="Felelős fél megjelölése" value={formatLiableParty(data.liableParty)} flex={1} noBorderRight />
               </View>
-            )}
-          </View>
-          <View style={{ flex: 2 }}>
-            <View style={s.row}>
-              <CheckCell label="Kábítószer / alkohol befolyás" checked={data.underInfluence} flex={1} />
-              <CheckCell label="Érvényes jogosítvány" checked={data.licenseValid} flex={1} />
-              <CheckCell label="Tulajdonjogi terhelés" checked={data.vehicleEncumbrance} flex={1} noBorderRight />
+              {data.taxNumber && (
+                <View style={s.row}>
+                  <Cell label="Adószám (ÁFA visszaigénylés esetén)" value={data.taxNumber} flex={1} noBorderRight />
+                </View>
+              )}
             </View>
-            <View style={s.row}>
-              <CheckCell label="DEKRA fotómásolási engedély" checked={data.consentToPhotocopy} flex={1} />
-              <CheckCell label="CASCO alapú kárrendezés igénylése" checked={data.cascoClaimRequest} flex={2} noBorderRight />
-            </View>
-            {data.vehicleEncumbrance && data.encumbranceFinancier && (
+            <View style={{ flex: 2 }}>
               <View style={s.row}>
-                <Cell label="Finanszírozó neve" value={data.encumbranceFinancier} flex={1} noBorderRight />
+                <CheckCell label="Kábítószer / alkohol befolyás" checked={data.underInfluence} flex={1} />
+                <CheckCell label="Érvényes jogosítvány" checked={data.licenseValid} flex={1} />
+                <CheckCell label="Tulajdonjogi terhelés" checked={data.vehicleEncumbrance} flex={1} noBorderRight />
               </View>
-            )}
+              <View style={s.row}>
+                <CheckCell label="DEKRA fotómásolási engedély" checked={data.consentToPhotocopy} flex={1} />
+                <CheckCell label="CASCO alapú kárrendezés igénylése" checked={data.cascoClaimRequest} flex={2} noBorderRight />
+              </View>
+              {data.vehicleEncumbrance && data.encumbranceFinancier && (
+                <View style={s.row}>
+                  <Cell label="Finanszírozó neve" value={data.encumbranceFinancier} flex={1} noBorderRight />
+                </View>
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* 7. ALÁÍRÁSOK — wrap={false}: az egész blokk (fejléc + mindkét aláírás) egyben marad,
-          nem hasad ketté oldaltörésnél (különben az egyik aláírás levágva / üresen jelenne meg). */}
-      <View style={s.outerBorder} wrap={false}>
-        <SectionHeader title="ALÁÍRÁSOK" />
-        <View style={s.row}>
-          <View style={[s.cell, { flex: 1, borderRight: BORDER }]}>
-            <SignatureBlock label="Tulajdonos aláírása" signatureDataUrl={data.ownerSignatureUrl} />
-          </View>
-          <View style={[s.cell, { flex: 1 }]}>
-            {data.driverSignatureUrl ? (
-              <SignatureBlock label="Vezető aláírása" signatureDataUrl={data.driverSignatureUrl} />
-            ) : (
-              <>
-                <Text style={s.label}>Kelt:</Text>
-                <Text style={[s.value, { marginTop: 8 }]}>{formatDate(data.createdAt)}</Text>
-              </>
-            )}
+        <View style={s.outerBorder}>
+          <SectionHeader title="ALÁÍRÁSOK" />
+          <View style={s.row}>
+            <View style={[s.cell, { flex: 1, borderRight: BORDER }]}>
+              <SignatureBlock label="Tulajdonos aláírása" signatureDataUrl={data.ownerSignatureUrl} />
+            </View>
+            <View style={[s.cell, { flex: 1 }]}>
+              {data.driverSignatureUrl ? (
+                <SignatureBlock label="Vezető aláírása" signatureDataUrl={data.driverSignatureUrl} />
+              ) : (
+                <>
+                  <Text style={s.label}>Kelt:</Text>
+                  <Text style={[s.value, { marginTop: 8 }]}>{formatDate(data.createdAt)}</Text>
+                </>
+              )}
+            </View>
           </View>
         </View>
       </View>

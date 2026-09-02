@@ -184,21 +184,25 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
         </View>
       </View>
 
-      <View style={s.outerBorder}>
-        <SectionHeader title="ÁTVÉTELKORI ÁLLAPOT / MEGJEGYZÉSEK" />
-        <View style={[s.cell, { minHeight: 30 }]}>
-          <Text style={[s.value, { fontWeight: "normal", lineHeight: 1.4 }]}>{data.damageNotes}</Text>
+      {/* wrap={false} az utolsó tartalmi szekció + az aláírás-sor közös külső blokkján:
+          így az aláírás SOHA nem kerülhet egyedül egy (majdnem) üres oldal tetejére —
+          ha a kettő együtt nem fér ki az aktuális oldalon, az egész blokk (a megjegyzés-
+          szekcióval együtt) egyben csúszik a következő oldalra. */}
+      <View wrap={false}>
+        <View style={s.outerBorder}>
+          <SectionHeader title="ÁTVÉTELKORI ÁLLAPOT / MEGJEGYZÉSEK" />
+          <View style={[s.cell, { minHeight: 30 }]}>
+            <Text style={[s.value, { fontWeight: "normal", lineHeight: 1.4 }]}>{data.damageNotes}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* wrap={false}: az aláírás-sor egyben marad, nem hasad ketté oldaltörésnél
-          (különben az egyik aláírás levágva / üresen jelenne meg a következő oldalon). */}
-      <View style={s.signatureRow} wrap={false}>
-        <SignatureBlock label="Átadó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
-        <SignatureBlock
-          label={`Átvevő (${data.technicianName}) aláírása`}
-          signatureDataUrl={data.technicianSignatureUrl}
-        />
+        <View style={s.signatureRow}>
+          <SignatureBlock label="Átadó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
+          <SignatureBlock
+            label={`Átvevő (${data.technicianName}) aláírása`}
+            signatureDataUrl={data.technicianSignatureUrl}
+          />
+        </View>
       </View>
 
       <PageFooter
