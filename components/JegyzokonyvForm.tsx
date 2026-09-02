@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useState } from "react"
 import type { DamageReport } from "@prisma/client"
 import { getInsuranceCompanyLabel } from "@/lib/validation"
 import {
@@ -13,7 +13,8 @@ import {
   WORK_PROCESS_OPTIONS,
   VEHICLE_CONDITION_OPTIONS,
 } from "@/lib/protocolChoices"
-import SignaturePad, { type SignaturePadHandle } from "@/components/ui/SignaturePad"
+import SignatureField from "@/components/ui/SignatureField"
+import SignatureModal from "@/components/ui/SignatureModal"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
@@ -151,8 +152,8 @@ function EquipmentItemRow({
 }
 
 export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
-  const sigRef = useRef<SignaturePadHandle>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(report.status === "COMPLETED")
@@ -175,13 +176,12 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
     setEquipment((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleSignatureEnd = () => {
-    if (!sigRef.current || sigRef.current.isEmpty()) return
-    setTechnicianSignatureUrl(sigRef.current.toDataURL("image/png"))
+  const handleSignatureConfirm = (dataUrl: string) => {
+    setTechnicianSignatureUrl(dataUrl)
+    setSignatureModalOpen(false)
   }
 
   const clearSignature = () => {
-    sigRef.current?.clear()
     setTechnicianSignatureUrl("")
   }
 
@@ -430,22 +430,21 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
             required
           />
 
-          <div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Technikus (átvevő) aláírása <span className="text-red-500">*</span>
-            </p>
-            <div className="border rounded-lg overflow-hidden bg-white">
-              <SignaturePad ref={sigRef} height={160} onEnd={handleSignatureEnd} />
-            </div>
-            {errors.technicianSignatureUrl && (
-              <p className="text-xs text-red-500 mt-1">{errors.technicianSignatureUrl}</p>
-            )}
-            <div className="mt-2">
-              <Button variant="secondary" type="button" onClick={clearSignature}>
-                Törlés
-              </Button>
-            </div>
-          </div>
+          <SignatureField
+            label="Technikus (átvevő) aláírása"
+            required
+            value={technicianSignatureUrl}
+            error={errors.technicianSignatureUrl}
+            onOpen={() => setSignatureModalOpen(true)}
+            onClear={clearSignature}
+          />
+
+          <SignatureModal
+            open={signatureModalOpen}
+            title="Technikus (átvevő) aláírása"
+            onCancel={() => setSignatureModalOpen(false)}
+            onConfirm={handleSignatureConfirm}
+          />
         </FormSection>
 
         <div className="flex items-center justify-end mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">

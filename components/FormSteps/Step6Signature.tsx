@@ -1,10 +1,11 @@
 "use client"
 
-import { useRef } from "react"
-import SignaturePad, { type SignaturePadHandle } from "@/components/ui/SignaturePad"
+import { useState } from "react"
 import { z } from "zod"
 import Button from "@/components/ui/Button"
 import Checkbox from "@/components/ui/Checkbox"
+import SignatureField from "@/components/ui/SignatureField"
+import SignatureModal from "@/components/ui/SignatureModal"
 
 export const step6Schema = z.object({
   ownerSignatureUrl: z.string().min(1, "A tulajdonos aláírása kötelező"),
@@ -29,6 +30,8 @@ type Props = {
   driverSameAsOwner?: boolean
 }
 
+type SignatureTarget = "owner" | "driver" | null
+
 export default function Step6Signature({
   data,
   onChange,
@@ -37,30 +40,20 @@ export default function Step6Signature({
   isSubmitting,
   driverSameAsOwner,
 }: Props) {
-  const ownerSigRef = useRef<SignaturePadHandle>(null)
-  const driverSigRef = useRef<SignaturePadHandle>(null)
+  const [activeTarget, setActiveTarget] = useState<SignatureTarget>(null)
   const penColor = "#1e293b"
 
-  const handleOwnerEnd = () => {
-    if (!ownerSigRef.current || ownerSigRef.current.isEmpty()) return
-    const dataUrl = ownerSigRef.current.toDataURL("image/png")
-    onChange("ownerSignatureUrl", dataUrl)
-  }
+  const targetLabel =
+    activeTarget === "owner"
+      ? "Tulajdonos aláírása"
+      : activeTarget === "driver"
+        ? "Vezető aláírása"
+        : ""
 
-  const handleDriverEnd = () => {
-    if (!driverSigRef.current || driverSigRef.current.isEmpty()) return
-    const dataUrl = driverSigRef.current.toDataURL("image/png")
-    onChange("driverSignatureUrl", dataUrl)
-  }
-
-  const clearOwner = () => {
-    ownerSigRef.current?.clear()
-    onChange("ownerSignatureUrl", "")
-  }
-
-  const clearDriver = () => {
-    driverSigRef.current?.clear()
-    onChange("driverSignatureUrl", "")
+  const handleConfirm = (dataUrl: string) => {
+    if (activeTarget === "owner") onChange("ownerSignatureUrl", dataUrl)
+    if (activeTarget === "driver") onChange("driverSignatureUrl", dataUrl)
+    setActiveTarget(null)
   }
 
   const canSubmit =
@@ -73,51 +66,32 @@ export default function Step6Signature({
       </h2>
 
       {/* Tulajdonos aláírása */}
-      <div>
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Tulajdonos aláírása <span className="text-red-500">*</span>
-        </p>
-        <div className="border rounded-lg overflow-hidden bg-white">
-          <SignaturePad
-            ref={ownerSigRef}
-            penColor={penColor}
-            backgroundColor="white"
-            height={180}
-            onEnd={handleOwnerEnd}
-          />
-        </div>
-        {errors.ownerSignatureUrl && (
-          <p className="text-xs text-red-500 mt-1">{errors.ownerSignatureUrl}</p>
-        )}
-        <div className="mt-2">
-          <Button variant="secondary" onClick={clearOwner} type="button">
-            Törlés
-          </Button>
-        </div>
-      </div>
+      <SignatureField
+        label="Tulajdonos aláírása"
+        required
+        value={data.ownerSignatureUrl}
+        error={errors.ownerSignatureUrl}
+        onOpen={() => setActiveTarget("owner")}
+        onClear={() => onChange("ownerSignatureUrl", "")}
+      />
 
       {/* Vezető aláírása — csak akkor kell, ha a vezető nem azonos a tulajdonossal */}
       {!driverSameAsOwner && (
-        <div>
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-            Vezető aláírása
-          </p>
-          <div className="border rounded-lg overflow-hidden bg-white">
-            <SignaturePad
-              ref={driverSigRef}
-              penColor={penColor}
-              backgroundColor="white"
-              height={180}
-              onEnd={handleDriverEnd}
-            />
-          </div>
-          <div className="mt-2">
-            <Button variant="secondary" onClick={clearDriver} type="button">
-              Törlés
-            </Button>
-          </div>
-        </div>
+        <SignatureField
+          label="Vezető aláírása"
+          value={data.driverSignatureUrl}
+          onOpen={() => setActiveTarget("driver")}
+          onClear={() => onChange("driverSignatureUrl", "")}
+        />
       )}
+
+      <SignatureModal
+        open={activeTarget !== null}
+        title={targetLabel}
+        penColor={penColor}
+        onCancel={() => setActiveTarget(null)}
+        onConfirm={handleConfirm}
+      />
 
       {/* GDPR */}
       <Checkbox
