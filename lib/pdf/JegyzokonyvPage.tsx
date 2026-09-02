@@ -191,7 +191,9 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
         </View>
       </View>
 
-      <View style={s.signatureRow}>
+      {/* wrap={false}: az aláírás-sor egyben marad, nem hasad ketté oldaltörésnél
+          (különben az egyik aláírás levágva / üresen jelenne meg a következő oldalon). */}
+      <View style={s.signatureRow} wrap={false}>
         <SignatureBlock label="Átadó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
         <SignatureBlock
           label={`Átvevő (${data.technicianName}) aláírása`}

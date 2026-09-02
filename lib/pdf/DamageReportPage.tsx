@@ -231,8 +231,9 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
         </View>
       </View>
 
-      {/* 7. ALÁÍRÁSOK */}
-      <View style={s.outerBorder}>
+      {/* 7. ALÁÍRÁSOK — wrap={false}: az egész blokk (fejléc + mindkét aláírás) egyben marad,
+          nem hasad ketté oldaltörésnél (különben az egyik aláírás levágva / üresen jelenne meg). */}
+      <View style={s.outerBorder} wrap={false}>
         <SectionHeader title="ALÁÍRÁSOK" />
         <View style={s.row}>
           <View style={[s.cell, { flex: 1, borderRight: BORDER }]}>

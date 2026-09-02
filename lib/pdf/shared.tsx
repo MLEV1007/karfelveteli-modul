@@ -431,7 +431,7 @@ export function SignatureBlock({
   fallbackText?: string
 }) {
   return (
-    <View style={s.signatureBox}>
+    <View style={s.signatureBox} wrap={false}>
       {signatureDataUrl ? (
         <Image src={signatureDataUrl} style={s.signatureImage} />
       ) : (

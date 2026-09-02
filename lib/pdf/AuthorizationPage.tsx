@@ -107,7 +107,9 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
         </View>
       </View>
 
-      <View style={s.signatureRow}>
+      {/* wrap={false}: az aláírás-sor egyben marad, nem hasad ketté oldaltörésnél
+          (különben az aláírás levágva / üresen jelenne meg a következő oldalon). */}
+      <View style={s.signatureRow} wrap={false}>
         <SignatureBlock label="Meghatalmazó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
         <View style={{ flex: 1 }}>
           <Text style={[s.label, { marginBottom: 20 }]}>Kelt: {formatDate(data.createdAt)}, {grantee.location ?? WORKSHOP_LOCATION_FALLBACK}</Text>
