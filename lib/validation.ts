@@ -123,6 +123,9 @@ const damageReportObjectSchema = z.object({
   driverName: z.string().optional(),
   driverAddress: z.string().optional(),
   driverPhone: z.string().optional(),
+  driverBirthDate: dateOnlySchema,
+  driverLicenseNumber: z.string().optional(),
+  driverLicenseValidUntil: dateOnlySchema,
   customerEmail: z.string().email("Érvénytelen e-mail cím"),
   customerPhone: phoneSchema,
 

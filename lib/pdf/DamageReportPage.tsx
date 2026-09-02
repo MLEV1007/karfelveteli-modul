@@ -1,5 +1,5 @@
 import { Page, View, Text } from "@react-pdf/renderer"
-import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, CheckCell, SignatureBlock, DamageDiagram, formatDate } from "./shared"
+import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, CheckCell, SignatureBlock, DamageDiagram, formatDate, formatDateOnly } from "./shared"
 import type { FullPdfData } from "./types"
 
 function formatAccidentDate(raw: string): string {
@@ -17,7 +17,14 @@ function formatLiableParty(party: string): string {
 
 // 1. oldal — Gépjármű kárbejelentő lap
 export default function DamageReportPage({ data }: { data: FullPdfData }) {
-  const hasDriver = !!(data.driverName || data.driverAddress || data.driverPhone)
+  const hasDriver = !!(
+    data.driverName ||
+    data.driverAddress ||
+    data.driverPhone ||
+    data.driverBirthDate ||
+    data.driverLicenseNumber ||
+    data.driverLicenseValidUntil
+  )
   const hasOtherVehicle = !!(data.otherVehiclePlate || data.otherVehicleType || data.otherVehicleColor)
   const hasLocationDetails = !!(data.roadNumber || data.kilometerMark)
   const hasDamagePoints = !!(data.damagePoints && data.damagePoints.length > 0)
@@ -48,6 +55,30 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
                 {data.driverAddress && (
                   <View style={s.row}>
                     <Cell label="Vezető címe" value={data.driverAddress} flex={1} />
+                  </View>
+                )}
+                {data.driverBirthDate && (
+                  <View style={s.row}>
+                    <Cell
+                      label="Vezető születési ideje"
+                      value={formatDateOnly(data.driverBirthDate)}
+                      flex={1}
+                    />
+                  </View>
+                )}
+                {(data.driverLicenseNumber || data.driverLicenseValidUntil) && (
+                  <View style={s.row}>
+                    {data.driverLicenseNumber && (
+                      <Cell label="Jogosítvány száma" value={data.driverLicenseNumber} flex={1} />
+                    )}
+                    {data.driverLicenseValidUntil && (
+                      <Cell
+                        label="Jogosítvány érvényessége"
+                        value={formatDateOnly(data.driverLicenseValidUntil)}
+                        flex={1}
+                        noBorderRight={!data.driverLicenseNumber}
+                      />
+                    )}
                   </View>
                 )}
               </>

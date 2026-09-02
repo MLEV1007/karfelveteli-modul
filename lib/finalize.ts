@@ -23,6 +23,11 @@ function toFullPdfData(
     driverName: report.driverName ?? undefined,
     driverAddress: report.driverAddress ?? undefined,
     driverPhone: report.driverPhone ?? undefined,
+    driverBirthDate: report.driverBirthDate ? report.driverBirthDate.toISOString() : undefined,
+    driverLicenseNumber: report.driverLicenseNumber ?? undefined,
+    driverLicenseValidUntil: report.driverLicenseValidUntil
+      ? report.driverLicenseValidUntil.toISOString()
+      : undefined,
     customerEmail: report.customerEmail,
     customerPhone: report.customerPhone ?? "",
     vehiclePlate: report.vehiclePlate,

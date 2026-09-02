@@ -58,6 +58,9 @@ model DamageReport {
   driverName    String?
   driverAddress String?
   driverPhone   String?
+  driverBirthDate         DateTime?
+  driverLicenseNumber     String?
+  driverLicenseValidUntil DateTime?
   customerEmail String
   customerPhone String?
 

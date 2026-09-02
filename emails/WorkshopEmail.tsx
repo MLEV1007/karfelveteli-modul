@@ -30,6 +30,18 @@ export default function WorkshopEmail({ data }: WorkshopEmailProps) {
       minute: "2-digit",
     }).format(date)
 
+  const formatDateOnly = (value?: string) => {
+    if (!value) return undefined
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return undefined
+    return new Intl.DateTimeFormat("hu-HU", {
+      timeZone: "Europe/Budapest",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d)
+  }
+
   const formatLiableParty = (party: string) => {
     const map: Record<string, string> = {
       own: "Saját felelősség",
@@ -70,6 +82,18 @@ export default function WorkshopEmail({ data }: WorkshopEmailProps) {
             {data.driverName && <DataRow label="Vezető neve" value={data.driverName} />}
             {data.driverAddress && (
               <DataRow label="Vezető címe" value={data.driverAddress} />
+            )}
+            {data.driverBirthDate && (
+              <DataRow label="Vezető születési ideje" value={formatDateOnly(data.driverBirthDate)} />
+            )}
+            {data.driverLicenseNumber && (
+              <DataRow label="Vezetői engedély száma" value={data.driverLicenseNumber} />
+            )}
+            {data.driverLicenseValidUntil && (
+              <DataRow
+                label="Vezetői engedély érvényessége"
+                value={formatDateOnly(data.driverLicenseValidUntil)}
+              />
             )}
             <DataRow
               label="E-mail"

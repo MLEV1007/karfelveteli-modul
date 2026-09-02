@@ -50,6 +50,9 @@ export default function EditForm({ report }: EditFormProps) {
     driverName: report.driverName ?? "",
     driverAddress: report.driverAddress ?? "",
     driverPhone: report.driverPhone ?? "",
+    driverBirthDate: report.driverBirthDate?.toISOString().split("T")[0] ?? "",
+    driverLicenseNumber: report.driverLicenseNumber ?? "",
+    driverLicenseValidUntil: report.driverLicenseValidUntil?.toISOString().split("T")[0] ?? "",
     customerEmail: report.customerEmail,
     customerPhone: report.customerPhone ?? "",
 
@@ -223,6 +226,29 @@ export default function EditForm({ report }: EditFormProps) {
             value={formData.driverPhone}
             onChange={(e) => updateField("driverPhone", e.target.value)}
             error={errors.driverPhone}
+          />
+          <Input
+            label="Vezető születési ideje"
+            name="driverBirthDate"
+            type="date"
+            value={formData.driverBirthDate}
+            onChange={(e) => updateField("driverBirthDate", e.target.value)}
+            error={errors.driverBirthDate}
+          />
+          <Input
+            label="Vezetői engedély száma"
+            name="driverLicenseNumber"
+            value={formData.driverLicenseNumber}
+            onChange={(e) => updateField("driverLicenseNumber", e.target.value)}
+            error={errors.driverLicenseNumber}
+          />
+          <Input
+            label="Vezetői engedély érvényességi ideje"
+            name="driverLicenseValidUntil"
+            type="date"
+            value={formData.driverLicenseValidUntil}
+            onChange={(e) => updateField("driverLicenseValidUntil", e.target.value)}
+            error={errors.driverLicenseValidUntil}
           />
           <Input
             label="E-mail cím"

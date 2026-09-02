@@ -12,6 +12,9 @@ export const step1Schema = z.object({
   driverName: z.string().optional(),
   driverAddress: z.string().optional(),
   driverPhone: z.string().optional(),
+  driverBirthDate: z.string().optional(),
+  driverLicenseNumber: z.string().optional(),
+  driverLicenseValidUntil: z.string().optional(),
   customerEmail: z.string().email("Érvénytelen e-mail cím"),
   customerPhone: z.string().regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)"),
 })
@@ -103,7 +106,7 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
 
         {data.driverSameAsOwner ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            A vezető adatai megegyeznek a tulajdonossal.
+            A vezető neve, címe és telefonszáma megegyezik a tulajdonossal.
           </p>
         ) : (
           <>
@@ -134,6 +137,35 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
             />
           </>
         )}
+
+        {/* Ezek a mezők a "Megegyezik a tulajdonossal" jelölőtől függetlenül mindig
+            láthatók — a tulajdonos adatai között nincs születési idő / jogosítvány. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
+            label="Vezető születési ideje"
+            name="driverBirthDate"
+            type="date"
+            value={data.driverBirthDate ?? ""}
+            onChange={handle("driverBirthDate")}
+            error={errors.driverBirthDate}
+          />
+          <Input
+            label="Vezetői engedély száma"
+            name="driverLicenseNumber"
+            value={data.driverLicenseNumber ?? ""}
+            onChange={handle("driverLicenseNumber")}
+            error={errors.driverLicenseNumber}
+            placeholder="pl. AB123456"
+          />
+        </div>
+        <Input
+          label="Vezetői engedély érvényességi ideje"
+          name="driverLicenseValidUntil"
+          type="date"
+          value={data.driverLicenseValidUntil ?? ""}
+          onChange={handle("driverLicenseValidUntil")}
+          error={errors.driverLicenseValidUntil}
+        />
       </section>
 
       {/* Kapcsolattartási adatok */}

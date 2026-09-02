@@ -62,6 +62,13 @@ export async function PATCH(req: NextRequest) {
         driverName: validatedData.driverName ?? null,
         driverAddress: validatedData.driverAddress ?? null,
         driverPhone: validatedData.driverPhone ?? null,
+        driverBirthDate: validatedData.driverBirthDate
+          ? new Date(validatedData.driverBirthDate)
+          : null,
+        driverLicenseNumber: validatedData.driverLicenseNumber ?? null,
+        driverLicenseValidUntil: validatedData.driverLicenseValidUntil
+          ? new Date(validatedData.driverLicenseValidUntil)
+          : null,
         customerEmail: validatedData.customerEmail,
         customerPhone: validatedData.customerPhone ?? null,
 
