@@ -387,9 +387,9 @@ export interface DamagePoint {
 }
 
 // A gépjármű felülnézeti sérülési ábrája — a Kárbejelentő és a Jegyzőkönyv oldal is használja.
-export function DamageDiagram({ points }: { points: DamagePoint[] }) {
+export function DamageDiagram({ points, height = 130 }: { points: DamagePoint[]; height?: number }) {
   return (
-    <Svg viewBox="0 0 400 310" style={{ width: "100%", height: 130 }}>
+    <Svg viewBox="0 0 400 310" style={{ width: "100%", height }}>
       <G transform="translate(111, 61) scale(3.8)" fill="#d1d5db" stroke="#9ca3af" strokeWidth="0.4">
         <Path d="M29.395,0H17.636c-3.117,0-5.643,3.467-5.643,6.584v34.804c0,3.116,2.526,5.644,5.643,5.644h11.759
           c3.116,0,5.644-2.527,5.644-5.644V6.584C35.037,3.467,32.511,0,29.395,0z M34.05,14.188v11.665l-2.729,0.351v-4.806

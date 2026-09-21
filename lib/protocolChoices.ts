@@ -37,6 +37,13 @@ export const VEHICLE_CONDITION_VALUES = VEHICLE_CONDITION_OPTIONS.map((o) => o.v
   ...VehicleConditionValue[],
 ]
 
+// ÁFA-visszatérítési jogosultság — a Jegyzőkönyvön és a Meghatalmazáson Igen/Nem
+// kizárólagos választóként jelenik meg (az adat a vatReclaimEligible boolean mező).
+export const VAT_RECLAIM_OPTIONS = [
+  { value: "IGEN", label: "Igen" },
+  { value: "NEM", label: "Nem" },
+] as const
+
 export function getOptionLabel<T extends { value: string; label: string }>(
   options: readonly T[],
   value: string | null | undefined

@@ -12,6 +12,11 @@ export interface EquipmentItemDef {
   numberSuffix?: string
 }
 
+// 2026-09: a ritkán használt 15 tételt (EDS, katalizátorok, pótféklámpa, velúrkárpit, sízsák,
+// telefon, külső hőmérő, fordulatszámmérő, fedélzeti számítógép, mechanikus tükör,
+// szervokormány, fejtámla, önzáró differenciálmű, szintszabályozás) kivettük, hogy a
+// Jegyzőkönyv egy A4 oldalra férjen. A korábbi kárügyek JSON-adataiban maradt kulcsokat
+// a rendszer egyszerűen figyelmen kívül hagyja.
 export const EQUIPMENT_CHECKLIST_ITEMS: EquipmentItemDef[] = [
   { key: "doors2", label: "2 ajtós", type: "boolean" },
   { key: "doors3", label: "3 ajtós", type: "boolean" },
@@ -19,12 +24,8 @@ export const EQUIPMENT_CHECKLIST_ITEMS: EquipmentItemDef[] = [
   { key: "doors5", label: "5 ajtós", type: "boolean" },
   { key: "abs", label: "ABS", type: "boolean" },
   { key: "asr", label: "ASR", type: "boolean" },
-  { key: "eds", label: "EDS", type: "boolean" },
-  { key: "catalystRegulated", label: "Szabályozott katalizátor", type: "boolean" },
-  { key: "catalystUnregulated", label: "Szabályozatlan katalizátor", type: "boolean" },
   { key: "towHook", label: "Vonóhorog", type: "boolean" },
   { key: "rearWiper", label: "Hátsó ablaktörlő", type: "boolean" },
-  { key: "auxBrakeLight", label: "Pótféklámpa", type: "boolean" },
   { key: "airbagDriver", label: "Légzsák a vezető oldalon", type: "boolean" },
   { key: "airbagPassenger", label: "Légzsák az utasoldalon", type: "boolean" },
   { key: "sideAirbag", label: "Oldallégzsák", type: "count" },
@@ -38,28 +39,17 @@ export const EQUIPMENT_CHECKLIST_ITEMS: EquipmentItemDef[] = [
   { key: "gearbox5", label: "5 fokozatú váltó", type: "boolean" },
   { key: "gearbox6", label: "6 fokozatú váltó", type: "boolean" },
   { key: "automaticGearbox", label: "Automata váltó", type: "number", numberSuffix: "sebességes" },
-  { key: "selfLockingDiff", label: "Önzáró differenciálmű", type: "boolean" },
   { key: "electronicSuspension", label: "Elektronikus futóműszabályozás", type: "boolean" },
-  { key: "levelControl", label: "Szintszabályozás", type: "boolean" },
-  { key: "powerSteering", label: "Szervokormány", type: "boolean" },
   { key: "headlightWasher", label: "Fényszórómosó", type: "boolean" },
   { key: "ac", label: "Légkondicionáló", type: "boolean" },
   { key: "automaticAc", label: "Automata légkondicionáló", type: "boolean" },
-  { key: "headrest", label: "Fejtámla", type: "count" },
-  { key: "velourUpholstery", label: "Velúr kárpit", type: "boolean" },
   { key: "leatherUpholstery", label: "Bőrkárpit", type: "boolean" },
   { key: "splitRearSeat", label: "Osztott hátsó ülés", type: "boolean" },
   { key: "childSeat", label: "Gyerekülés", type: "boolean" },
-  { key: "skiBag", label: "Sízsák", type: "boolean" },
   { key: "sportSeat", label: "Sportülés", type: "count" },
   { key: "heatedSeat", label: "Fűthető ülés", type: "count" },
-  { key: "phone", label: "Telefon", type: "boolean" },
-  { key: "onboardComputer", label: "Fedélzeti számítógép", type: "boolean" },
-  { key: "outdoorThermometer", label: "Külső hőmérő", type: "boolean" },
-  { key: "tachometer", label: "Fordulatszámmérő", type: "boolean" },
   { key: "cruiseControl", label: "Tempomat", type: "boolean" },
   { key: "parkingHeater", label: "Parkolófűtés", type: "boolean" },
-  { key: "mechanicalMirror", label: "Mechanikus tükör", type: "count" },
   { key: "electricMirror", label: "Elektromos tükör", type: "count" },
   { key: "sunroof", label: "Napfénytető", type: "count" },
   { key: "tiltRoof", label: "Tolótető", type: "count" },

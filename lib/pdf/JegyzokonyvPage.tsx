@@ -19,6 +19,7 @@ import {
   VEHICLE_CATEGORY_OPTIONS,
   WORK_PROCESS_OPTIONS,
   VEHICLE_CONDITION_OPTIONS,
+  VAT_RECLAIM_OPTIONS,
 } from "@/lib/protocolChoices"
 import type { FullPdfData } from "./types"
 
@@ -31,7 +32,7 @@ function EquipmentRow({ def, value }: { def: EquipmentItemDef; value: unknown })
   const checked = isEquipmentChecked(def, value as never)
   const detail = formatEquipmentDetail(def, value as never)
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 1.5 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 2, paddingVertical: 1.2 }}>
       <CheckMark checked={checked} size={7} />
       <Text style={{ fontSize: 6, color: "#111827" }}>
         {def.label}
@@ -58,12 +59,12 @@ function ExclusiveChoiceGroup({
   selected?: string | null
 }) {
   return (
-    <View style={{ flex: 1, padding: 4 }}>
-      <Text style={[s.label, { marginBottom: 2 }]}>{title}</Text>
+    <View style={{ flex: 1, padding: "3 4" }}>
+      <Text style={[s.label, { marginBottom: 1 }]}>{title}</Text>
       {options.map((opt) => {
         const checked = opt.value === selected
         return (
-          <View key={opt.value} style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 1.5 }}>
+          <View key={opt.value} style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 1 }}>
             <CheckMark checked={checked} />
             <Text style={{ fontSize: 6, color: "#111827" }}>{opt.label}</Text>
           </View>
@@ -77,7 +78,8 @@ function ExclusiveChoiceGroup({
 export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
   const hasDamagePoints = !!(data.damagePoints && data.damagePoints.length > 0)
   const equipment = data.equipmentChecklist as Record<string, unknown>
-  const columns = chunk(EQUIPMENT_CHECKLIST_ITEMS, 3)
+  // 5 oszlop (36 tétel -> 8 sor), hogy a Jegyzőkönyv egy A4 oldalra férjen
+  const columns = chunk(EQUIPMENT_CHECKLIST_ITEMS, 5)
 
   return (
     <Page size="A4" style={s.page}>
@@ -91,7 +93,7 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
       />
 
       <View style={[s.outerBorder, { marginTop: 4 }]}>
-        <SectionHeader title="ÜGYFÉL ÉS JÁRMŰ ADATAI" />
+        <SectionHeader title="ÜGYFÉL, JÁRMŰ ÉS KÁRESEMÉNY ADATAI" />
         <View style={s.row}>
           <Cell label="Tulajdonos neve" value={data.ownerName} flex={1} />
           <Cell label="Rendszám" value={data.vehiclePlate.toUpperCase()} width={90} />
@@ -115,14 +117,13 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
           />
           <Cell label="Szín" value={data.vehicleColor} width={70} noBorderRight />
         </View>
-      </View>
-
-      <View style={s.outerBorder}>
-        <SectionHeader title="A BALESET (KÁRESEMÉNY) KÖRÜLMÉNYEI" />
+        {/* A baleset körülményei — a jármű adatai blokkjába olvasztva */}
         <View style={s.row}>
-          {data.accidentDate && (
-            <Cell label="A baleset időpontja" value={formatAccidentDate(data.accidentDate)} width={120} />
-          )}
+          <Cell
+            label="A baleset időpontja"
+            value={data.accidentDate ? formatAccidentDate(data.accidentDate) : undefined}
+            width={100}
+          />
           <Cell label="Ország" value={data.accidentCountry} width={90} />
           <Cell label="Város / Település" value={data.accidentCity} flex={1} />
           <CheckCell label="Rendőrség intézkedett" checked={data.policeInvolved} width={110} noBorderRight />
@@ -133,40 +134,42 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
         <SectionHeader title="SÉRÜLÉS HELYE ÉS LEÍRÁSA" />
         <View style={s.row}>
           <View style={{ flex: 3, borderRight: hasDamagePoints ? BORDER : undefined }}>
-            <View style={[s.cell, { minHeight: hasDamagePoints ? 110 : 40 }]}>
+            <View style={[s.cell, { minHeight: hasDamagePoints ? 80 : 30, borderBottom: 0 }]}>
               <Text style={s.label}>A káresemény leírása</Text>
-              <Text style={[s.value, { lineHeight: 1.5, fontWeight: "normal" }]}>{data.damageDescription}</Text>
+              <Text style={[s.value, { lineHeight: 1.4, fontWeight: "normal" }]}>{data.damageDescription}</Text>
             </View>
           </View>
           {hasDamagePoints && (
-            <View style={{ flex: 2, padding: 6 }}>
-              <Text style={[s.label, { marginBottom: 4, textAlign: "center" }]}>Sérülés helye és iránya:</Text>
-              <DamageDiagram points={data.damagePoints!} />
+            <View style={{ flex: 2, padding: 3 }}>
+              <DamageDiagram points={data.damagePoints!} height={95} />
             </View>
           )}
         </View>
       </View>
 
+      {/* Átvétel / visszaadás + a kizárólagos választások (kategória, munkafolyamat,
+          állapot, ÁFA) egy közös blokkban */}
       <View style={s.outerBorder}>
-        <SectionHeader title="ÁTVÉTEL / VISSZAADÁS" />
+        <SectionHeader title="ÁTVÉTEL / VISSZAADÁS, KATEGÓRIA, MUNKAFOLYAMAT, ÁLLAPOT, ÁFA" />
         <View style={s.row}>
           <Cell label="Átvétel időpontja" value={formatDateTimeShort(data.vehicleCheckIn)} flex={1} />
           <Cell label="Visszaadás időpontja" value={formatDateTimeShort(data.vehicleCheckOut)} flex={1} noBorderRight />
         </View>
-      </View>
-
-      <View style={s.outerBorder}>
-        <SectionHeader title="JÁRMŰ KATEGÓRIA / MUNKAFOLYAMAT / ÁLLAPOT" />
-        <View style={[s.row, { padding: 2 }]}>
+        <View style={[s.row, { padding: 1 }]}>
           <ExclusiveChoiceGroup title="Jármű kategória" options={VEHICLE_CATEGORY_OPTIONS} selected={data.vehicleCategory} />
           <ExclusiveChoiceGroup title="Munkafolyamat" options={WORK_PROCESS_OPTIONS} selected={data.workProcess} />
           <ExclusiveChoiceGroup title="Jármű állapota" options={VEHICLE_CONDITION_OPTIONS} selected={data.vehicleCondition} />
+          <ExclusiveChoiceGroup
+            title="ÁFA-visszatérítésre jogosult"
+            options={VAT_RECLAIM_OPTIONS}
+            selected={data.vatReclaimEligible ? "IGEN" : "NEM"}
+          />
         </View>
       </View>
 
       <View style={s.outerBorder}>
         <SectionHeader title="A GÉPJÁRMŰ FELSZERELTSÉGE" />
-        <View style={[s.row, { padding: 5 }]}>
+        <View style={[s.row, { padding: "3 5" }]}>
           {columns.map((col, i) => (
             <View
               key={i}
@@ -191,17 +194,21 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
       <View wrap={false}>
         <View style={s.outerBorder}>
           <SectionHeader title="ÁTVÉTELKORI ÁLLAPOT / MEGJEGYZÉSEK" />
-          <View style={[s.cell, { minHeight: 30 }]}>
+          <View style={[s.cell, { minHeight: 24, borderBottom: 0 }]}>
             <Text style={[s.value, { fontWeight: "normal", lineHeight: 1.4 }]}>{data.damageNotes}</Text>
           </View>
         </View>
 
         <View style={s.signatureRow}>
-          <SignatureBlock label="Átadó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
-          <SignatureBlock
-            label={`Átvevő (${data.technicianName}) aláírása`}
-            signatureDataUrl={data.technicianSignatureUrl}
-          />
+          <View style={{ flex: 1 }}>
+            <SignatureBlock label="Átadó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <SignatureBlock
+              label={`Átvevő (${data.technicianName}) aláírása`}
+              signatureDataUrl={data.technicianSignatureUrl}
+            />
+          </View>
         </View>
       </View>
 
