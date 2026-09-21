@@ -1,5 +1,5 @@
 import { Page, View, Text } from "@react-pdf/renderer"
-import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, CheckCell, SignatureBlock, DamageDiagram, formatDate, formatDateOnly } from "./shared"
+import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, CheckCell, SignatureBlock, DamageDiagram, formatDate, formatDateOnly, formatDateTimeShort } from "./shared"
 import type { FullPdfData } from "./types"
 
 function formatAccidentDate(raw: string): string {
@@ -33,7 +33,10 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
     <Page size="A4" style={s.page}>
       <PageHeader
         title="GÉPJÁRMŰ KÁRBEJELENTŐ LAP"
-        subtitle={`Azonosító: ${data.referenceNumber} • Kitöltés időpontja: ${formatDate(data.createdAt)}`}
+        details={[
+          `Azonosító: ${data.referenceNumber}`,
+          `Kitöltés: ${formatDateTimeShort(data.createdAt)}`,
+        ]}
       />
 
       {/* 1. SZEMÉLYES ADATOK + JÁRMŰ ÉS BIZTOSÍTÁS */}

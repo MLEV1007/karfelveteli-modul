@@ -11,7 +11,6 @@ import {
   CheckMark,
   SignatureBlock,
   DamageDiagram,
-  formatDate,
   formatDateOnly,
   formatDateTimeShort,
 } from "./shared"
@@ -84,7 +83,11 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
     <Page size="A4" style={s.page}>
       <PageHeader
         title="JEGYZŐKÖNYV"
-        subtitle={`Azonosító: ${data.referenceNumber} • Lezárva: ${formatDate(data.munkalapClosedAt ?? new Date())}`}
+        details={[
+          `Azonosító: ${data.referenceNumber}`,
+          `Kitöltés: ${formatDateTimeShort(data.createdAt)}`,
+          `Lezárva: ${formatDateTimeShort(data.munkalapClosedAt ?? new Date())}`,
+        ]}
       />
 
       <View style={[s.outerBorder, { marginTop: 4 }]}>

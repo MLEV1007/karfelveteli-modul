@@ -1,6 +1,7 @@
 import { View, Text, Image, StyleSheet, Font, Svg, Path, Line, Circle, G, Polygon, Rect } from "@react-pdf/renderer"
 import path from "path"
 import fs from "fs"
+import { WORKSHOP_BRAND } from "@/lib/workshop"
 
 const fontsDir = path.join(process.cwd(), "lib", "fonts")
 const robotoRegular = fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf"))
@@ -37,6 +38,8 @@ export const s = StyleSheet.create({
   },
 
   // ── Fejléc ──────────────────────────────────────────────
+  // Bal oldalt a logó a sarokban, mellette a dokumentum címe, alatta az azonosító és a
+  // dátumok; jobb oldalt a cégadatok ("M1 Szerviz Tata Kft." + cím, telefon, web).
   headerRow: {
     flexDirection: "row",
     borderBottom: BORDER,
@@ -44,8 +47,18 @@ export const s = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
-    padding: 6,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: "5 6",
+    gap: 10,
+  },
+  logo: {
+    width: 104,
+    height: 25,
+    objectFit: "contain",
+  },
+  headerTitleBlock: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 13,
@@ -55,33 +68,24 @@ export const s = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 7,
-    color: "#6b7280",
-    marginTop: 2,
+    color: "#4b5563",
+    marginTop: 1.5,
   },
   headerRight: {
-    width: 200,
-    flexDirection: "row",
+    width: 150,
     borderLeft: BORDER,
-    alignItems: "center",
-    padding: 6,
-    gap: 8,
-  },
-  logo: {
-    width: 90,
-    height: 18,
-    objectFit: "contain",
-  },
-  workshopInfo: {
-    flex: 1,
+    justifyContent: "center",
+    padding: "5 8",
   },
   workshopName: {
     fontSize: 9,
     fontWeight: "bold",
     color: HEADER_BG,
+    marginBottom: 1,
   },
   workshopDetail: {
     fontSize: 6.5,
-    color: "#6b7280",
+    color: "#4b5563",
     marginTop: 1,
   },
 
@@ -238,22 +242,27 @@ export function formatDateTimeShort(value?: string | Date | null): string {
   }).format(d)
 }
 
-export function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
+// Közös fejléc mindhárom dokumentumhoz. A `details` sorok (azonosító, dátumok) a cím
+// alatt, egymás alatt jelennek meg.
+export function PageHeader({ title, details }: { title: string; details: string[] }) {
   return (
     <View style={s.headerRow}>
       <View style={s.headerLeft}>
-        <Text style={s.headerTitle}>{title}</Text>
-        <Text style={s.headerSubtitle}>{subtitle}</Text>
+        <Image src={logoBase64} style={s.logo} />
+        <View style={s.headerTitleBlock}>
+          <Text style={s.headerTitle}>{title}</Text>
+          {details.map((line, i) => (
+            <Text key={i} style={s.headerSubtitle}>
+              {line}
+            </Text>
+          ))}
+        </View>
       </View>
       <View style={s.headerRight}>
-        <Image src={logoBase64} style={s.logo} />
-        <View style={s.workshopInfo}>
-          <Text style={s.workshopName}>M1 SZERVIZ TATA</Text>
-          <Text style={s.workshopDetail}>Autóüveg · Karosszéria · Autószerviz</Text>
-          <Text style={s.workshopDetail}>2890 Tata, Kalapács u. 1.</Text>
-          <Text style={s.workshopDetail}>Tel.: 0670/540-1062</Text>
-          <Text style={s.workshopDetail}>www.m1szerviztata.hu</Text>
-        </View>
+        <Text style={s.workshopName}>{WORKSHOP_BRAND.legalName}</Text>
+        <Text style={s.workshopDetail}>{WORKSHOP_BRAND.address}</Text>
+        <Text style={s.workshopDetail}>Tel.: {WORKSHOP_BRAND.phone}</Text>
+        <Text style={s.workshopDetail}>{WORKSHOP_BRAND.website}</Text>
       </View>
     </View>
   )
@@ -264,7 +273,7 @@ export function PageFooter({ referenceNumber, note }: { referenceNumber: string;
     <View style={s.footer} fixed>
       <Text style={s.footerText}>{note}</Text>
       <Text style={s.footerRight}>
-        M1 Szerviz Tata • www.m1szerviztata.hu{"\n"}
+        {WORKSHOP_BRAND.legalName} • {WORKSHOP_BRAND.website}{"\n"}
         Azonosító: {referenceNumber}
       </Text>
     </View>

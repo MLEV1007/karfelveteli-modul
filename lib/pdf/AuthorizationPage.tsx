@@ -1,5 +1,5 @@
 import { Page, View, Text } from "@react-pdf/renderer"
-import { s, BORDER, CheckMark, PageHeader, PageFooter, SectionHeader, Cell, SignatureBlock, formatDate } from "./shared"
+import { s, BORDER, CheckMark, PageHeader, PageFooter, SectionHeader, Cell, SignatureBlock, formatDate, formatDateTimeShort } from "./shared"
 import { getInsuranceCompanyLabel } from "@/lib/validation"
 import type { LegalEntity } from "@/lib/workshop"
 import type { FullPdfData } from "./types"
@@ -19,7 +19,10 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
     <Page size="A4" style={s.page}>
       <PageHeader
         title="MEGHATALMAZÁS"
-        subtitle={`Azonosító: ${data.referenceNumber} • Kelt: ${formatDate(data.createdAt)}`}
+        details={[
+          `Azonosító: ${data.referenceNumber}`,
+          `Kitöltés: ${formatDateTimeShort(data.createdAt)}`,
+        ]}
       />
 
       <View style={[s.outerBorder, { marginTop: 4 }]}>

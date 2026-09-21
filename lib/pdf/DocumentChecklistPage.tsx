@@ -1,5 +1,5 @@
 import { Page, View, Text } from "@react-pdf/renderer"
-import { s, CheckMark, PageHeader, PageFooter, SectionHeader, formatDate } from "./shared"
+import { s, CheckMark, PageHeader, PageFooter, SectionHeader, formatDateTimeShort } from "./shared"
 import type { FullPdfData } from "./types"
 
 interface ChecklistItem {
@@ -69,7 +69,10 @@ export default function DocumentChecklistPage({ data }: { data: FullPdfData }) {
     <Page size="A4" style={s.page}>
       <PageHeader
         title="IRATÖSSZESÍTŐ"
-        subtitle={`Azonosító: ${data.referenceNumber} • Kelt: ${formatDate(data.createdAt)}`}
+        details={[
+          `Azonosító: ${data.referenceNumber}`,
+          `Kitöltés: ${formatDateTimeShort(data.createdAt)}`,
+        ]}
       />
 
       <Text style={[s.docTitle, { marginTop: 8 }]}>A KÁRÜGY INTÉZÉSÉHEZ SZÜKSÉGES MELLÉKLETEK</Text>

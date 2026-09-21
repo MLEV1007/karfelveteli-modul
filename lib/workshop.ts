@@ -1,6 +1,10 @@
-// Fix szerviz/márka adatok — a kárbejelentő fejlécén megjelenő brand
+// Fix szerviz/márka adatok — mindhárom PDF-dokumentum (Kárbejelentő, Jegyzőkönyv,
+// Meghatalmazás, Iratösszesítő) közös fejlécének jobb oldali sávja innen dolgozik.
 export const WORKSHOP_BRAND = {
   name: "M1 SZERVIZ TATA",
+  // A fejlécben megjelenő cégnév — mindhárom meghatalmazás-példányon is ez áll
+  // (a meghatalmazott cég adatai a szövegben és a "Meghatalmazott adatai" blokkban vannak).
+  legalName: "M1 Szerviz Tata Kft.",
   tagline: "Autóüveg · Karosszéria · Autószerviz",
   address: "2890 Tata, Kalapács u. 1.",
   phone: "0670/540-1062",
