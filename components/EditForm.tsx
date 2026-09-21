@@ -9,6 +9,7 @@ import {
   WORK_PROCESS_OPTIONS,
   VEHICLE_CONDITION_OPTIONS,
 } from "@/lib/protocolChoices"
+import { DAMAGE_TYPE_OPTIONS } from "@/lib/damageTypes"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
@@ -53,6 +54,7 @@ export default function EditForm({ report }: EditFormProps) {
     ownerName: report.ownerName,
     ownerAddress: report.ownerAddress ?? "",
     idOrTaxNumber: report.idOrTaxNumber ?? "",
+    driverSameAsOwner: report.driverSameAsOwner,
     driverName: report.driverName ?? "",
     driverAddress: report.driverAddress ?? "",
     driverPhone: report.driverPhone ?? "",
@@ -93,6 +95,7 @@ export default function EditForm({ report }: EditFormProps) {
     vehicleInspectionLocation: report.vehicleInspectionLocation ?? "",
 
     // Step 4
+    damageType: (report.damageType ?? "") as string,
     damageDescription: report.damageDescription ?? "",
     damagePoints: report.damagePoints as any[] ?? [],
 
@@ -215,6 +218,12 @@ export default function EditForm({ report }: EditFormProps) {
             value={formData.idOrTaxNumber}
             onChange={(e) => updateField("idOrTaxNumber", e.target.value)}
             error={errors.idOrTaxNumber}
+          />
+          <Checkbox
+            label="A vezető személye és a tulajdonos személye megegyezik."
+            name="driverSameAsOwner"
+            checked={formData.driverSameAsOwner}
+            onChange={(e) => updateField("driverSameAsOwner", e.target.checked)}
           />
           <Input
             label="Vezető neve"
@@ -543,6 +552,14 @@ export default function EditForm({ report }: EditFormProps) {
           title="4. Kár leírása"
           description="A sérülések és károk részletes leírása"
         >
+          <RadioGroup
+            label="A kár jellege"
+            name="damageType"
+            value={formData.damageType}
+            onChange={(val) => updateField("damageType", val)}
+            options={[...DAMAGE_TYPE_OPTIONS]}
+            error={errors.damageType}
+          />
           <Textarea
             label="Kár leírása"
             name="damageDescription"

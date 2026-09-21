@@ -365,6 +365,19 @@ export function CheckCell({
   )
 }
 
+// A vezető és a tulajdonos ugyanaz a személy-e. A korábbi kárügyeknél (driverSameAsOwner
+// NULL/false) azonosnak tekintjük, ha a vezető neve üres vagy megegyezik a tulajdonoséval —
+// így a régi PDF-ek újragenerálásakor sem jelenik meg kétszer ugyanaz a személy.
+export function isDriverSameAsOwner(d: {
+  driverSameAsOwner?: boolean | null
+  driverName?: string | null
+  ownerName: string
+}): boolean {
+  if (d.driverSameAsOwner) return true
+  const norm = (x?: string | null) => (x ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase("hu")
+  return !norm(d.driverName) || norm(d.driverName) === norm(d.ownerName)
+}
+
 export interface DamagePoint {
   x: number
   y: number

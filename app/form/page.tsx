@@ -107,6 +107,7 @@ const initialData: FormData = {
   additionalParties: "",
   vehicleInspectionLocation: "",
   // Step 4
+  damageType: "",
   damageDescription: "",
   damagePoints: [],
   photoUrls: [],
@@ -174,6 +175,7 @@ export default function FormPage() {
         driverBirthDate: formData.driverBirthDate,
         driverLicenseNumber: formData.driverLicenseNumber,
         driverLicenseValidUntil: formData.driverLicenseValidUntil,
+        driverSameAsOwner: formData.driverSameAsOwner,
         customerEmail: formData.customerEmail,
         customerPhone: formData.customerPhone,
       }
@@ -219,6 +221,7 @@ export default function FormPage() {
     } else if (currentStep === 4) {
       schema = step4Schema
       data = {
+        damageType: formData.damageType,
         damageDescription: formData.damageDescription,
         damagePoints: formData.damagePoints,
         photoUrls: formData.photoUrls,
@@ -246,6 +249,7 @@ export default function FormPage() {
       data = {
         ownerSignatureUrl: formData.ownerSignatureUrl,
         driverSignatureUrl: formData.driverSignatureUrl || undefined,
+        driverSameAsOwner: formData.driverSameAsOwner,
         gdprConsent: formData.gdprConsent,
       }
     } else {
@@ -388,6 +392,7 @@ export default function FormPage() {
         return (
           <Step4DamageAndPhotos
             data={{
+              damageType: formData.damageType,
               damageDescription: formData.damageDescription,
               damagePoints: formData.damagePoints,
               photoUrls: formData.photoUrls,

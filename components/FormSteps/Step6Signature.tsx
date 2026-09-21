@@ -7,13 +7,20 @@ import Checkbox from "@/components/ui/Checkbox"
 import SignatureField from "@/components/ui/SignatureField"
 import SignatureModal from "@/components/ui/SignatureModal"
 
-export const step6Schema = z.object({
-  ownerSignatureUrl: z.string().min(1, "A tulajdonos aláírása kötelező"),
-  driverSignatureUrl: z.string().optional(),
-  gdprConsent: z.literal(true, {
-    errorMap: () => ({ message: "Az adatkezelési hozzájárulás kötelező" }),
-  }),
-})
+export const step6Schema = z
+  .object({
+    ownerSignatureUrl: z.string().min(1, "A tulajdonos aláírása kötelező"),
+    driverSignatureUrl: z.string().optional(),
+    driverSameAsOwner: z.boolean().optional(),
+    gdprConsent: z.literal(true, {
+      errorMap: () => ({ message: "Az adatkezelési hozzájárulás kötelező" }),
+    }),
+  })
+  // Eltérő vezető és tulajdonos esetén mindkét aláírás kötelező
+  .refine((d) => d.driverSameAsOwner !== false || !!d.driverSignatureUrl, {
+    message: "A vezető aláírása kötelező",
+    path: ["driverSignatureUrl"],
+  })
 
 export type Step6Data = {
   ownerSignatureUrl: string
@@ -43,9 +50,10 @@ export default function Step6Signature({
   const [activeTarget, setActiveTarget] = useState<SignatureTarget>(null)
   const penColor = "#1e293b"
 
+  const ownerLabel = driverSameAsOwner ? "Tulajdonos / vezető aláírása" : "Tulajdonos aláírása"
   const targetLabel =
     activeTarget === "owner"
-      ? "Tulajdonos aláírása"
+      ? ownerLabel
       : activeTarget === "driver"
         ? "Vezető aláírása"
         : ""
@@ -57,7 +65,10 @@ export default function Step6Signature({
   }
 
   const canSubmit =
-    data.ownerSignatureUrl.length > 0 && data.gdprConsent && !isSubmitting
+    data.ownerSignatureUrl.length > 0 &&
+    (driverSameAsOwner || data.driverSignatureUrl.length > 0) &&
+    data.gdprConsent &&
+    !isSubmitting
 
   return (
     <div className="space-y-8">
@@ -65,9 +76,10 @@ export default function Step6Signature({
         Aláírás és beküldés
       </h2>
 
-      {/* Tulajdonos aláírása */}
+      {/* Tulajdonos aláírása — azonos személy esetén ez az egyetlen aláírás, és a
+          Kárbejelentő lapon a "Vezető aláírása" dobozba is ugyanez kerül */}
       <SignatureField
-        label="Tulajdonos aláírása"
+        label={ownerLabel}
         required
         value={data.ownerSignatureUrl}
         error={errors.ownerSignatureUrl}
@@ -75,10 +87,18 @@ export default function Step6Signature({
         onClear={() => onChange("ownerSignatureUrl", "")}
       />
 
-      {/* Vezető aláírása — csak akkor kell, ha a vezető nem azonos a tulajdonossal */}
+      {driverSameAsOwner && (
+        <p className="-mt-6 text-xs text-gray-500 dark:text-gray-400">
+          A vezető és a tulajdonos ugyanaz a személy, ezért elég egyszer aláírni.
+        </p>
+      )}
+
+      {/* Vezető aláírása — eltérő személy esetén kötelező */}
       {!driverSameAsOwner && (
         <SignatureField
           label="Vezető aláírása"
+          required
+          error={errors.driverSignatureUrl}
           value={data.driverSignatureUrl}
           onOpen={() => setActiveTarget("driver")}
           onClear={() => onChange("driverSignatureUrl", "")}

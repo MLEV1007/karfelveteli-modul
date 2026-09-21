@@ -59,6 +59,7 @@ export async function PATCH(req: NextRequest) {
         ownerName: validatedData.ownerName,
         ownerAddress: validatedData.ownerAddress ?? null,
         idOrTaxNumber: validatedData.idOrTaxNumber ?? null,
+        driverSameAsOwner: validatedData.driverSameAsOwner,
         driverName: validatedData.driverName ?? null,
         driverAddress: validatedData.driverAddress ?? null,
         driverPhone: validatedData.driverPhone ?? null,
@@ -104,6 +105,7 @@ export async function PATCH(req: NextRequest) {
         vehicleInspectionLocation: validatedData.vehicleInspectionLocation ?? null,
 
         // Step 4
+        damageType: validatedData.damageType,
         damageDescription: validatedData.damageDescription ?? null,
         damagePoints: validatedData.damagePoints ?? [],
 

@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
           ownerName: data.ownerName,
           ownerAddress: data.ownerAddress,
           idOrTaxNumber: data.idOrTaxNumber,
+          driverSameAsOwner: data.driverSameAsOwner ?? false,
           driverName: data.driverName ?? null,
           driverAddress: data.driverAddress ?? null,
           driverPhone: data.driverPhone ?? null,
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
           otherVehicleColor: data.otherVehicleColor ?? null,
           additionalParties: data.additionalParties ?? null,
           vehicleInspectionLocation: data.vehicleInspectionLocation ?? null,
+          damageType: data.damageType ?? null,
           damageDescription: data.damageDescription ?? null,
           damagePoints: data.damagePoints ?? [],
           photoUrls: data.photoUrls ?? [],
@@ -122,7 +124,9 @@ export async function POST(req: NextRequest) {
         ? await uploadSignature(data.ownerSignatureUrl, data.vehiclePlate, report.id, "owner")
         : null
 
-      const driverSigUrl = data.driverSignatureUrl
+      // Azonos vezető és tulajdonos esetén csak egy aláírás van (a tulajdonosé) — a PDF
+      // ugyanazt teszi mindkét dobozba, külön vezetői aláírást nem tárolunk.
+      const driverSigUrl = data.driverSignatureUrl && !data.driverSameAsOwner
         ? await uploadSignature(data.driverSignatureUrl, data.vehiclePlate, report.id, "driver")
         : null
 

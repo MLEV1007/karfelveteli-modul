@@ -17,11 +17,14 @@ export const step1Schema = z.object({
   driverLicenseValidUntil: z.string().optional(),
   customerEmail: z.string().email("Érvénytelen e-mail cím"),
   customerPhone: z.string().regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)"),
+  driverSameAsOwner: z.boolean(),
+}).refine((d) => d.driverSameAsOwner || (d.driverName ?? "").trim().length >= 2, {
+  // Eltérő személy esetén a vezető nevét meg kell adni (különben a PDF vezetői blokkja üres lenne)
+  message: "Adja meg a vezető nevét, vagy jelölje, hogy megegyezik a tulajdonossal",
+  path: ["driverName"],
 })
 
-export type Step1Data = z.infer<typeof step1Schema> & {
-  driverSameAsOwner: boolean
-}
+export type Step1Data = z.infer<typeof step1Schema>
 
 interface Step1Props {
   data: Step1Data
@@ -48,6 +51,12 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
       onChange("driverName", data.ownerName ?? "")
       onChange("driverAddress", data.ownerAddress ?? "")
       onChange("driverPhone", data.customerPhone ?? "")
+    } else {
+      // Eltérő személy: a tulajdonostól átmásolt értékeket töröljük, hogy a vezető
+      // adatait ténylegesen megadják (és ne a tulajdonos adatai szerepeljenek kétszer).
+      onChange("driverName", "")
+      onChange("driverAddress", "")
+      onChange("driverPhone", "")
     }
   }
 
@@ -89,20 +98,26 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
 
       {/* Vezető adatai */}
       <section className="flex flex-col gap-4">
-        <div className="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-2 gap-4">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
-            Vezető adatai
-          </h2>
-          <label className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 cursor-pointer select-none whitespace-nowrap">
-            <input
-              type="checkbox"
-              checked={data.driverSameAsOwner}
-              onChange={(e) => handleSameAsOwner(e.target.checked)}
-              className="w-4 h-4 rounded"
-            />
-            Megegyezik a tulajdonossal
-          </label>
-        </div>
+        <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
+          Vezető adatai
+        </h2>
+        <label
+          className={`flex items-center gap-3 min-h-[56px] px-4 py-3 rounded-xl border-2 cursor-pointer select-none ${
+            data.driverSameAsOwner
+              ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400"
+              : "border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={data.driverSameAsOwner}
+            onChange={(e) => handleSameAsOwner(e.target.checked)}
+            className="h-5 w-5 shrink-0 rounded"
+          />
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-100">
+            A vezető személye és a tulajdonos személye megegyezik.
+          </span>
+        </label>
 
         {data.driverSameAsOwner ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">

@@ -5,8 +5,20 @@ import { z } from "zod"
 import Textarea from "@/components/ui/Textarea"
 import Input from "@/components/ui/Input"
 import Button from "@/components/ui/Button"
+import RadioGroup from "@/components/ui/RadioGroup"
+import {
+  DAMAGE_TYPE_OPTIONS,
+  DAMAGE_TYPE_VALUES,
+  DAMAGE_TYPE_PRESET_DESCRIPTIONS,
+  isPresetOrEmptyDescription,
+  type DamageTypeValue,
+} from "@/lib/damageTypes"
 
 export const step4Schema = z.object({
+  damageType: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.enum(DAMAGE_TYPE_VALUES).optional()
+  ),
   damageDescription: z
     .string()
     .min(20, "Kérjük részletesebben írja le (min. 20 karakter)"),
@@ -25,6 +37,7 @@ export const step4Schema = z.object({
 })
 
 export type Step4Data = {
+  damageType: DamageTypeValue | ""
   damageDescription: string
   damagePoints: { x: number; y: number; dx: number; dy: number; label: string }[]
   photoUrls: string[]
@@ -224,6 +237,16 @@ export default function Step4DamageAndPhotos({ data, onChange, errors }: Props) 
     )
   }
 
+  // Szélvédőjavítás / -csere: a leírás a rögzített mondattal töltődik ki, de csak ha
+  // még üres vagy egy másik előre megadott mondat áll benne — az ügyfél saját szövege
+  // nem vész el. "Egyéb kár" esetén az előre megadott mondat törlődik.
+  const handleDamageTypeChange = (value: string) => {
+    const type = value as DamageTypeValue
+    onChange("damageType", type)
+    if (!isPresetOrEmptyDescription(data.damageDescription)) return
+    onChange("damageDescription", DAMAGE_TYPE_PRESET_DESCRIPTIONS[type] ?? "")
+  }
+
   // Húzás közbeni preview nyíl dx/dy
   const previewDx = drag.currentX - drag.startX
   const previewDy = drag.currentY - drag.startY
@@ -234,6 +257,16 @@ export default function Step4DamageAndPhotos({ data, onChange, errors }: Props) 
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         Kár leírása és sérülés jelölése
       </h2>
+
+      {/* Gyors opciók — a két szélvédős opció kitölti a leírást (utána módosítható) */}
+      <RadioGroup
+        label="A kár jellege"
+        name="damageType"
+        value={data.damageType}
+        onChange={handleDamageTypeChange}
+        options={[...DAMAGE_TYPE_OPTIONS]}
+        error={errors.damageType}
+      />
 
       {/* Szöveges leírás */}
       <Textarea

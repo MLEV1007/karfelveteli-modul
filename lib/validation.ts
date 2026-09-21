@@ -5,6 +5,7 @@ import {
   WORK_PROCESS_VALUES,
   VEHICLE_CONDITION_VALUES,
 } from "./protocolChoices"
+import { DAMAGE_TYPE_VALUES } from "./damageTypes"
 
 // ─────────────────────────────────────────────────────────────
 // Enum-szerű literál listák — Prisma enumokkal szinkronban tartva
@@ -125,6 +126,9 @@ const damageReportObjectSchema = z.object({
   ownerName: z.string().min(2, "Legalább 2 karakter szükséges"),
   ownerAddress: z.string().min(2, "A lakcím megadása kötelező"),
   idOrTaxNumber: z.string().min(5, "Adjon meg érvényes személyi igazolvány- vagy adószámot"),
+  // "A vezető személye és a tulajdonos személye megegyezik" — opcionális, hogy a régi
+  // (mező nélküli) rekordok szerkesztése is érvényes maradjon.
+  driverSameAsOwner: z.boolean().optional(),
   driverName: z.string().optional(),
   driverAddress: z.string().optional(),
   driverPhone: z.string().optional(),
@@ -172,6 +176,7 @@ const damageReportObjectSchema = z.object({
   vehicleInspectionLocation: z.string().optional(),
 
   // 4. lépés — Kár és sérülés
+  damageType: z.preprocess(emptyToUndefined, z.enum(DAMAGE_TYPE_VALUES).optional()),
   damageDescription: z.string().min(20, "A kár leírása legalább 20 karakter kell legyen"),
   damagePoints: z
     .array(
@@ -212,10 +217,20 @@ const damageReportObjectSchema = z.object({
   }),
 })
 
-export const damageReportSchema = damageReportObjectSchema.refine(
-  insuranceOtherRequired,
-  insuranceOtherRefinement
-)
+// Eltérő vezető és tulajdonos esetén a vezető aláírása is kötelező (azonos személynél
+// egyszer írnak alá, és ugyanaz az aláírás kerül mindkét dobozba).
+function driverSignatureRequired(data: { driverSameAsOwner?: boolean; driverSignatureUrl?: string }) {
+  return data.driverSameAsOwner !== false || !!data.driverSignatureUrl
+}
+
+const driverSignatureRefinement = {
+  message: "A vezető aláírása kötelező, ha a vezető nem azonos a tulajdonossal",
+  path: ["driverSignatureUrl"],
+}
+
+export const damageReportSchema = damageReportObjectSchema
+  .refine(insuranceOtherRequired, insuranceOtherRefinement)
+  .refine(driverSignatureRequired, driverSignatureRefinement)
 
 export type DamageReportInput = z.infer<typeof damageReportObjectSchema>
 

@@ -47,14 +47,32 @@ enum VehicleCondition {
   MOZGASKEPES
 }
 
+// Kárleírás gyors opciói (4. lépés) — lásd lib/damageTypes.ts
+enum DamageType {
+  SZELVEDO_JAVITAS
+  SZELVEDO_CSERE
+  EGYEB
+}
+
+// A tulajdonos (meghatalmazó) típusa — a feliratok (név/cégnév, lakcím/székhely,
+// okmányszám/adószám) ehhez igazodnak. Az azonosító továbbra is az idOrTaxNumber mezőben van.
+enum OwnerType {
+  MAGANSZEMELY
+  CEG
+}
+
 model DamageReport {
   id              String   @id @default(cuid())
   referenceNumber String   @unique
   createdAt       DateTime @default(now())
 
   // 1. lépés — Személyes adatok
+  ownerType     OwnerType?
   ownerName     String
   ownerAddress  String?
+  // "A vezető személye és a tulajdonos személye megegyezik" — ekkor egyszer írnak alá,
+  // és ugyanaz az aláírás kerül mindkét dobozba (Vezető / Tulajdonos aláírása).
+  driverSameAsOwner Boolean @default(false)
   driverName    String?
   driverAddress String?
   driverPhone   String?
@@ -98,6 +116,7 @@ model DamageReport {
   vehicleInspectionLocation String?
 
   // 4. lépés — Kár leírása
+  damageType        DamageType?
   damageDescription String?
   damagePoints      Json?
   photoUrls         String[]
@@ -147,6 +166,9 @@ model DamageReport {
   // A 3 önálló Meghatalmazás-PDF Supabase Storage URL-jei, LegalEntity.key szerinti kulcsokkal
   // ({ m1, autouveg, bodrogi }) — csak a műhely kapja meg emailben, lásd lib/finalize.ts.
   authorizationPdfUrls       Json?
+  // A technikus által a Jegyzőkönyv lezárásakor kiválasztott meghatalmazások
+  // (LegalEntity.key: "m1" | "autouveg" | "bodrogi"). Üres tömb (régi rekord) = mindhárom.
+  selectedAuthorizations     String[] @default([])
   munkalapClosedAt          DateTime?
   pdfErrorMessage           String?
 
