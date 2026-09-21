@@ -13,6 +13,8 @@ import {
   WORK_PROCESS_OPTIONS,
   VEHICLE_CONDITION_OPTIONS,
 } from "@/lib/protocolChoices"
+import { WORKSHOP_LEGAL_ENTITIES } from "@/lib/workshop"
+import { isWindshieldDamage } from "@/lib/damageTypes"
 import SignatureField from "@/components/ui/SignatureField"
 import SignatureModal from "@/components/ui/SignatureModal"
 import FormSection from "./ui/FormSection"
@@ -168,6 +170,19 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
   const [damageNotes, setDamageNotes] = useState(report.damageNotes ?? "")
   const [technicianName, setTechnicianName] = useState(report.technicianName ?? "")
   const [technicianSignatureUrl, setTechnicianSignatureUrl] = useState("")
+  // Szükséges meghatalmazás(ok) — szélvédős kárnál az Autóüveg előre bejelölve (módosítható)
+  const [selectedAuthorizations, setSelectedAuthorizations] = useState<string[]>(
+    report.selectedAuthorizations && report.selectedAuthorizations.length > 0
+      ? report.selectedAuthorizations
+      : isWindshieldDamage(report.damageType)
+        ? ["autouveg"]
+        : []
+  )
+  const toggleAuthorization = (key: string, checked: boolean) => {
+    setSelectedAuthorizations((prev) =>
+      checked ? Array.from(new Set([...prev, key])) : prev.filter((k) => k !== key)
+    )
+  }
   const [equipment, setEquipment] = useState<Record<string, unknown>>(
     (report.equipmentChecklist as Record<string, unknown> | null) ?? getDefaultEquipmentChecklist()
   )
@@ -190,6 +205,13 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (selectedAuthorizations.length === 0) {
+      setErrors({ selectedAuthorizations: "Legalább egy meghatalmazást ki kell választani" })
+      setSubmitError("Válassza ki a szükséges meghatalmazás(oka)t.")
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitError(null)
     setErrors({})
@@ -204,6 +226,7 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
           vehicleCategory,
           workProcess,
           vehicleCondition,
+          selectedAuthorizations,
           equipmentChecklist: equipment,
           damageNotes,
           technicianName,
@@ -273,8 +296,9 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
       <Card>
         <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
           <p className="text-green-800 dark:text-green-200 text-sm font-medium">
-            ✓ A jegyzőkönyv lezárva, a végleges dokumentumok (Kárbejelentő, Meghatalmazás,
-            Iratösszesítő, Jegyzőkönyv) kiküldve az ügyfélnek és a szerviznek.
+            ✓ A jegyzőkönyv lezárva, a végleges dokumentumok (Kárbejelentő, Iratösszesítő,
+            Jegyzőkönyv és a kiválasztott meghatalmazások külön PDF-ben) kiküldve az ügyfélnek és a
+            szerviznek.
           </p>
         </div>
       </Card>
@@ -393,6 +417,26 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
               options={[...VEHICLE_CONDITION_OPTIONS]}
               error={errors.vehicleCondition}
             />
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="Szükséges meghatalmazás(ok)"
+          description="Csak a kiválasztott meghatalmazások készülnek el, cégenként külön PDF-ben — ezeket az ügyfél és a műhely kapja meg. Legalább egyet ki kell választani."
+        >
+          <div className="flex flex-col gap-1">
+            {WORKSHOP_LEGAL_ENTITIES.map((entity) => (
+              <Checkbox
+                key={entity.key}
+                label={entity.companyName}
+                name={`authorization-${entity.key}`}
+                checked={selectedAuthorizations.includes(entity.key)}
+                onChange={(e) => toggleAuthorization(entity.key, e.target.checked)}
+              />
+            ))}
+            {errors.selectedAuthorizations && (
+              <p className="text-xs text-red-500">{errors.selectedAuthorizations}</p>
+            )}
           </div>
         </FormSection>
 

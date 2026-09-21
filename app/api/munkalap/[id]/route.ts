@@ -72,6 +72,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         vehicleCategory: data.vehicleCategory,
         workProcess: data.workProcess,
         vehicleCondition: data.vehicleCondition,
+        selectedAuthorizations: data.selectedAuthorizations,
         equipmentChecklist: data.equipmentChecklist,
         damageNotes: data.damageNotes,
         technicianName: data.technicianName,

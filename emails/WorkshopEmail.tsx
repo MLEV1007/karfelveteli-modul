@@ -17,9 +17,11 @@ import type { DamageReportInput } from "@/lib/validation"
 
 interface WorkshopEmailProps {
   data: DamageReportInput & { id: string; referenceNumber: string; createdAt: Date; editToken?: string }
+  // A mellékelt (a technikus által kiválasztott) meghatalmazások cégnevei
+  authorizationNames?: string[]
 }
 
-export default function WorkshopEmail({ data }: WorkshopEmailProps) {
+export default function WorkshopEmail({ data, authorizationNames = [] }: WorkshopEmailProps) {
   const formatDate = (date: Date) =>
     new Intl.DateTimeFormat("hu-HU", {
       timeZone: "Europe/Budapest",
@@ -246,6 +248,14 @@ export default function WorkshopEmail({ data }: WorkshopEmailProps) {
             <Text style={footerNote}>
               A teljes kárfelvételi lapot PDF formátumban csatoltan küldjük.
             </Text>
+            {authorizationNames.length > 0 && (
+              <Text style={footerNote}>
+                Csatolt meghatalmazás{authorizationNames.length > 1 ? "ok (cégenként külön PDF-ben)" : ""}:{" "}
+                <strong>{authorizationNames.join(", ")}</strong>. A meghatalmazás-fájlok egyenként,
+                közvetlenül továbbíthatók az illetékes biztosítónak — a rendszer a biztosítónak nem küld
+                semmit.
+              </Text>
+            )}
             <Text style={footerNote}>
               Azonosító: <strong>{data.referenceNumber}</strong>
             </Text>

@@ -1,9 +1,9 @@
 import type { DamageReport } from "@prisma/client"
 import { randomUUID } from "crypto"
 import { prisma } from "./db"
-import { generateMainReportPDF, generateAuthorizationPdfs, generateCombinedAuthorizationPdf, type FullPdfData } from "./pdf"
+import { generateMainReportPDF, generateAuthorizationPdfs, type FullPdfData } from "./pdf"
 import { sendFinalReportEmails } from "./email"
-import { uploadFinalPdf, uploadAuthorizationPdfs, uploadCombinedAuthorizationPdf, downloadSignatureAsBase64 } from "./storage"
+import { uploadFinalPdf, uploadAuthorizationPdfs, downloadSignatureAsBase64 } from "./storage"
 import { getDefaultEquipmentChecklist } from "./equipment"
 
 // A tárolt Prisma rekordot a PDF-generátor által várt alakra hozza.
@@ -91,6 +91,8 @@ function toFullPdfData(
     vehicleCategory: (report.vehicleCategory ?? undefined) as FullPdfData["vehicleCategory"],
     workProcess: (report.workProcess ?? undefined) as FullPdfData["workProcess"],
     vehicleCondition: (report.vehicleCondition ?? undefined) as FullPdfData["vehicleCondition"],
+    // Üres tömb = régi kárügy -> mindhárom meghatalmazás elkészül (lásd resolveSelectedAuthorizations)
+    selectedAuthorizations: (report.selectedAuthorizations ?? []) as FullPdfData["selectedAuthorizations"],
     equipmentChecklist: (report.equipmentChecklist ?? getDefaultEquipmentChecklist()) as FullPdfData["equipmentChecklist"],
     damageNotes: report.damageNotes ?? "",
     technicianName: report.technicianName ?? "",
@@ -162,31 +164,24 @@ export async function finalizeReport(
       munkalapClosedAt
     )
 
-    // A fő, összevont PDF (Kárbejelentő + Iratösszesítő + Jegyzőkönyv), a műhelynek szánt
-    // 3 önálló Meghatalmazás-PDF (M1 / Autóüveg / Bodrogi Róbert) és az ügyfélnek szánt,
-    // 1 összesített Meghatalmazás-PDF együtt, egy pipeline lépésként készül el — vagy mind
-    // az 5 dokumentum sikeresen elkészül, feltöltésre és kiküldésre kerül, vagy a rekord
-    // FAILED_PDF marad és egy Retry mindet újra megpróbálja.
+    // A fő, összevont PDF (Kárbejelentő + Iratösszesítő + Jegyzőkönyv) és a technikus által
+    // kiválasztott meghatalmazások (mindegyik külön PDF-ben) egy pipeline lépésként készülnek
+    // el — vagy minden dokumentum sikeresen elkészül, feltöltésre és kiküldésre kerül, vagy a
+    // rekord FAILED_PDF marad és egy Retry mindet újra megpróbálja.
     const pdfBuffer = await generateMainReportPDF(pdfData)
     const authorizationPdfs = await generateAuthorizationPdfs(pdfData)
-    const combinedAuthorizationPdf = await generateCombinedAuthorizationPdf(pdfData)
 
     const finalPdfUrl = await uploadFinalPdf(pdfBuffer, report.vehiclePlate, report.id)
     const authorizationPdfUrls = await uploadAuthorizationPdfs(authorizationPdfs, report.vehiclePlate, report.id)
-    const combinedAuthorizationPdfUrl = await uploadCombinedAuthorizationPdf(
-      combinedAuthorizationPdf,
-      report.vehiclePlate,
-      report.id
-    )
 
-    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer, authorizationPdfs, combinedAuthorizationPdf)
+    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer, authorizationPdfs)
 
     await prisma.damageReport.update({
       where: { id: report.id },
       data: {
         status: "COMPLETED",
         finalPdfUrl,
-        authorizationPdfUrls: { ...authorizationPdfUrls, customerCombined: combinedAuthorizationPdfUrl },
+        authorizationPdfUrls,
         munkalapClosedAt,
         pdfErrorMessage: null,
       },

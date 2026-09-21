@@ -72,10 +72,10 @@ export async function uploadFinalPdf(
   return data.publicUrl
 }
 
-// Server-side only: a 3 önálló Meghatalmazás-PDF feltöltése a "reports" bucketbe, a fő
+// Server-side only: a kiválasztott Meghatalmazás-PDF-ek feltöltése a "reports" bucketbe, a fő
 // összevont PDF-fel azonos {rendszám}/{dátum}_{reportId}/ mappába, de külön fájlnévvel
 // (lásd lib/pdf/index.tsx generateAuthorizationPdfs — a `filename` már tartalmazza a
-// "meghatalmazas-{key}.pdf" alakot). A visszaadott map kulcsai a LegalEntity.key értékek
+// "meghatalmazas-{key}-{rendszám}-{azonosító}.pdf" alakot). A visszaadott map kulcsai a LegalEntity.key értékek
 // (pl. "m1", "autouveg", "bodrogi"), ez kerül a DamageReport.authorizationPdfUrls Json mezőbe.
 export async function uploadAuthorizationPdfs(
   pdfs: { key: string; filename: string; buffer: Buffer }[],
@@ -103,31 +103,6 @@ export async function uploadAuthorizationPdfs(
   }
 
   return urls
-}
-
-// Server-side only: az ügyfélnek szánt, 1 összesített Meghatalmazás-PDF feltöltése a "reports"
-// bucketbe, a fő összevont PDF-fel és a műhelynek szánt 3 önálló Meghatalmazás-PDF-fel azonos
-// {rendszám}/{dátum}_{reportId}/ mappába (lásd lib/pdf/index.tsx generateCombinedAuthorizationPdf).
-export async function uploadCombinedAuthorizationPdf(
-  pdfBuffer: Buffer,
-  vehiclePlate: string,
-  reportId: string
-): Promise<string> {
-  const dateStr = formatDateForFolder()
-  const sanitizedPlate = sanitizeVehiclePlate(vehiclePlate)
-  const path = `${sanitizedPlate}/${dateStr}_${reportId}/meghatalmazasok-osszevont.pdf`
-
-  const { error } = await supabaseAdmin.storage
-    .from("reports")
-    .upload(path, pdfBuffer, {
-      contentType: "application/pdf",
-      upsert: true,
-    })
-
-  if (error) throw new Error(`Supabase Storage hiba (Meghatalmazás összesített PDF): ${error.message}`)
-
-  const { data } = supabaseAdmin.storage.from("reports").getPublicUrl(path)
-  return data.publicUrl
 }
 
 // Server-side only: letölt egy tárolt aláírás-PNG-t és base64 data URI-vá alakítja.

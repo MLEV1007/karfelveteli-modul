@@ -16,9 +16,11 @@ import type { DamageReportInput } from "@/lib/validation"
 
 interface CustomerEmailProps {
   data: DamageReportInput & { id: string; referenceNumber: string; createdAt: Date }
+  // A mellékelt (a technikus által kiválasztott) meghatalmazások cégnevei
+  authorizationNames?: string[]
 }
 
-export default function CustomerEmail({ data }: CustomerEmailProps) {
+export default function CustomerEmail({ data, authorizationNames = [] }: CustomerEmailProps) {
   const formatDate = (date: Date) =>
     new Intl.DateTimeFormat("hu-HU", {
       timeZone: "Europe/Budapest",
@@ -101,8 +103,11 @@ export default function CustomerEmail({ data }: CustomerEmailProps) {
           </Section>
 
           <Text style={text}>
-            A részletes kárfelvételi lapot, valamint az Ön által aláírt meghatalmazásokat
-            (egy összesített PDF formátumban) csatoltan küldjük.
+            {authorizationNames.length === 0
+              ? "A részletes kárfelvételi lapot PDF formátumban csatoltan küldjük."
+              : authorizationNames.length === 1
+                ? `A részletes kárfelvételi lapot, valamint az Ön által aláírt meghatalmazást (${authorizationNames[0]} részére) külön PDF-fájlban csatoltan küldjük.`
+                : `A részletes kárfelvételi lapot, valamint az Ön által aláírt ${authorizationNames.length} meghatalmazást — cégenként külön PDF-fájlban (${authorizationNames.join(", ")}) — csatoltan küldjük.`}
           </Text>
 
           {data.photoUrls && data.photoUrls.length > 0 && (

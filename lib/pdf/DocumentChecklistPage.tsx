@@ -1,6 +1,7 @@
 import { Page, View, Text } from "@react-pdf/renderer"
 import { s, CheckMark, PageHeader, PageFooter, SectionHeader, formatDateTimeShort } from "./shared"
 import type { FullPdfData } from "./types"
+import { resolveSelectedAuthorizations } from "@/lib/workshop"
 
 interface ChecklistItem {
   label: string
@@ -55,12 +56,14 @@ export default function DocumentChecklistPage({ data }: { data: FullPdfData }) {
     },
     {
       label: "Aláírt Meghatalmazás",
-      note: "Jelen dokumentum 2. oldala",
+      note: `Külön PDF-ben: ${resolveSelectedAuthorizations(data.selectedAuthorizations)
+        .map((e) => e.companyName)
+        .join(", ")}`,
       done: !!data.ownerSignatureUrl,
     },
     {
       label: "Kitöltött és aláírt Kárbejelentő lap",
-      note: "Jelen dokumentum 1. oldala",
+      note: "Jelen dokumentum 1. oldala (Kárbejelentő lap)",
       done: !!data.ownerSignatureUrl,
     },
   ]

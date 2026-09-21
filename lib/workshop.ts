@@ -54,3 +54,16 @@ export const WORKSHOP_LEGAL_ENTITIES: LegalEntity[] = [
   WORKSHOP_LEGAL_AUTOUVEG,
   WORKSHOP_LEGAL_KAROSSZERIA,
 ]
+
+// A technikus által választható meghatalmazás-kulcsok (DamageReport.selectedAuthorizations),
+// a WORKSHOP_LEGAL_ENTITIES sorrendjében.
+export const AUTHORIZATION_KEYS = ["m1", "autouveg", "bodrogi"] as const
+export type AuthorizationKey = (typeof AUTHORIZATION_KEYS)[number]
+
+// A ténylegesen elkészítendő meghatalmazások (kanonikus sorrendben). Üres / hiányzó
+// kiválasztás = korábbi kárügy a mező bevezetése előttről: ekkor mindhárom elkészül,
+// a korábbi működésnek megfelelően.
+export function resolveSelectedAuthorizations(selected?: readonly string[] | null): LegalEntity[] {
+  if (!selected || selected.length === 0) return WORKSHOP_LEGAL_ENTITIES
+  return WORKSHOP_LEGAL_ENTITIES.filter((entity) => selected.includes(entity.key))
+}

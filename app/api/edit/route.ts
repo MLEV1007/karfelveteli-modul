@@ -125,6 +125,7 @@ export async function PATCH(req: NextRequest) {
         vehicleCategory: validatedData.vehicleCategory,
         workProcess: validatedData.workProcess,
         vehicleCondition: validatedData.vehicleCondition,
+        selectedAuthorizations: validatedData.selectedAuthorizations,
 
         // photoUrls, aláírások, gdprConsent, createdAt, emailSentAt
         // SZÁNDÉKOSAN NINCS FELSOROLVA — readonly mezők

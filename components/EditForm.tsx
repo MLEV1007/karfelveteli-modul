@@ -10,6 +10,7 @@ import {
   VEHICLE_CONDITION_OPTIONS,
 } from "@/lib/protocolChoices"
 import { DAMAGE_TYPE_OPTIONS } from "@/lib/damageTypes"
+import { WORKSHOP_LEGAL_ENTITIES, AUTHORIZATION_KEYS } from "@/lib/workshop"
 import { OWNER_TYPE_OPTIONS, getOwnerLabels } from "@/lib/ownerType"
 import { VAT_RECLAIM_OPTIONS } from "@/lib/protocolChoices"
 import FormSection from "./ui/FormSection"
@@ -116,6 +117,11 @@ export default function EditForm({ report }: EditFormProps) {
     vehicleCategory: (report.vehicleCategory ?? "") as string,
     workProcess: (report.workProcess ?? "") as string,
     vehicleCondition: (report.vehicleCondition ?? "") as string,
+    // Üres (régi kárügy) = mindhárom meghatalmazás készült, ezért mindhárom bejelölve indul
+    selectedAuthorizations:
+      report.selectedAuthorizations && report.selectedAuthorizations.length > 0
+        ? report.selectedAuthorizations
+        : [...AUTHORIZATION_KEYS] as string[],
   })
 
   const updateField = (field: string, value: unknown) => {
@@ -682,6 +688,32 @@ export default function EditForm({ report }: EditFormProps) {
           />
         </FormSection>
 
+        {/* Szükséges meghatalmazás(ok) — mentéskor csak a kiválasztottak generálódnak újra */}
+        <FormSection
+          title="Szükséges meghatalmazás(ok)"
+          description="Csak a kiválasztott meghatalmazások készülnek el, cégenként külön PDF-ben. Legalább egyet ki kell választani."
+        >
+          {WORKSHOP_LEGAL_ENTITIES.map((entity) => (
+            <Checkbox
+              key={entity.key}
+              label={entity.companyName}
+              name={`authorization-${entity.key}`}
+              checked={formData.selectedAuthorizations.includes(entity.key)}
+              onChange={(e) =>
+                updateField(
+                  "selectedAuthorizations",
+                  e.target.checked
+                    ? Array.from(new Set([...formData.selectedAuthorizations, entity.key]))
+                    : formData.selectedAuthorizations.filter((k: string) => k !== entity.key)
+                )
+              }
+            />
+          ))}
+          {formData.selectedAuthorizations.length === 0 && (
+            <p className="text-xs text-red-500">Legalább egy meghatalmazást ki kell választani</p>
+          )}
+        </FormSection>
+
         {/* 6. Aláírások (readonly) */}
         <FormSection
           title="6. Aláírások és adatkezelés"
@@ -728,7 +760,11 @@ export default function EditForm({ report }: EditFormProps) {
             Mégse
           </Button>
 
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isSubmitting || formData.selectedAuthorizations.length === 0}
+          >
             {isSubmitting ? "Mentés..." : "Módosítások mentése"}
           </Button>
         </div>

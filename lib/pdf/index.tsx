@@ -3,16 +3,15 @@ import DamageReportPage from "./DamageReportPage"
 import AuthorizationPage from "./AuthorizationPage"
 import DocumentChecklistPage from "./DocumentChecklistPage"
 import JegyzokonyvPage from "./JegyzokonyvPage"
-import { WORKSHOP_LEGAL_ENTITIES } from "@/lib/workshop"
+import { resolveSelectedAuthorizations } from "@/lib/workshop"
 import type { FullPdfData } from "./types"
 
 export type { FullPdfData }
 
 // Szigorú, kódszinten kényszerített oldalsorrend a fő, összevont PDF-hez — nem konfigurálható:
 // 1) Kárbejelentő lap, 2) Iratösszesítő, 3) Jegyzőkönyv.
-// A Meghatalmazás ebből KIVÉVE — a műhely a 3 entitáshoz (M1 / Autóüveg / Bodrogi Róbert)
-// 3 önálló PDF-et kap (lásd generateAuthorizationPdfs), az ügyfél viszont ugyanezt a 3
-// oldalt egyetlen összefűzött PDF-ben kapja (lásd generateCombinedAuthorizationPdf).
+// A Meghatalmazás ebből KIVÉVE — a technikus által kiválasztott cégekhez egyenként,
+// külön PDF-fájl készül (lásd generateAuthorizationPdfs).
 const MAIN_PAGE_ORDER = [DamageReportPage, DocumentChecklistPage, JegyzokonyvPage] as const
 
 export async function generateMainReportPDF(data: FullPdfData): Promise<Buffer> {
@@ -26,36 +25,32 @@ export async function generateMainReportPDF(data: FullPdfData): Promise<Buffer> 
   return await renderToBuffer(doc)
 }
 
-// A 3 jogi entitáshoz (M1 Szerviz Tata Kft. / Autóüveg Szinak Gábor e.v. / Bodrogi Róbert e.v.)
-// 3 külön, önálló Meghatalmazás-PDF-et generál. Ezeket a műhely kapja meg emailben mind
-// a 3-at (lásd lib/email.ts sendFinalReportEmails) — az ügyfélnek szánt, 1 összesített
-// változatot lásd generateCombinedAuthorizationPdf.
-export async function generateAuthorizationPdfs(
-  data: FullPdfData
-): Promise<{ key: string; filename: string; buffer: Buffer }[]> {
-  const results: { key: string; filename: string; buffer: Buffer }[] = []
-  for (const grantee of WORKSHOP_LEGAL_ENTITIES) {
+export interface AuthorizationPdf {
+  key: string
+  companyName: string
+  filename: string
+  buffer: Buffer
+}
+
+// Csak a technikus által kiválasztott meghatalmazások készülnek el (üres kiválasztás = régi
+// kárügy -> mindhárom), mindegyik KÜLÖN, önálló PDF-ben — ezeket az ügyfél és a műhely is
+// megkapja (lásd lib/email.ts). Fájlnév: meghatalmazas-<cég>-<rendszám>-<azonosító>.pdf
+export async function generateAuthorizationPdfs(data: FullPdfData): Promise<AuthorizationPdf[]> {
+  const plate = data.vehiclePlate.toUpperCase().replace(/[^A-Z0-9]/g, "")
+  const results: AuthorizationPdf[] = []
+  for (const grantee of resolveSelectedAuthorizations(data.selectedAuthorizations)) {
     const doc = (
       <Document>
         <AuthorizationPage data={data} grantee={grantee} />
       </Document>
     )
     const buffer = await renderToBuffer(doc)
-    results.push({ key: grantee.key, filename: `meghatalmazas-${grantee.key}.pdf`, buffer })
+    results.push({
+      key: grantee.key,
+      companyName: grantee.companyName,
+      filename: `meghatalmazas-${grantee.key}-${plate}-${data.referenceNumber}.pdf`,
+      buffer,
+    })
   }
   return results
-}
-
-// Az ügyfélnek szánt Meghatalmazás-PDF: ugyanaz a 3 AuthorizationPage oldal (M1 / Autóüveg /
-// Bodrogi Róbert), de — a műhelynek küldött 3 önálló fájllal szemben — egyetlen, 1 összefűzött
-// PDF-be téve (lásd lib/email.ts sendFinalReportEmails — ez megy csatolva az ügyfél emailjéhez).
-export async function generateCombinedAuthorizationPdf(data: FullPdfData): Promise<Buffer> {
-  const doc = (
-    <Document>
-      {WORKSHOP_LEGAL_ENTITIES.map((grantee) => (
-        <AuthorizationPage key={grantee.key} data={data} grantee={grantee} />
-      ))}
-    </Document>
-  )
-  return await renderToBuffer(doc)
 }

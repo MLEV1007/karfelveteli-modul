@@ -7,6 +7,13 @@ import {
 } from "./protocolChoices"
 import { DAMAGE_TYPE_VALUES } from "./damageTypes"
 import { OWNER_TYPE_VALUES, TAX_NUMBER_REGEX } from "./ownerType"
+import { AUTHORIZATION_KEYS } from "./workshop"
+
+// A technikus által kiválasztott meghatalmazások — legalább egy kötelező, ismétlődés nélkül
+const selectedAuthorizationsSchema = z
+  .array(z.enum(AUTHORIZATION_KEYS))
+  .min(1, "Legalább egy meghatalmazást ki kell választani")
+  .transform((keys) => AUTHORIZATION_KEYS.filter((k) => keys.includes(k)))
 
 // ─────────────────────────────────────────────────────────────
 // Enum-szerű literál listák — Prisma enumokkal szinkronban tartva
@@ -283,6 +290,8 @@ export const editReportSchema = damageReportObjectSchema
     vehicleCategory: z.preprocess(emptyToUndefined, vehicleCategorySchema.optional()),
     workProcess: z.preprocess(emptyToUndefined, workProcessSchema.optional()),
     vehicleCondition: z.preprocess(emptyToUndefined, vehicleConditionSchema.optional()),
+    // A kiválasztott meghatalmazások utólag is módosíthatók (mentéskor a PDF-ek újragenerálódnak)
+    selectedAuthorizations: selectedAuthorizationsSchema.optional(),
   })
   .strict()
   .refine(insuranceOtherRequired, insuranceOtherRefinement)
@@ -299,6 +308,7 @@ const munkalapObjectSchema = z.object({
   vehicleCategory: vehicleCategorySchema,
   workProcess: workProcessSchema,
   vehicleCondition: vehicleConditionSchema,
+  selectedAuthorizations: selectedAuthorizationsSchema,
   equipmentChecklist: equipmentChecklistSchema,
   damageNotes: z.string().min(1, "Az átvételkori állapot rögzítése kötelező"),
   technicianName: z.string().min(2, "A technikus neve kötelező"),

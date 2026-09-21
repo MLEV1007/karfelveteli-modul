@@ -70,16 +70,14 @@ export async function sendCustomerSubmissionEmail(data: {
 }
 
 // A technikus lezárása után — a végleges, összevont PDF-fel mindkét fél értesítést kap.
-// A `authorizationPdfs` a 3 önálló Meghatalmazás-PDF-et tartalmazza (M1 / Autóüveg / Bodrogi
-// Róbert) — ezeket CSAK a műhely kapja meg mellékletként, mindhárom külön fájlban.
-// A `combinedAuthorizationPdf` ugyanezt a 3 aláírt meghatalmazást tartalmazza, de egyetlen,
-// 1 összefűzött PDF-ként — ezt kapja meg az ügyfél (CustomerEmail) az összevont
-// kárfelvételi PDF mellett, nem szétszedve entitásonként.
+// Az `authorizationPdfs` a technikus által kiválasztott meghatalmazásokat tartalmazza,
+// mindegyiket KÜLÖN PDF-ben — ezeket az ügyfél és a műhely is megkapja különálló
+// mellékletként (a műhely így egy-egy fájlt közvetlenül továbbíthat a biztosítónak).
+// A biztosítónak a rendszer maga NEM küld semmit.
 export async function sendFinalReportEmails(
   data: EmailData,
   pdfBuffer: Buffer,
-  authorizationPdfs: { filename: string; buffer: Buffer }[] = [],
-  combinedAuthorizationPdf?: Buffer
+  authorizationPdfs: { filename: string; companyName: string; buffer: Buffer }[] = []
 ): Promise<void> {
   // Lazy initialization - csak runtime-ban inicializálunk
   const resend = new Resend(process.env.RESEND_API_KEY)
@@ -93,26 +91,18 @@ export async function sendFinalReportEmails(
     filename: pdf.filename,
     content: pdf.buffer,
   }))
+  const authorizationNames = authorizationPdfs.map((pdf) => pdf.companyName)
 
-  const customerAttachments = [pdfAttachment]
-  if (combinedAuthorizationPdf) {
-    customerAttachments.push({
-      filename: `meghatalmazasok-${data.vehiclePlate}-${data.referenceNumber}.pdf`,
-      content: combinedAuthorizationPdf,
-    })
-  }
-
-  // 1. Email az ügyfélnek — az összevont kárfelvételi PDF mellett az 1 összesített
-  // meghatalmazás-PDF-et is megkapja (nem a műhelynek szánt, entitásonként szétszedett 3-at)
+  // 1. Email az ügyfélnek — az összevont kárfelvételi PDF + a kiválasztott meghatalmazások külön-külön
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
     to: resolveRecipients(data.customerEmail),
     subject: `Kárfelvételi visszaigazolás — ${data.vehiclePlate.toUpperCase()}`,
-    react: CustomerEmail({ data }),
-    attachments: customerAttachments,
+    react: CustomerEmail({ data, authorizationNames }),
+    attachments: [pdfAttachment, ...authorizationAttachments],
   })
 
-  // 2. Email a műhelynek — az összevont PDF mellett mind a 3 meghatalmazás-PDF is megy, külön-külön
+  // 2. Email a műhelynek — ugyanazok a mellékletek, külön-külön
   await resend.emails.send({
     from: process.env.EMAIL_FROM!,
     to: resolveRecipients(getWorkshopRecipients()),
@@ -121,7 +111,7 @@ export async function sendFinalReportEmails(
       month: "2-digit",
       day: "2-digit",
     }).format(data.createdAt)}`,
-    react: WorkshopEmail({ data }),
+    react: WorkshopEmail({ data, authorizationNames }),
     attachments: [pdfAttachment, ...authorizationAttachments],
   })
 }

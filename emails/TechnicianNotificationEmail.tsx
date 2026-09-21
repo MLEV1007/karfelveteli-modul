@@ -62,7 +62,9 @@ export default function TechnicianNotificationEmail({
             kárügy lezárásához és a végleges dokumentumok (Kárbejelentő, Meghatalmazás,
             Iratösszesítő, Jegyzőkönyv) kiküldéséhez szükséges a technikusi jegyzőkönyv
             kitöltése: átvétel/visszaadás időpontjai, a gépjármű felszereltsége, az átvételkori
-            állapot és az átvevő aláírása.
+            állapot, a szükséges meghatalmazás(ok) kiválasztása és az átvevő aláírása. Csak a
+            kiválasztott meghatalmazások készülnek el (cégenként külön PDF-ben), ezeket az ügyfél és
+            a műhely kapja meg.
           </Text>
 
           <Section style={buttonSection}>
