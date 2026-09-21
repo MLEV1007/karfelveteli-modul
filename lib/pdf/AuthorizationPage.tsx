@@ -1,5 +1,5 @@
 import { Page, View, Text } from "@react-pdf/renderer"
-import { s, BORDER, PageHeader, PageFooter, SectionHeader, Cell, SignatureBlock, formatDate } from "./shared"
+import { s, BORDER, CheckMark, PageHeader, PageFooter, SectionHeader, Cell, SignatureBlock, formatDate } from "./shared"
 import { getInsuranceCompanyLabel } from "@/lib/validation"
 import type { LegalEntity } from "@/lib/workshop"
 import type { FullPdfData } from "./types"
@@ -80,19 +80,11 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
         <SectionHeader title="NYILATKOZATOK MEGERŐSÍTÉSE" />
         <View style={s.row}>
           <View style={[s.cell, { flex: 1, flexDirection: "row", alignItems: "center", gap: 4 }]}>
-            <View style={data.accept8DayPayment ? s.checkBoxFilled : s.checkBox}>
-              {data.accept8DayPayment && (
-                <Text style={{ fontSize: 6, color: "#ffffff", fontWeight: "bold" }}>✓</Text>
-              )}
-            </View>
+            <CheckMark checked={data.accept8DayPayment} />
             <Text style={s.value}>A 8 napos fizetési záradékot elfogadom</Text>
           </View>
           <View style={[s.cell, { flex: 1, flexDirection: "row", alignItems: "center", gap: 4 }]} >
-            <View style={data.knowsCascoTerms ? s.checkBoxFilled : s.checkBox}>
-              {data.knowsCascoTerms && (
-                <Text style={{ fontSize: 6, color: "#ffffff", fontWeight: "bold" }}>✓</Text>
-              )}
-            </View>
+            <CheckMark checked={data.knowsCascoTerms} />
             <Text style={s.value}>A CASCO feltételeket tudomásul veszem</Text>
           </View>
         </View>

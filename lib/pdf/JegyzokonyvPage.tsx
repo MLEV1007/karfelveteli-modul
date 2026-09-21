@@ -8,6 +8,7 @@ import {
   SectionHeader,
   Cell,
   CheckCell,
+  CheckMark,
   SignatureBlock,
   DamageDiagram,
   formatDate,
@@ -32,9 +33,7 @@ function EquipmentRow({ def, value }: { def: EquipmentItemDef; value: unknown })
   const detail = formatEquipmentDetail(def, value as never)
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 1.5 }}>
-      <View style={checked ? s.checkBoxFilled : s.checkBox}>
-        {checked && <Text style={{ fontSize: 5, color: "#ffffff", fontWeight: "bold" }}>✓</Text>}
-      </View>
+      <CheckMark checked={checked} size={7} />
       <Text style={{ fontSize: 6, color: "#111827" }}>
         {def.label}
         {detail}
@@ -48,7 +47,7 @@ function chunk<T>(items: T[], columns: number): T[][] {
   return Array.from({ length: columns }, (_, i) => items.slice(i * size, i * size + size))
 }
 
-// Egy kizárólagos-választós (2 elemű) mezőcsoport sora — checkBox/checkBoxFilled stílussal,
+// Egy kizárólagos-választós (2 elemű) mezőcsoport sora — CheckMark (SVG X) jelölővel,
 // a kiválasztott opció kitöltve, egymás alatt (nem szabadon kombinálható, mint a felszereltség).
 function ExclusiveChoiceGroup({
   title,
@@ -66,9 +65,7 @@ function ExclusiveChoiceGroup({
         const checked = opt.value === selected
         return (
           <View key={opt.value} style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 1.5 }}>
-            <View style={checked ? s.checkBoxFilled : s.checkBox}>
-              {checked && <Text style={{ fontSize: 5, color: "#ffffff", fontWeight: "bold" }}>✓</Text>}
-            </View>
+            <CheckMark checked={checked} />
             <Text style={{ fontSize: 6, color: "#111827" }}>{opt.label}</Text>
           </View>
         )
@@ -87,7 +84,7 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
     <Page size="A4" style={s.page}>
       <PageHeader
         title="JEGYZŐKÖNYV"
-        subtitle={`Azonosító: ${data.referenceNumber} • Lezárva: ${formatDate(data.createdAt)}`}
+        subtitle={`Azonosító: ${data.referenceNumber} • Lezárva: ${formatDate(data.munkalapClosedAt ?? new Date())}`}
       />
 
       <View style={[s.outerBorder, { marginTop: 4 }]}>

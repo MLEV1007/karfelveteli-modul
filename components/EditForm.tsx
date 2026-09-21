@@ -4,10 +4,16 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { DamageReport } from "@prisma/client"
 import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS, type InsuranceCompanyValue } from "@/lib/validation"
+import {
+  VEHICLE_CATEGORY_OPTIONS,
+  WORK_PROCESS_OPTIONS,
+  VEHICLE_CONDITION_OPTIONS,
+} from "@/lib/protocolChoices"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
 import Checkbox from "./ui/Checkbox"
+import RadioGroup from "./ui/RadioGroup"
 import SelectWithOther from "./ui/SelectWithOther"
 import Card from "./ui/Card"
 import Button from "./ui/Button"
@@ -98,6 +104,11 @@ export default function EditForm({ report }: EditFormProps) {
     consentToPhotocopy: report.consentToPhotocopy,
     cascoClaimRequest: report.cascoClaimRequest,
     vehicleEncumbrance: report.vehicleEncumbrance,
+
+    // Jegyzőkönyv — technikusi kizárólagos választások
+    vehicleCategory: (report.vehicleCategory ?? "") as string,
+    workProcess: (report.workProcess ?? "") as string,
+    vehicleCondition: (report.vehicleCondition ?? "") as string,
   })
 
   const updateField = (field: string, value: unknown) => {
@@ -607,6 +618,37 @@ export default function EditForm({ report }: EditFormProps) {
             name="vehicleEncumbrance"
             checked={formData.vehicleEncumbrance}
             onChange={(e) => updateField("vehicleEncumbrance", e.target.checked)}
+          />
+        </FormSection>
+
+        {/* Jegyzőkönyv — kategória / munkafolyamat / állapot (technikusi adatok) */}
+        <FormSection
+          title="Jegyzőkönyv: jármű kategória, munkafolyamat, állapot"
+          description="A technikus választásai a Jegyzőkönyvön — mentéskor a PDF újragenerálódik"
+        >
+          <RadioGroup
+            label="Jármű kategória"
+            name="vehicleCategory"
+            value={formData.vehicleCategory}
+            onChange={(val) => updateField("vehicleCategory", val)}
+            options={[...VEHICLE_CATEGORY_OPTIONS]}
+            error={errors.vehicleCategory}
+          />
+          <RadioGroup
+            label="Munkafolyamat"
+            name="workProcess"
+            value={formData.workProcess}
+            onChange={(val) => updateField("workProcess", val)}
+            options={[...WORK_PROCESS_OPTIONS]}
+            error={errors.workProcess}
+          />
+          <RadioGroup
+            label="Jármű állapota"
+            name="vehicleCondition"
+            value={formData.vehicleCondition}
+            onChange={(val) => updateField("vehicleCondition", val)}
+            options={[...VEHICLE_CONDITION_OPTIONS]}
+            error={errors.vehicleCondition}
           />
         </FormSection>
 

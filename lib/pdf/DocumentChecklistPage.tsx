@@ -1,5 +1,5 @@
 import { Page, View, Text } from "@react-pdf/renderer"
-import { s, PageHeader, PageFooter, SectionHeader, formatDate } from "./shared"
+import { s, CheckMark, PageHeader, PageFooter, SectionHeader, formatDate } from "./shared"
 import type { FullPdfData } from "./types"
 
 interface ChecklistItem {
@@ -11,9 +11,7 @@ interface ChecklistItem {
 function ChecklistRow({ item }: { item: ChecklistItem }) {
   return (
     <View style={[s.row, { padding: "5 6", borderBottom: "0.5pt solid #9ca3af", alignItems: "center", gap: 6 }]}>
-      <View style={item.done ? s.checkBoxFilled : s.checkBox}>
-        {item.done && <Text style={{ fontSize: 6, color: "#ffffff", fontWeight: "bold" }}>✓</Text>}
-      </View>
+      <CheckMark checked={item.done} size={9} />
       <View style={{ flex: 1 }}>
         <Text style={[s.value, { fontWeight: "normal" }]}>{item.label}</Text>
         {item.note && <Text style={s.label}>{item.note}</Text>}

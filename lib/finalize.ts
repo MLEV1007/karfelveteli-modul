@@ -11,12 +11,14 @@ import { getDefaultEquipmentChecklist } from "./equipment"
 // ez a függvény tisztán adatleképzés, az I/O — Storage letöltés — a finalizeReport-ban történik).
 function toFullPdfData(
   report: DamageReport,
-  signatures: { owner: string; driver?: string; technician: string }
+  signatures: { owner: string; driver?: string; technician: string },
+  munkalapClosedAt: Date
 ): FullPdfData {
   return {
     id: report.id,
     referenceNumber: report.referenceNumber,
     createdAt: report.createdAt,
+    munkalapClosedAt,
     ownerName: report.ownerName,
     ownerAddress: report.ownerAddress ?? "",
     idOrTaxNumber: report.idOrTaxNumber ?? "",
@@ -142,11 +144,20 @@ export async function finalizeReport(
       ? await downloadSignatureAsBase64(report.technicianSignatureUrl)
       : ""
 
-    const pdfData = toFullPdfData(report, {
-      owner: ownerSigBase64,
-      driver: driverSigBase64,
-      technician: technicianSigBase64,
-    })
+    // Az első lezárás időpontja — egy utólagos szerkesztés/újraküldés nem írja felül.
+    // Már a PDF-generálás előtt rögzítjük, hogy a Jegyzőkönyv "Lezárva:" dátuma és az
+    // adatbázisba mentett munkalapClosedAt pontosan ugyanaz legyen.
+    const munkalapClosedAt = report.munkalapClosedAt ?? new Date()
+
+    const pdfData = toFullPdfData(
+      report,
+      {
+        owner: ownerSigBase64,
+        driver: driverSigBase64,
+        technician: technicianSigBase64,
+      },
+      munkalapClosedAt
+    )
 
     // A fő, összevont PDF (Kárbejelentő + Iratösszesítő + Jegyzőkönyv), a műhelynek szánt
     // 3 önálló Meghatalmazás-PDF (M1 / Autóüveg / Bodrogi Róbert) és az ügyfélnek szánt,
@@ -173,8 +184,7 @@ export async function finalizeReport(
         status: "COMPLETED",
         finalPdfUrl,
         authorizationPdfUrls: { ...authorizationPdfUrls, customerCombined: combinedAuthorizationPdfUrl },
-        // Az első lezárás időpontját egy utólagos szerkesztés/újraküldés nem írja felül.
-        munkalapClosedAt: report.munkalapClosedAt ?? new Date(),
+        munkalapClosedAt,
         pdfErrorMessage: null,
       },
     })

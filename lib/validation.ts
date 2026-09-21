@@ -86,6 +86,11 @@ const workProcessSchema = z.enum(WORK_PROCESS_VALUES, {
 const vehicleConditionSchema = z.enum(VEHICLE_CONDITION_VALUES, {
   errorMap: () => ({ message: "Válassza ki a jármű állapotát" }),
 })
+// Üres select/radio érték ("") -> undefined, hogy az opcionális enum mezők ne bukjanak el rajta
+function emptyToUndefined(val: unknown) {
+  return val === "" || val === null ? undefined : val
+}
+
 const phoneSchema = z
   .string()
   .regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)")
@@ -233,6 +238,11 @@ export const editReportSchema = damageReportObjectSchema
     customerPhone: z.string().optional(),
     vehicleVin: vinSchema.optional(),
     insuranceCompany: insuranceCompanySchema.optional(),
+    // Jegyzőkönyv kizárólagos választásai — a technikus utólag is javíthatja őket
+    // (a 2026-09 előtti lezárásoknál a PATCH végpont nem mentette el ezeket).
+    vehicleCategory: z.preprocess(emptyToUndefined, vehicleCategorySchema.optional()),
+    workProcess: z.preprocess(emptyToUndefined, workProcessSchema.optional()),
+    vehicleCondition: z.preprocess(emptyToUndefined, vehicleConditionSchema.optional()),
   })
   .strict()
   .refine(insuranceOtherRequired, insuranceOtherRefinement)

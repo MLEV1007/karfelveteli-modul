@@ -117,6 +117,12 @@ export async function PATCH(req: NextRequest) {
         cascoClaimRequest: validatedData.cascoClaimRequest,
         vehicleEncumbrance: validatedData.vehicleEncumbrance,
 
+        // Jegyzőkönyv kizárólagos választásai — csak ha a technikus megadta őket
+        // (undefined esetén a Prisma nem írja felül a meglévő értéket)
+        vehicleCategory: validatedData.vehicleCategory,
+        workProcess: validatedData.workProcess,
+        vehicleCondition: validatedData.vehicleCondition,
+
         // photoUrls, aláírások, gdprConsent, createdAt, emailSentAt
         // SZÁNDÉKOSAN NINCS FELSOROLVA — readonly mezők
       },

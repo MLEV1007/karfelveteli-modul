@@ -7,4 +7,6 @@ export interface FullPdfData extends FullReportInput {
   id: string
   referenceNumber: string
   createdAt: Date
+  // A Jegyzőkönyv lezárásának időpontja (első lezáráskor a pipeline állítja be)
+  munkalapClosedAt?: Date | null
 }

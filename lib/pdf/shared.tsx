@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, Font, Svg, Path, Line, Circle, G, Polygon } from "@react-pdf/renderer"
+import { View, Text, Image, StyleSheet, Font, Svg, Path, Line, Circle, G, Polygon, Rect } from "@react-pdf/renderer"
 import path from "path"
 import fs from "fs"
 
@@ -125,25 +125,6 @@ export const s = StyleSheet.create({
     fontSize: 8,
     color: "#d1d5db",
     minHeight: 10,
-  },
-
-  // ── Checkbox sor ─────────────────────────────────────────
-  checkBox: {
-    width: 8,
-    height: 8,
-    border: "1pt solid #6b7280",
-    marginRight: 3,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkBoxFilled: {
-    width: 8,
-    height: 8,
-    border: "1pt solid #1e3a5f",
-    backgroundColor: HEADER_BG,
-    marginRight: 3,
-    justifyContent: "center",
-    alignItems: "center",
   },
 
   // ── Külső keret ──────────────────────────────────────────
@@ -331,6 +312,20 @@ export function Cell({
   )
 }
 
+// Font-független jelölőnégyzet: fehér négyzet vékony fekete kerettel, bejelölve két
+// SVG-vonallal rajzolt fekete X. A Roboto betűtípusban nincs "✓" karakter, ezért a
+// korábbi szöveges pipa nem látszott (fekete-fehér nyomtatásban pedig a kitöltött
+// sötétkék négyzet sem különült el egy üres négyzettől).
+export function CheckMark({ checked, size = 8 }: { checked: boolean; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 10 10" style={{ marginRight: 3 }}>
+      <Rect x="0.5" y="0.5" width="9" height="9" fill="#ffffff" stroke="#111827" strokeWidth="0.9" />
+      {checked && <Line x1="2.2" y1="2.2" x2="7.8" y2="7.8" stroke="#000000" strokeWidth="1.6" />}
+      {checked && <Line x1="7.8" y1="2.2" x2="2.2" y2="7.8" stroke="#000000" strokeWidth="1.6" />}
+    </Svg>
+  )
+}
+
 export function CheckCell({
   label,
   checked,
@@ -352,9 +347,7 @@ export function CheckCell({
   ]
   return (
     <View style={cellStyle}>
-      <View style={checked ? s.checkBoxFilled : s.checkBox}>
-        {checked && <Text style={{ fontSize: 6, color: "#ffffff", fontWeight: "bold" }}>✓</Text>}
-      </View>
+      <CheckMark checked={checked} />
       <View>
         <Text style={s.label}>{label}</Text>
         <Text style={s.value}>{checked ? "Igen" : "Nem"}</Text>
