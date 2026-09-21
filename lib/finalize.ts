@@ -19,6 +19,7 @@ function toFullPdfData(
     referenceNumber: report.referenceNumber,
     createdAt: report.createdAt,
     munkalapClosedAt,
+    ownerType: report.ownerType ?? undefined,
     ownerName: report.ownerName,
     ownerAddress: report.ownerAddress ?? "",
     idOrTaxNumber: report.idOrTaxNumber ?? "",

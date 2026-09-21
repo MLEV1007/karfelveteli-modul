@@ -6,6 +6,7 @@ import {
   VEHICLE_CONDITION_VALUES,
 } from "./protocolChoices"
 import { DAMAGE_TYPE_VALUES } from "./damageTypes"
+import { OWNER_TYPE_VALUES, TAX_NUMBER_REGEX } from "./ownerType"
 
 // ─────────────────────────────────────────────────────────────
 // Enum-szerű literál listák — Prisma enumokkal szinkronban tartva
@@ -123,9 +124,12 @@ const insuranceOtherRefinement = {
 
 const damageReportObjectSchema = z.object({
   // 1. lépés — Személyes adatok
+  // Magánszemély / cég — opcionális, hogy a régi (mező nélküli) rekordok is érvényesek
+  // maradjanak; az új beküldéseknél a damageReportSchema kötelezővé teszi.
+  ownerType: z.preprocess(emptyToUndefined, z.enum(OWNER_TYPE_VALUES).optional()),
   ownerName: z.string().min(2, "Legalább 2 karakter szükséges"),
   ownerAddress: z.string().min(2, "A lakcím megadása kötelező"),
-  idOrTaxNumber: z.string().min(5, "Adjon meg érvényes személyi igazolvány- vagy adószámot"),
+  idOrTaxNumber: z.string().min(5, "Adja meg a személyazonosító okmány számát / az adószámot"),
   // "A vezető személye és a tulajdonos személye megegyezik" — opcionális, hogy a régi
   // (mező nélküli) rekordok szerkesztése is érvényes maradjon.
   driverSameAsOwner: z.boolean().optional(),
@@ -228,9 +232,30 @@ const driverSignatureRefinement = {
   path: ["driverSignatureUrl"],
 }
 
+// Cég esetén az azonosító mező adószám, 12345678-1-12 formátumban
+function ownerTaxNumberFormat(data: { ownerType?: string; idOrTaxNumber?: string }) {
+  return data.ownerType !== "CEG" || TAX_NUMBER_REGEX.test((data.idOrTaxNumber ?? "").trim())
+}
+
+const ownerTaxNumberRefinement = {
+  message: "Érvénytelen adószám (formátum: 12345678-1-12)",
+  path: ["idOrTaxNumber"],
+}
+
 export const damageReportSchema = damageReportObjectSchema
   .refine(insuranceOtherRequired, insuranceOtherRefinement)
   .refine(driverSignatureRequired, driverSignatureRefinement)
+  .refine(ownerTaxNumberFormat, ownerTaxNumberRefinement)
+  // Új beküldésnél kötelező: magánszemély/cég választás és a káresemény időpontja
+  // (utóbbi a meghatalmazáson is szerepel)
+  .refine((d) => !!d.ownerType, {
+    message: "Válassza ki, hogy magánszemély vagy cég a tulajdonos",
+    path: ["ownerType"],
+  })
+  .refine((d) => !!d.accidentDate, {
+    message: "A káresemény időpontjának megadása kötelező",
+    path: ["accidentDate"],
+  })
 
 export type DamageReportInput = z.infer<typeof damageReportObjectSchema>
 
@@ -261,6 +286,7 @@ export const editReportSchema = damageReportObjectSchema
   })
   .strict()
   .refine(insuranceOtherRequired, insuranceOtherRefinement)
+  .refine(ownerTaxNumberFormat, ownerTaxNumberRefinement)
 
 export type EditReportInput = z.infer<typeof editReportSchema>
 

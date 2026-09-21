@@ -4,6 +4,7 @@ import { z } from "zod"
 import Checkbox from "@/components/ui/Checkbox"
 import { getInsuranceCompanyLabel, type InsuranceCompanyValue } from "@/lib/validation"
 import { WORKSHOP_LEGAL_ENTITIES } from "@/lib/workshop"
+import { getOwnerLabels } from "@/lib/ownerType"
 
 export const authorizationSchema = z.object({
   accept8DayPayment: z.literal(true, {
@@ -20,6 +21,7 @@ export type AuthorizationData = {
 }
 
 interface AuthorizationSummary {
+  ownerType: string
   ownerName: string
   ownerAddress: string
   idOrTaxNumber: string
@@ -38,6 +40,7 @@ interface Props {
 
 export default function Step6Authorization({ data, summary, onChange, errors }: Props) {
   const insurerLabel = getInsuranceCompanyLabel(summary.insuranceCompany || null, summary.insuranceCompanyOther)
+  const labels = getOwnerLabels(summary.ownerType || null)
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,9 +48,9 @@ export default function Step6Authorization({ data, summary, onChange, errors }: 
 
       {/* Korábban megadott adatok — automatikusan betöltve, nincs újra beírás (DRY) */}
       <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 space-y-1">
-        <p><strong>Meghatalmazó neve:</strong> {summary.ownerName || "—"}</p>
-        <p><strong>Lakcím:</strong> {summary.ownerAddress || "—"}</p>
-        <p><strong>Igazolvány- / adószám:</strong> {summary.idOrTaxNumber || "—"}</p>
+        <p><strong>{summary.ownerType === "CEG" ? "Meghatalmazó cég neve" : "Meghatalmazó neve"}:</strong> {summary.ownerName || "—"}</p>
+        <p><strong>{labels.address}:</strong> {summary.ownerAddress || "—"}</p>
+        <p><strong>{labels.id}:</strong> {summary.idOrTaxNumber || "—"}</p>
         <p><strong>Rendszám:</strong> {summary.vehiclePlate ? summary.vehiclePlate.toUpperCase() : "—"}</p>
         <p><strong>Alvázszám (VIN):</strong> {summary.vehicleVin || "—"}</p>
         <p><strong>Illetékes biztosító:</strong> {insurerLabel}</p>

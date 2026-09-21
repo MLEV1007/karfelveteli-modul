@@ -13,6 +13,7 @@ import {
   DamageDiagram,
   formatDateOnly,
   formatDateTimeShort,
+  formatAccidentDateTime,
 } from "./shared"
 import { EQUIPMENT_CHECKLIST_ITEMS, isEquipmentChecked, formatEquipmentDetail, type EquipmentItemDef } from "@/lib/equipment"
 import {
@@ -22,10 +23,6 @@ import {
   VAT_RECLAIM_OPTIONS,
 } from "@/lib/protocolChoices"
 import type { FullPdfData } from "./types"
-
-function formatAccidentDate(raw: string): string {
-  return raw.replace("T", " ")
-}
 
 // Egy felszereltségi tétel sora: checkbox + felirat + opcionális (db / típus / sebességfok) kiegészítés
 function EquipmentRow({ def, value }: { def: EquipmentItemDef; value: unknown }) {
@@ -95,12 +92,12 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
       <View style={[s.outerBorder, { marginTop: 4 }]}>
         <SectionHeader title="ÜGYFÉL, JÁRMŰ ÉS KÁRESEMÉNY ADATAI" />
         <View style={s.row}>
-          <Cell label="Tulajdonos neve" value={data.ownerName} flex={1} />
+          <Cell label={data.ownerType === "CEG" ? "Tulajdonos cégneve" : "Tulajdonos neve"} value={data.ownerName} flex={1} />
           <Cell label="Rendszám" value={data.vehiclePlate.toUpperCase()} width={90} />
           <Cell label="Gyártmány / Típus" value={`${data.vehicleMake} ${data.vehicleModel}`} flex={1} noBorderRight />
         </View>
         <View style={s.row}>
-          <Cell label="Lakcím" value={data.ownerAddress} flex={1} />
+          <Cell label={data.ownerType === "CEG" ? "Székhely" : "Lakcím"} value={data.ownerAddress} flex={1} />
           <Cell label="Alvázszám (VIN)" value={data.vehicleVin} flex={1} noBorderRight />
         </View>
         <View style={s.row}>
@@ -121,7 +118,7 @@ export default function JegyzokonyvPage({ data }: { data: FullPdfData }) {
         <View style={s.row}>
           <Cell
             label="A baleset időpontja"
-            value={data.accidentDate ? formatAccidentDate(data.accidentDate) : undefined}
+            value={data.accidentDate ? formatAccidentDateTime(data.accidentDate) : undefined}
             width={100}
           />
           <Cell label="Ország" value={data.accidentCountry} width={90} />

@@ -56,6 +56,7 @@ export async function PATCH(req: NextRequest) {
       where: { id },
       data: {
         // Step 1
+        ownerType: validatedData.ownerType,
         ownerName: validatedData.ownerName,
         ownerAddress: validatedData.ownerAddress ?? null,
         idOrTaxNumber: validatedData.idOrTaxNumber ?? null,

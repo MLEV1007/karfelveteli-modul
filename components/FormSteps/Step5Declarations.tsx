@@ -3,11 +3,16 @@
 import { z } from "zod"
 import Checkbox from "@/components/ui/Checkbox"
 import Input from "@/components/ui/Input"
+import RadioGroup from "@/components/ui/RadioGroup"
+import { VAT_RECLAIM_OPTIONS } from "@/lib/protocolChoices"
+
+const VAT_ERROR = "Válassza ki, hogy ÁFA-visszatérítésre jogosult-e"
 
 export const step5Schema = z.object({
   underInfluence: z.boolean(),
   licenseValid: z.boolean(),
-  vatReclaimEligible: z.boolean(),
+  // Kötelező Igen/Nem választás, alapértelmezett érték nélkül (null = még nem választott)
+  vatReclaimEligible: z.boolean({ required_error: VAT_ERROR, invalid_type_error: VAT_ERROR }),
   taxNumber: z.string().optional(),
   consentToPhotocopy: z.boolean(),
   cascoClaimRequest: z.boolean(),
@@ -18,7 +23,7 @@ export const step5Schema = z.object({
 export type Step5Data = {
   underInfluence: boolean
   licenseValid: boolean
-  vatReclaimEligible: boolean
+  vatReclaimEligible: boolean | null
   taxNumber: string
   consentToPhotocopy: boolean
   cascoClaimRequest: boolean
@@ -30,9 +35,18 @@ type Props = {
   data: Step5Data
   onChange: (field: string, value: unknown) => void
   errors: Record<string, string>
+  // Céges tulajdonosnál az 1. lépésben megadott adószám — az ÁFA-kérdés adószám mezőjét
+  // ezzel töltjük elő
+  companyTaxNumber?: string
 }
 
-export default function Step5Declarations({ data, onChange, errors }: Props) {
+export default function Step5Declarations({ data, onChange, errors, companyTaxNumber }: Props) {
+  const handleVatChange = (value: string) => {
+    const eligible = value === "IGEN"
+    onChange("vatReclaimEligible", eligible)
+    if (eligible && !data.taxNumber && companyTaxNumber) onChange("taxNumber", companyTaxNumber)
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -77,11 +91,13 @@ export default function Step5Declarations({ data, onChange, errors }: Props) {
           />
 
           <div>
-            <Checkbox
-              label="A hatályos szabályok értelmében a bejelentett jármű vonatkozásában ÁFA visszaigénylésre jogosult vagyok."
+            <RadioGroup
+              label="A hatályos szabályok értelmében a bejelentett jármű vonatkozásában ÁFA-visszatérítésre jogosult vagyok:"
               name="vatReclaimEligible"
-              checked={data.vatReclaimEligible}
-              onChange={(e) => onChange("vatReclaimEligible", e.target.checked)}
+              required
+              value={data.vatReclaimEligible === null ? "" : data.vatReclaimEligible ? "IGEN" : "NEM"}
+              onChange={handleVatChange}
+              options={[...VAT_RECLAIM_OPTIONS]}
               error={errors.vatReclaimEligible}
             />
             {data.vatReclaimEligible && (

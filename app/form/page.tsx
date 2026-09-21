@@ -61,6 +61,7 @@ type FormData = Step1Data &
 
 const initialData: FormData = {
   // Step 1
+  ownerType: "",
   ownerName: "",
   ownerAddress: "",
   idOrTaxNumber: "",
@@ -114,7 +115,7 @@ const initialData: FormData = {
   // Step 5
   underInfluence: false,
   licenseValid: true,
-  vatReclaimEligible: false,
+  vatReclaimEligible: null,
   taxNumber: "",
   consentToPhotocopy: false,
   cascoClaimRequest: false,
@@ -166,6 +167,7 @@ export default function FormPage() {
     if (currentStep === 1) {
       schema = step1Schema
       data = {
+        ownerType: formData.ownerType,
         ownerName: formData.ownerName,
         ownerAddress: formData.ownerAddress,
         idOrTaxNumber: formData.idOrTaxNumber,
@@ -322,6 +324,7 @@ export default function FormPage() {
         return (
           <Step1PersonalData
             data={{
+              ownerType: formData.ownerType,
               ownerName: formData.ownerName,
               ownerAddress: formData.ownerAddress,
               idOrTaxNumber: formData.idOrTaxNumber,
@@ -416,6 +419,7 @@ export default function FormPage() {
             }}
             onChange={(field, value) => updateField(field, value)}
             errors={errors}
+            companyTaxNumber={formData.ownerType === "CEG" ? formData.idOrTaxNumber : undefined}
           />
         )
       case 6:
@@ -426,6 +430,7 @@ export default function FormPage() {
               knowsCascoTerms: formData.knowsCascoTerms,
             }}
             summary={{
+              ownerType: formData.ownerType,
               ownerName: formData.ownerName,
               ownerAddress: formData.ownerAddress,
               idOrTaxNumber: formData.idOrTaxNumber,

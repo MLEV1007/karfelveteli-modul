@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       report = await prisma.damageReport.create({
         data: {
           referenceNumber,
+          ownerType: data.ownerType ?? null,
           ownerName: data.ownerName,
           ownerAddress: data.ownerAddress,
           idOrTaxNumber: data.idOrTaxNumber,

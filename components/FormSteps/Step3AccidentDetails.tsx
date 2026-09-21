@@ -8,7 +8,8 @@ import Checkbox from "@/components/ui/Checkbox"
 import SelectWithOther from "@/components/ui/SelectWithOther"
 
 export const step3Schema = z.object({
-  accidentDate: z.string().optional(),
+  // Kötelező: a káresemény időpontja a meghatalmazáson is szerepel
+  accidentDate: z.string().min(1, "A baleset időpontjának megadása kötelező"),
   accidentCountry: z.string().optional(),
   accidentCity: z.string().optional(),
   accidentStreet: z.string().optional(),
@@ -100,6 +101,7 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
           value={data.accidentDate ?? ""}
           onChange={handleAccidentDateChange}
           error={errors.accidentDate}
+          required
           min="1900-01-01T00:00"
           max="2099-12-31T23:59"
         />

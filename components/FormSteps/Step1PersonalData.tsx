@@ -2,13 +2,24 @@
 
 import { z } from "zod"
 import Input from "@/components/ui/Input"
+import RadioGroup from "@/components/ui/RadioGroup"
+import {
+  OWNER_TYPE_OPTIONS,
+  OWNER_TYPE_VALUES,
+  TAX_NUMBER_REGEX,
+  getOwnerLabels,
+  type OwnerTypeValue,
+} from "@/lib/ownerType"
 
 const PHONE_REGEX = /^\+?[0-9\s-]{7,20}$/
 
 export const step1Schema = z.object({
+  ownerType: z.enum(OWNER_TYPE_VALUES, {
+    errorMap: () => ({ message: "Válassza ki, hogy magánszemély vagy cég a tulajdonos" }),
+  }),
   ownerName: z.string().min(2, "Legalább 2 karakter szükséges"),
   ownerAddress: z.string().min(2, "A lakcím megadása kötelező"),
-  idOrTaxNumber: z.string().min(5, "Adjon meg érvényes személyi igazolvány- vagy adószámot"),
+  idOrTaxNumber: z.string().min(5, "Adja meg a személyazonosító okmány számát / az adószámot"),
   driverName: z.string().optional(),
   driverAddress: z.string().optional(),
   driverPhone: z.string().optional(),
@@ -22,9 +33,15 @@ export const step1Schema = z.object({
   // Eltérő személy esetén a vezető nevét meg kell adni (különben a PDF vezetői blokkja üres lenne)
   message: "Adja meg a vezető nevét, vagy jelölje, hogy megegyezik a tulajdonossal",
   path: ["driverName"],
+}).refine((d) => d.ownerType !== "CEG" || TAX_NUMBER_REGEX.test(d.idOrTaxNumber.trim()), {
+  message: "Érvénytelen adószám (formátum: 12345678-1-12)",
+  path: ["idOrTaxNumber"],
 })
 
-export type Step1Data = z.infer<typeof step1Schema>
+// Az űrlap-állapotban a típus kezdetben üres (nincs alapértelmezett választás)
+export type Step1Data = Omit<z.infer<typeof step1Schema>, "ownerType"> & {
+  ownerType: OwnerTypeValue | ""
+}
 
 interface Step1Props {
   data: Step1Data
@@ -33,6 +50,9 @@ interface Step1Props {
 }
 
 export default function Step1PersonalData({ data, onChange, errors }: Step1Props) {
+  const isCompany = data.ownerType === "CEG"
+  const labels = getOwnerLabels(data.ownerType || "MAGANSZEMELY")
+
   const handle = (field: keyof Step1Data) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange(field, e.target.value)
 
@@ -67,17 +87,26 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
           Tulajdonos (üzembentartó) adatai
         </h2>
+        <RadioGroup
+          label="A tulajdonos"
+          name="ownerType"
+          required
+          value={data.ownerType}
+          onChange={(val) => onChange("ownerType", val)}
+          options={[...OWNER_TYPE_OPTIONS]}
+          error={errors.ownerType}
+        />
         <Input
-          label="Tulajdonos neve"
+          label={isCompany ? "Cégnév" : "Tulajdonos neve"}
           name="ownerName"
           value={data.ownerName}
           onChange={handleOwnerField("ownerName", "driverName")}
           error={errors.ownerName}
           required
-          placeholder="Teljes név"
+          placeholder={isCompany ? "pl. Példa Kft." : "Teljes név"}
         />
         <Input
-          label="Tulajdonos lakcíme"
+          label={isCompany ? "Székhely" : "Tulajdonos lakcíme"}
           name="ownerAddress"
           value={data.ownerAddress ?? ""}
           onChange={handleOwnerField("ownerAddress", "driverAddress")}
@@ -86,13 +115,13 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
           placeholder="Irányítószám, város, utca, házszám"
         />
         <Input
-          label="Személyi igazolvány- vagy adószám"
+          label={labels.id}
           name="idOrTaxNumber"
           value={data.idOrTaxNumber ?? ""}
           onChange={handle("idOrTaxNumber")}
           error={errors.idOrTaxNumber}
           required
-          placeholder="pl. 123456AB vagy 12345678-1-12"
+          placeholder={isCompany ? "12345678-1-12" : "pl. 123456AB"}
         />
       </section>
 

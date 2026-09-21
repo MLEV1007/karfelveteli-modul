@@ -244,6 +244,26 @@ export function formatDateTimeShort(value?: string | Date | null): string {
 
 // Közös fejléc mindhárom dokumentumhoz. A `details` sorok (azonosító, dátumok) a cím
 // alatt, egymás alatt jelennek meg.
+// A baleset időpontja "2026.09.18. 14:30" formában. Az érték a felhasználó által begépelt
+// falióra-idő (a szerver UTC-ként értelmezve tárolja), ezért a szöveges részeit használjuk,
+// időzóna-átszámítás nélkül. Régi formátum ("2026-09-18T14:30") és ISO ("…:00.000Z") is jó.
+export function formatAccidentDateTime(raw?: string | null): string {
+  if (!raw) return "—"
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
+  if (!m) return raw
+  return m[4] ? `${m[1]}.${m[2]}.${m[3]}. ${m[4]}:${m[5]}` : `${m[1]}.${m[2]}.${m[3]}.`
+}
+
+// "2026. szeptember 21." — a meghatalmazás "Tata, …" keltezéséhez (időpont nélkül)
+export function formatLongDate(date: Date): string {
+  return new Intl.DateTimeFormat("hu-HU", {
+    timeZone: "Europe/Budapest",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date)
+}
+
 export function PageHeader({ title, details }: { title: string; details: string[] }) {
   return (
     <View style={s.headerRow}>

@@ -10,6 +10,8 @@ import {
   VEHICLE_CONDITION_OPTIONS,
 } from "@/lib/protocolChoices"
 import { DAMAGE_TYPE_OPTIONS } from "@/lib/damageTypes"
+import { OWNER_TYPE_OPTIONS, getOwnerLabels } from "@/lib/ownerType"
+import { VAT_RECLAIM_OPTIONS } from "@/lib/protocolChoices"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
 import Textarea from "./ui/Textarea"
@@ -51,6 +53,7 @@ export default function EditForm({ report }: EditFormProps) {
   // Form state inicializálása a report adatokkal
   const [formData, setFormData] = useState({
     // Step 1
+    ownerType: (report.ownerType ?? "") as string,
     ownerName: report.ownerName,
     ownerAddress: report.ownerAddress ?? "",
     idOrTaxNumber: report.idOrTaxNumber ?? "",
@@ -79,7 +82,8 @@ export default function EditForm({ report }: EditFormProps) {
     insuranceCompanyOther: report.insuranceCompanyOther ?? "",
 
     // Step 3
-    accidentDate: report.accidentDate?.toISOString().split("T")[0] ?? "",
+    // datetime-local ("YYYY-MM-DDTHH:mm") — az időpont is megmarad szerkesztéskor
+    accidentDate: report.accidentDate?.toISOString().slice(0, 16) ?? "",
     accidentCountry: report.accidentCountry ?? "",
     accidentCity: report.accidentCity ?? "",
     accidentStreet: report.accidentStreet ?? "",
@@ -197,8 +201,16 @@ export default function EditForm({ report }: EditFormProps) {
           title="1. Személyes adatok"
           description="Tulajdonos és vezető adatai"
         >
+          <RadioGroup
+            label="A tulajdonos"
+            name="ownerType"
+            value={formData.ownerType}
+            onChange={(val) => updateField("ownerType", val)}
+            options={[...OWNER_TYPE_OPTIONS]}
+            error={errors.ownerType}
+          />
           <Input
-            label="Tulajdonos neve"
+            label={formData.ownerType === "CEG" ? "Cégnév" : "Tulajdonos neve"}
             name="ownerName"
             value={formData.ownerName}
             onChange={(e) => updateField("ownerName", e.target.value)}
@@ -206,14 +218,14 @@ export default function EditForm({ report }: EditFormProps) {
             required
           />
           <Input
-            label="Tulajdonos címe"
+            label={formData.ownerType === "CEG" ? "Székhely" : "Tulajdonos címe"}
             name="ownerAddress"
             value={formData.ownerAddress}
             onChange={(e) => updateField("ownerAddress", e.target.value)}
             error={errors.ownerAddress}
           />
           <Input
-            label="Személyi igazolvány- vagy adószám"
+            label={getOwnerLabels(formData.ownerType || null).id}
             name="idOrTaxNumber"
             value={formData.idOrTaxNumber}
             onChange={(e) => updateField("idOrTaxNumber", e.target.value)}
@@ -440,9 +452,9 @@ export default function EditForm({ report }: EditFormProps) {
           description="Hol, mikor, hogyan történt a baleset"
         >
           <Input
-            label="Baleset dátuma"
+            label="Baleset időpontja"
             name="accidentDate"
-            type="date"
+            type="datetime-local"
             value={formData.accidentDate}
             onChange={(e) => updateField("accidentDate", e.target.value)}
             error={errors.accidentDate}
@@ -603,11 +615,12 @@ export default function EditForm({ report }: EditFormProps) {
             checked={formData.licenseValid}
             onChange={(e) => updateField("licenseValid", e.target.checked)}
           />
-          <Checkbox
-            label="ÁFA visszaigénylésre jogosult"
+          <RadioGroup
+            label="ÁFA-visszatérítésre jogosult"
             name="vatReclaimEligible"
-            checked={formData.vatReclaimEligible}
-            onChange={(e) => updateField("vatReclaimEligible", e.target.checked)}
+            value={formData.vatReclaimEligible ? "IGEN" : "NEM"}
+            onChange={(val) => updateField("vatReclaimEligible", val === "IGEN")}
+            options={[...VAT_RECLAIM_OPTIONS]}
           />
           {formData.vatReclaimEligible && (
             <Input

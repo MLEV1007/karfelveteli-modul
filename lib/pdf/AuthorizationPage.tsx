@@ -1,5 +1,18 @@
 import { Page, View, Text } from "@react-pdf/renderer"
-import { s, BORDER, CheckMark, PageHeader, PageFooter, SectionHeader, Cell, SignatureBlock, formatDate, formatDateTimeShort } from "./shared"
+import {
+  s,
+  BORDER,
+  CheckMark,
+  PageHeader,
+  PageFooter,
+  SectionHeader,
+  Cell,
+  SignatureBlock,
+  formatDateTimeShort,
+  formatAccidentDateTime,
+  formatLongDate,
+} from "./shared"
+import { getOwnerLabels } from "@/lib/ownerType"
 import { getInsuranceCompanyLabel } from "@/lib/validation"
 import type { LegalEntity } from "@/lib/workshop"
 import type { FullPdfData } from "./types"
@@ -14,6 +27,9 @@ const WORKSHOP_LOCATION_FALLBACK = "Tata"
 // dokumentum sem hivatkozik a másik két cégre.
 export default function AuthorizationPage({ data, grantee }: { data: FullPdfData; grantee: LegalEntity }) {
   const insurerLabel = getInsuranceCompanyLabel(data.insuranceCompany, data.insuranceCompanyOther)
+  // Magánszemély / cég szerinti feliratok (régi, típus nélküli rekordnál a korábbi közös feliratok)
+  const labels = getOwnerLabels(data.ownerType)
+  const place = grantee.location ?? WORKSHOP_LOCATION_FALLBACK
 
   return (
     <Page size="A4" style={s.page}>
@@ -28,11 +44,11 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
       <View style={[s.outerBorder, { marginTop: 4 }]}>
         <SectionHeader title="MEGHATALMAZÓ (ÜGYFÉL) ADATAI" />
         <View style={s.row}>
-          <Cell label="Név" value={data.ownerName} flex={1} />
-          <Cell label="Lakcím" value={data.ownerAddress} flex={1} noBorderRight />
+          <Cell label={labels.name} value={data.ownerName} flex={1} />
+          <Cell label={labels.address} value={data.ownerAddress} flex={1} noBorderRight />
         </View>
         <View style={s.row}>
-          <Cell label="Személyi igazolvány- / adószám" value={data.idOrTaxNumber} flex={1} />
+          <Cell label={labels.id} value={data.idOrTaxNumber} flex={1} />
           <Cell label="Telefonszám" value={data.customerPhone} flex={1} />
           <Cell label="E-mail cím" value={data.customerEmail} flex={1} noBorderRight />
         </View>
@@ -46,15 +62,25 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
           <Cell label="Alvázszám (VIN)" value={data.vehicleVin} flex={1} noBorderRight />
         </View>
         <View style={s.row}>
-          <Cell label="Illetékes biztosító" value={insurerLabel} flex={1} noBorderRight />
+          <Cell label="Illetékes biztosító" value={insurerLabel} flex={1} />
+          <Cell label="Káresemény időpontja" value={formatAccidentDateTime(data.accidentDate)} width={130} noBorderRight />
+        </View>
+        <View style={[s.row, { alignItems: "center", padding: "4 5" }]}>
+          <Text style={[s.value, { fontWeight: "normal", marginRight: 10, minHeight: 0 }]}>
+            ÁFA-visszatérítésre jogosult:
+          </Text>
+          <CheckMark checked={data.vatReclaimEligible} size={10} />
+          <Text style={[s.value, { marginRight: 12, minHeight: 0 }]}>Igen</Text>
+          <CheckMark checked={!data.vatReclaimEligible} size={10} />
+          <Text style={[s.value, { minHeight: 0 }]}>Nem</Text>
         </View>
       </View>
 
       <Text style={s.docTitle}>MEGHATALMAZÁS KÁRÜGYINTÉZÉSRE</Text>
 
       <Text style={s.paragraph}>
-        Alulírott <Text style={s.bold}>{data.ownerName}</Text> (lakcím: {data.ownerAddress}, személyi
-        igazolvány- vagy adószám: {data.idOrTaxNumber}), mint a fent megjelölt gépjármű tulajdonosa/üzembentartója
+        Alulírott <Text style={s.bold}>{data.ownerName}</Text> ({labels.addressInText}: {data.ownerAddress},{" "}
+        {labels.idInText}: {data.idOrTaxNumber}), mint a fent megjelölt gépjármű tulajdonosa/üzembentartója
         (a továbbiakban: Meghatalmazó), ezúton meghatalmazom a{" "}
         <Text style={s.bold}>{grantee.companyName}</Text>-t (adószám: {grantee.taxNumber},
         a továbbiakban: Meghatalmazott), hogy a fent megjelölt gépjárművön bekövetkezett káreseménnyel
@@ -107,10 +133,15 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
           </View>
         </View>
 
+        {/* Keltezés a bal alsó sarokban: előbb a helység, utána a dátum, időpont nélkül */}
         <View style={s.signatureRow}>
-          <SignatureBlock label="Meghatalmazó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
+          <View style={{ flex: 1, justifyContent: "flex-end", paddingBottom: 14 }}>
+            <Text style={{ fontSize: 10.5, color: "#111827" }}>
+              {place}, {formatLongDate(data.createdAt)}
+            </Text>
+          </View>
           <View style={{ flex: 1 }}>
-            <Text style={[s.label, { marginBottom: 20 }]}>Kelt: {formatDate(data.createdAt)}, {grantee.location ?? WORKSHOP_LOCATION_FALLBACK}</Text>
+            <SignatureBlock label="Meghatalmazó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
           </View>
         </View>
       </View>

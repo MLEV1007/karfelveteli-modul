@@ -13,13 +13,10 @@ import {
   formatDateOnly,
   formatDateTimeShort,
   isDriverSameAsOwner,
+  formatAccidentDateTime,
 } from "./shared"
 import { DAMAGE_TYPE_OPTIONS } from "@/lib/damageTypes"
 import type { FullPdfData } from "./types"
-
-function formatAccidentDate(raw: string): string {
-  return raw.replace("T", " ")
-}
 
 function formatLiableParty(party: string): string {
   const map: Record<string, string> = {
@@ -33,6 +30,7 @@ function formatLiableParty(party: string): string {
 // 1. oldal — Gépjármű kárbejelentő lap
 export default function DamageReportPage({ data }: { data: FullPdfData }) {
   const sameAsOwner = isDriverSameAsOwner(data)
+  const isCompany = data.ownerType === "CEG"
   const hasLicenseData = !!(data.driverLicenseNumber || data.driverLicenseValidUntil)
   const hasOtherVehicle = !!(data.otherVehiclePlate || data.otherVehicleType || data.otherVehicleColor)
   const hasLocationDetails = !!(data.roadNumber || data.kilometerMark)
@@ -70,10 +68,15 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
               <>
                 <SectionHeader title="TULAJDONOS ADATAI" />
                 <View style={s.row}>
-                  <Cell label="Tulajdonos (üzembentartó) neve" value={data.ownerName} flex={1} noBorderRight />
+                  <Cell
+                    label={isCompany ? "Tulajdonos (üzembentartó) cégneve" : "Tulajdonos (üzembentartó) neve"}
+                    value={data.ownerName}
+                    flex={1}
+                    noBorderRight
+                  />
                 </View>
                 <View style={s.row}>
-                  <Cell label="Tulajdonos címe" value={data.ownerAddress} flex={1} />
+                  <Cell label={isCompany ? "Székhely" : "Tulajdonos címe"} value={data.ownerAddress} flex={1} />
                   <Cell label="Telefonszám" value={data.customerPhone} width={95} noBorderRight />
                 </View>
                 <SectionHeader title="VEZETŐ ADATAI" />
@@ -147,7 +150,7 @@ export default function DamageReportPage({ data }: { data: FullPdfData }) {
         <SectionHeader title="A BALESET (KÁRESEMÉNY) KÖRÜLMÉNYEI" />
         <View style={s.row}>
           {data.accidentDate && (
-            <Cell label="A baleset időpontja" value={formatAccidentDate(data.accidentDate)} width={120} />
+            <Cell label="A baleset időpontja" value={formatAccidentDateTime(data.accidentDate)} width={120} />
           )}
           <Cell label="Ország" value={data.accidentCountry} width={90} />
           <Cell label="Város / Település" value={data.accidentCity} flex={1} />
