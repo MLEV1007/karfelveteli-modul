@@ -27,8 +27,8 @@ export const WORK_PROCESS_VALUES = WORK_PROCESS_OPTIONS.map((o) => o.value) as [
 ]
 
 export const VEHICLE_CONDITION_OPTIONS = [
-  { value: "MEGBONTATLAN", label: "Megbontatlan" },
   { value: "MOZGASKEPES", label: "Mozgásképes" },
+  { value: "MOZGASKEPTELEN", label: "Mozgásképtelen" },
 ] as const
 
 export type VehicleConditionValue = (typeof VEHICLE_CONDITION_OPTIONS)[number]["value"]

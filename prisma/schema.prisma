@@ -43,8 +43,8 @@ enum WorkProcess {
 }
 
 enum VehicleCondition {
-  MEGBONTATLAN
   MOZGASKEPES
+  MOZGASKEPTELEN
 }
 
 // Kárleírás gyors opciói (4. lépés) — lásd lib/damageTypes.ts

@@ -143,7 +143,6 @@ export default function CustomerSubmissionEmail({
             </Text>
             <Text style={footerText}>Autószerelő műhely és szerviz</Text>
             <Text style={footerText}>www.m1szerviztata.hu</Text>
-            <Text style={footerText}>info@m1szerviztata.hu</Text>
           </Section>
         </Container>
       </Body>

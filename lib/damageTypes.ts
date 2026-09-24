@@ -15,13 +15,12 @@ export const DAMAGE_TYPE_VALUES = DAMAGE_TYPE_OPTIONS.map((o) => o.value) as [
 
 // A két szélvédős opció kiválasztásakor a kárleírás automatikusan ezzel a mondattal
 // töltődik ki (utána szabadon módosítható). EGY HELYEN módosítható szöveg.
-// FIGYELEM: ideiglenes (draft) szöveg — az ügyféltől kapott végleges mondatokkal cserélendő
-// (a két mondat eltérése — „teherautóról” / „gépkocsiról” — szándékosan megtartva).
+// Végleges, az ügyféltől kapott szöveg (2026-09-24).
 export const DAMAGE_TYPE_PRESET_DESCRIPTIONS: Partial<Record<DamageTypeValue, string>> = {
   SZELVEDO_JAVITAS:
-    "Az előttem haladó teherautóról felpattanó kavics megsértette a gépjármű szélvédőjét, a sérülés javítható.",
+    "Az előttem haladó járműről felpattanó kavics megsértette a gépjármű szélvédőjét, a sérülés javítható.",
   SZELVEDO_CSERE:
-    "Az előttem haladó gépkocsiról felpattanó kavics megsértette a gépjármű szélvédőjét, a szélvédő cseréje szükséges.",
+    "Az előttem haladó járműről felpattanó kavics megsértette a gépjármű szélvédőjét, a szélvédő cseréje szükséges.",
 }
 
 // Igaz, ha a leírás üres, vagy valamelyik előre megadott mondat változtatás nélkül —

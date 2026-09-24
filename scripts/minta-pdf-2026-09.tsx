@@ -133,7 +133,7 @@ const cases: { dir: string; data: FullPdfData }[] = [
       driverSignatureUrl: SIG_DRIVER,
       vehicleCategory: "TEHERGEPKOCSI",
       workProcess: "JAVITAS",
-      vehicleCondition: "MEGBONTATLAN",
+      vehicleCondition: "MOZGASKEPTELEN",
       vehicleMake: "Ford",
       vehicleModel: "Transit Custom",
       vehiclePlate: "aa-bc-123",

@@ -21,6 +21,10 @@ interface WorkshopEmailProps {
   authorizationNames?: string[]
 }
 
+// Rövid, csak a legfontosabb adatokat tartalmazó összefoglaló a műhelynek — a teljes
+// kárfelvételi lap minden részlettel a csatolt PDF-ben található, ezt az emailt nem
+// duplikáljuk. Azonos vizuális stílus a TechnicianNotificationEmail-lel (logó, navy
+// riasztó-doboz rendszámmal, kék CTA gomb, egységes lábléc).
 export default function WorkshopEmail({ data, authorizationNames = [] }: WorkshopEmailProps) {
   const formatDate = (date: Date) =>
     new Intl.DateTimeFormat("hu-HU", {
@@ -31,27 +35,6 @@ export default function WorkshopEmail({ data, authorizationNames = [] }: Worksho
       hour: "2-digit",
       minute: "2-digit",
     }).format(date)
-
-  const formatDateOnly = (value?: string) => {
-    if (!value) return undefined
-    const d = new Date(value)
-    if (Number.isNaN(d.getTime())) return undefined
-    return new Intl.DateTimeFormat("hu-HU", {
-      timeZone: "Europe/Budapest",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(d)
-  }
-
-  const formatLiableParty = (party: string) => {
-    const map: Record<string, string> = {
-      own: "Saját felelősség",
-      other: "Másik fél felelőssége",
-      both: "Mindkét fél felelőssége",
-    }
-    return map[party] || party
-  }
 
   return (
     <Html lang="hu">
@@ -67,44 +50,22 @@ export default function WorkshopEmail({ data, authorizationNames = [] }: Worksho
               style={logoStyle}
             />
           </Section>
-          <Section style={alertBox}>
-            <Heading style={alertHeading}>ÚJ KÁRFELVÉTEL BEÉRKEZETT</Heading>
-            <Text style={plateNumber}>{data.vehiclePlate.toUpperCase()}</Text>
-            <Text style={alertSubtext}>{formatDate(data.createdAt)}</Text>
+
+          <Section style={alertBoxWrapper}>
+            <Section style={alertBox}>
+              <Heading style={alertHeading}>KÁRÜGY LEZÁRVA — ÚJ KÁRFELVÉTEL</Heading>
+              <Text style={plateNumber}>{data.vehiclePlate.toUpperCase()}</Text>
+              <Text style={alertSubtext}>{formatDate(data.createdAt)}</Text>
+            </Section>
           </Section>
 
-          <Section style={section}>
-            <Heading as="h2" style={h2}>
-              1. Személyes adatok
-            </Heading>
-            <DataRow label="Tulajdonos neve" value={data.ownerName} />
-            {data.ownerAddress && (
-              <DataRow label="Tulajdonos címe" value={data.ownerAddress} />
-            )}
-            {data.driverName && <DataRow label="Vezető neve" value={data.driverName} />}
-            {data.driverAddress && (
-              <DataRow label="Vezető címe" value={data.driverAddress} />
-            )}
-            {data.driverBirthDate && (
-              <DataRow label="Vezető születési ideje" value={formatDateOnly(data.driverBirthDate)} />
-            )}
-            {data.driverLicenseNumber && (
-              <DataRow label="Vezetői engedély száma" value={data.driverLicenseNumber} />
-            )}
-            {data.driverLicenseValidUntil && (
-              <DataRow
-                label="Vezetői engedély érvényessége"
-                value={formatDateOnly(data.driverLicenseValidUntil)}
-              />
-            )}
-            <DataRow
-              label="E-mail"
-              value={
-                <Link href={`mailto:${data.customerEmail}`} style={link}>
-                  {data.customerEmail}
-                </Link>
-              }
-            />
+          <Text style={text}>
+            A kárügy lezárásra került, a teljes kárfelvételi lap csatoltan érkezik PDF
+            formátumban. Az alábbiakban a legfontosabb adatok gyors áttekintéshez.
+          </Text>
+
+          <Section style={summaryBox}>
+            <DataRow label="Tulajdonos" value={data.ownerName} />
             {data.customerPhone && (
               <DataRow
                 label="Telefon"
@@ -115,150 +76,84 @@ export default function WorkshopEmail({ data, authorizationNames = [] }: Worksho
                 }
               />
             )}
-          </Section>
-
-          <Section style={section}>
-            <Heading as="h2" style={h2}>
-              2. Jármű és biztosítási adatok
-            </Heading>
-            <DataRow label="Rendszám" value={data.vehiclePlate.toUpperCase()} />
-            <DataRow label="Gyártmány" value={data.vehicleMake} />
-            <DataRow label="Típus" value={data.vehicleModel} />
-            {data.vehicleYear && (
-              <DataRow label="Évjárat" value={data.vehicleYear.toString()} />
-            )}
-            {data.vehicleVin && <DataRow label="Alvázszám" value={data.vehicleVin} />}
-            <DataRow label="Casco biztosítás" value={data.hasCasco ? "Igen" : "Nem"} />
-            {data.cascoInsurer && (
-              <DataRow label="Casco biztosító" value={data.cascoInsurer} />
-            )}
-            {data.liabilityInsurer && (
-              <DataRow label="Kötelező biztosító" value={data.liabilityInsurer} />
-            )}
-          </Section>
-
-          <Section style={section}>
-            <Heading as="h2" style={h2}>
-              3. Baleset körülményei
-            </Heading>
-            {data.accidentDate && (
-              <DataRow label="Baleset dátuma" value={data.accidentDate} />
-            )}
-            {data.accidentCountry && (
-              <DataRow label="Ország" value={data.accidentCountry} />
-            )}
-            {data.accidentCity && <DataRow label="Város" value={data.accidentCity} />}
-            {data.accidentStreet && <DataRow label="Utca" value={data.accidentStreet} />}
             <DataRow
-              label="Rendőrség részvétele"
-              value={data.policeInvolved ? "Igen" : "Nem"}
+              label="E-mail"
+              value={
+                <Link href={`mailto:${data.customerEmail}`} style={link}>
+                  {data.customerEmail}
+                </Link>
+              }
             />
-            {data.policeStation && (
-              <DataRow label="Intézkedő kapitányság" value={data.policeStation} />
-            )}
-            {data.otherVehiclePlate && (
-              <DataRow label="Másik jármű rendszáma" value={data.otherVehiclePlate} />
-            )}
-            {data.otherVehicleType && (
-              <DataRow label="Másik jármű típusa" value={data.otherVehicleType} />
-            )}
-            {data.otherVehicleColor && (
-              <DataRow label="Másik jármű színe" value={data.otherVehicleColor} />
-            )}
-            {data.additionalParties && (
-              <DataRow label="További érintettek" value={data.additionalParties} />
-            )}
+            <DataRow label="Jármű" value={`${data.vehicleMake} ${data.vehicleModel}`} />
+            <DataRow
+              label="Biztosítás"
+              value={
+                data.hasCasco
+                  ? `Casco${data.cascoInsurer ? ` — ${data.cascoInsurer}` : ""}`
+                  : data.liabilityInsurer
+                    ? `Kötelező — ${data.liabilityInsurer}`
+                    : "Nincs megadva"
+              }
+            />
           </Section>
 
           <Section style={section}>
             <Heading as="h2" style={h2}>
-              4. Kár leírása
+              Kár leírása
             </Heading>
             <Text style={descriptionText}>{data.damageDescription}</Text>
-            {data.photoUrls && data.photoUrls.length > 0 && (
-              <DataRow
-                label="Fényképek száma"
-                value={`${data.photoUrls.length} db`}
-              />
-            )}
           </Section>
 
-          <Section style={section}>
-            <Heading as="h2" style={h2}>
-              5. Nyilatkozatok
-            </Heading>
-            <DataRow label="Felelős fél" value={formatLiableParty(data.liableParty)} />
-            <DataRow
-              label="Alkohol/kábítószer befolyás"
-              value={data.underInfluence ? "Igen ⚠️" : "Nem"}
-            />
-            <DataRow
-              label="Érvényes jogosítvány"
-              value={data.licenseValid ? "Igen" : "Nem ⚠️"}
-            />
-            {data.taxNumber && <DataRow label="Adószám" value={data.taxNumber} />}
-            <DataRow
-              label="Fotómásolási engedély"
-              value={data.consentToPhotocopy ? "Igen" : "Nem"}
-            />
-          </Section>
-
-          {/* Feltöltött fotók */}
           {data.photoUrls && data.photoUrls.length > 0 && (
             <Section style={section}>
               <Heading as="h2" style={h2}>
-                Feltöltött fotók
+                Feltöltött fotók ({data.photoUrls.length} db)
               </Heading>
               {data.photoUrls.map((url, index) => (
-                <Row key={index} style={dataRow}>
-                  <Column style={valueColumn}>
-                    <Link href={url} style={link}>
-                      Fotó {index + 1} megtekintése →
-                    </Link>
-                  </Column>
-                </Row>
+                <Text key={index} style={photoLink}>
+                  <Link href={url} style={link}>
+                    Fotó {index + 1} megtekintése →
+                  </Link>
+                </Text>
               ))}
             </Section>
           )}
 
-          <Hr style={hr} />
-
           {/* Szerkesztési link (csak szerviznek) */}
           {data.editToken && (
-            <Section style={editLinkSection}>
-              <Heading as="h2" style={h2}>
-                Jelentés szerkesztése
-              </Heading>
-              <Text style={editDescription}>
-                Az alábbi linkkel szerkesztheti a beküldött adatokat (fotók és aláírások
-                kivételével). A link 14 napig érvényes a jegyzőkönyv lezárásától számítva.
-              </Text>
+            <Section style={buttonSection}>
               <Button
                 href={`${process.env.NEXT_PUBLIC_APP_URL}/api/edit/session?id=${data.id}&token=${data.editToken}`}
-                style={editButton}
+                style={button}
               >
-                Szerkesztés megnyitása →
+                Beküldött adatok szerkesztése →
               </Button>
+              <Text style={smallText}>A szerkesztési link 14 napig érvényes.</Text>
             </Section>
           )}
 
           <Hr style={hr} />
 
-          <Section style={section}>
-            <Text style={footerNote}>
-              A teljes kárfelvételi lapot PDF formátumban csatoltan küldjük.
+          <Section style={footer}>
+            <Text style={footerText}>
+              Csatolva: a teljes kárfelvételi lap PDF-ben
+              {authorizationNames.length > 0 && (
+                <>
+                  {" "}
+                  és {authorizationNames.length > 1 ? "a meghatalmazások" : "a meghatalmazás"} (
+                  <strong>{authorizationNames.join(", ")}</strong>) — közvetlenül továbbítható a
+                  biztosítónak.
+                </>
+              )}
             </Text>
-            {authorizationNames.length > 0 && (
-              <Text style={footerNote}>
-                Csatolt meghatalmazás{authorizationNames.length > 1 ? "ok (cégenként külön PDF-ben)" : ""}:{" "}
-                <strong>{authorizationNames.join(", ")}</strong>. A meghatalmazás-fájlok egyenként,
-                közvetlenül továbbíthatók az illetékes biztosítónak — a rendszer a biztosítónak nem küld
-                semmit.
-              </Text>
-            )}
-            <Text style={footerNote}>
+            <Text style={footerText}>
               Azonosító: <strong>{data.referenceNumber}</strong>
             </Text>
+            <Hr style={hr} />
+            <Text style={footerText}>
+              <strong>M1 Szerviz Tata</strong>
+            </Text>
+            <Text style={footerText}>Autóüveg · Karosszéria · Autószerviz</Text>
           </Section>
         </Container>
       </Body>
@@ -282,7 +177,6 @@ function DataRow({ label, value }: { label: string; value: React.ReactNode }) {
 const logoSection = {
   textAlign: "center" as const,
   padding: "24px 40px 0",
-  backgroundColor: "#ffffff",
 }
 
 const logoStyle = {
@@ -300,7 +194,14 @@ const container = {
   margin: "0 auto",
   padding: "20px 0 48px",
   marginBottom: "64px",
-  maxWidth: "700px",
+  maxWidth: "600px",
+}
+
+// A vízszintes 40px térközt a tartalomhoz a wrapper PADDING-je adja, nem a belső doboz
+// margin-ja — táblázat-alapú (Section) elemeken a margin levelezőkliensenként eltérően
+// (vagy egyáltalán nem) érvényesül, és a navy háttér ilyenkor túllóghat a kártya szélén.
+const alertBoxWrapper = {
+  padding: "0 40px",
 }
 
 const alertBox = {
@@ -308,19 +209,19 @@ const alertBox = {
   color: "#ffffff",
   padding: "24px",
   textAlign: "center" as const,
-  borderRadius: "8px 8px 0 0",
+  borderRadius: "8px",
 }
 
 const alertHeading = {
   color: "#ffffff",
-  fontSize: "20px",
+  fontSize: "18px",
   fontWeight: "bold",
   margin: "0 0 12px 0",
 }
 
 const plateNumber = {
   color: "#fbbf24",
-  fontSize: "32px",
+  fontSize: "28px",
   fontWeight: "bold",
   margin: "8px 0",
   letterSpacing: "2px",
@@ -332,22 +233,38 @@ const alertSubtext = {
   margin: "8px 0 0 0",
 }
 
+const text = {
+  color: "#525f7f",
+  fontSize: "16px",
+  lineHeight: "24px",
+  textAlign: "left" as const,
+  padding: "0 40px",
+  margin: "16px 0",
+}
+
+const summaryBox = {
+  backgroundColor: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  borderRadius: "8px",
+  padding: "16px",
+  margin: "16px 40px",
+  width: "auto",
+}
+
 const section = {
   padding: "0 40px",
-  margin: "24px 0",
+  margin: "16px 0",
 }
 
 const h2 = {
   color: "#1e3a5f",
-  fontSize: "16px",
+  fontSize: "14px",
   fontWeight: "bold",
-  margin: "0 0 16px 0",
-  borderBottom: "2px solid #e2e8f0",
-  paddingBottom: "8px",
+  margin: "0 0 8px 0",
 }
 
 const dataRow = {
-  marginBottom: "8px",
+  marginBottom: "6px",
 }
 
 const labelColumn = {
@@ -387,38 +304,23 @@ const descriptionText = {
   color: "#1e293b",
   fontSize: "14px",
   lineHeight: "20px",
-  margin: "0 0 12px 0",
+  margin: "0",
   whiteSpace: "pre-wrap" as const,
 }
 
-const hr = {
-  borderColor: "#e6ebf1",
-  margin: "32px 40px",
-}
-
-const footerNote = {
-  color: "#64748b",
-  fontSize: "13px",
-  lineHeight: "20px",
-  margin: "8px 0",
-  textAlign: "center" as const,
-}
-
-const editLinkSection = {
-  padding: "0 40px",
-  margin: "24px 0",
-  textAlign: "center" as const,
-}
-
-const editDescription = {
-  color: "#64748b",
+const photoLink = {
+  color: "#525f7f",
   fontSize: "14px",
-  lineHeight: "20px",
-  margin: "0 0 20px 0",
-  textAlign: "center" as const,
+  margin: "4px 0",
 }
 
-const editButton = {
+const buttonSection = {
+  textAlign: "center" as const,
+  padding: "8px 40px",
+  margin: "16px 0",
+}
+
+const button = {
   display: "inline-block",
   backgroundColor: "#2563eb",
   color: "#ffffff",
@@ -427,5 +329,29 @@ const editButton = {
   textDecoration: "none",
   padding: "14px 28px",
   borderRadius: "8px",
-  margin: "8px 0",
+}
+
+const smallText = {
+  color: "#94a3b8",
+  fontSize: "12px",
+  lineHeight: "18px",
+  textAlign: "center" as const,
+  margin: "12px 0 0 0",
+}
+
+const hr = {
+  borderColor: "#e6ebf1",
+  margin: "24px 40px",
+}
+
+const footer = {
+  textAlign: "center" as const,
+  padding: "0 40px",
+}
+
+const footerText = {
+  color: "#8898aa",
+  fontSize: "12px",
+  lineHeight: "18px",
+  margin: "4px 0",
 }

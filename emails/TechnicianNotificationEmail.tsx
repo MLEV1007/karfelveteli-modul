@@ -58,13 +58,10 @@ export default function TechnicianNotificationEmail({
           </Section>
 
           <Text style={text}>
-            {ownerName} ügyfelünk beküldte a kárfelvételi adatait és a meghatalmazást aláírta. A
-            kárügy lezárásához és a végleges dokumentumok (Kárbejelentő, Meghatalmazás,
-            Iratösszesítő, Jegyzőkönyv) kiküldéséhez szükséges a technikusi jegyzőkönyv
-            kitöltése: átvétel/visszaadás időpontjai, a gépjármű felszereltsége, az átvételkori
-            állapot, a szükséges meghatalmazás(ok) kiválasztása és az átvevő aláírása. Csak a
-            kiválasztott meghatalmazások készülnek el (cégenként külön PDF-ben), ezeket az ügyfél és
-            a műhely kapja meg.
+            {ownerName} ügyfelünk beküldte a kárfelvételi adatait és aláírta a meghatalmazást. A
+            kárügy lezárásához töltse ki a technikusi jegyzőkönyvet: átvétel/visszaadás időpontjai,
+            felszereltség, átvételkori állapot, a szükséges meghatalmazás(ok) kiválasztása és
+            aláírás.
           </Text>
 
           <Section style={buttonSection}>
@@ -191,7 +188,7 @@ const smallText = {
 
 const hr = {
   borderColor: "#e6ebf1",
-  margin: "32px 40px",
+  margin: "24px 40px",
 }
 
 const footer = {
@@ -202,6 +199,6 @@ const footer = {
 const footerText = {
   color: "#8898aa",
   fontSize: "12px",
-  lineHeight: "16px",
+  lineHeight: "18px",
   margin: "4px 0",
 }
