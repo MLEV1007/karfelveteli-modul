@@ -107,14 +107,22 @@ export default function Home() {
       <footer className="bg-white border-t border-gray-100 py-5 px-6">
         <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
           <span>© {new Date().getFullYear()} M1 Szerviz Tata — 2890 Tata, Kalapács utca 1.</span>
-          <a
-            href="https://www.m1szerviztata.hu/adatkezeles/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gray-600 transition-colors underline underline-offset-2"
-          >
-            ÁSZF / Adatkezelési tájékoztató
-          </a>
+          <span className="flex items-center gap-4">
+            <Link
+              href="/aszf"
+              className="hover:text-gray-600 transition-colors underline underline-offset-2"
+            >
+              ÁSZF
+            </Link>
+            <a
+              href="https://www.m1szerviztata.hu/adatkezeles/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-600 transition-colors underline underline-offset-2"
+            >
+              Adatkezelési tájékoztató
+            </a>
+          </span>
         </div>
       </footer>
     </div>
