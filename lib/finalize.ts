@@ -164,6 +164,9 @@ interface FinalizeOptions {
   // Egy már COMPLETED rekordot is újra végigfuttat a pipeline-on (új PDF + email) —
   // a műhelyi szerkesztés utáni dokumentum-frissítéshez használja az /api/edit route.
   force?: boolean
+  // Mely végleges e-maileket küldje ki (alapértelmezés: mindkettőt — a technikusi lezárás útja).
+  // Az admin „újragenerálás” alapból NEM küld e-mailt, csak a kijelölt címzetteknek.
+  emails?: { customer: boolean; workshop: boolean }
 }
 
 // A technikus lezárása (vagy egy újrapróbálkozás, vagy egy utólagos szerkesztés) után lefutó
@@ -234,7 +237,7 @@ export async function finalizeReport(
     const finalPdfUrl = await uploadFinalPdf(pdfBuffer, report.vehiclePlate, report.id)
     const authorizationPdfUrls = await uploadAuthorizationPdfs(authorizationPdfs, report.vehiclePlate, report.id)
 
-    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer, authorizationPdfs)
+    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer, authorizationPdfs, options?.emails)
 
     await prisma.damageReport.update({
       where: { id: report.id },

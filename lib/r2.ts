@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 const r2Client = new S3Client({
@@ -52,4 +52,18 @@ export async function getPresignedUploadUrl(
     uploadUrl,
     publicUrl: `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${key}`,
   }
+}
+
+// Rövid életű letöltési URL egy R2-ben tárolt fotóhoz (admin felület). A `publicUrl` a DB-ben
+// tárolt nyilvános URL; csak a saját CLOUDFLARE_R2_PUBLIC_URL alatti kulcs írható alá.
+// Null, ha az URL nem a mi R2 bucketünké, vagy az R2 nincs beállítva.
+export async function getPresignedDownloadUrl(publicUrl: string, expiresInSeconds: number): Promise<string | null> {
+  const base = process.env.CLOUDFLARE_R2_PUBLIC_URL
+  const bucket = process.env.CLOUDFLARE_R2_BUCKET_NAME
+  if (!base || !bucket || !process.env.CLOUDFLARE_R2_ACCOUNT_ID) return null
+  const prefix = base.replace(/\/+$/, "") + "/"
+  if (!publicUrl.startsWith(prefix)) return null
+  const key = decodeURIComponent(publicUrl.slice(prefix.length).split(/[?#]/)[0])
+  if (!key || key.split("/").some((s) => s === ".." || s === "")) return null
+  return getSignedUrl(r2Client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: expiresInSeconds })
 }

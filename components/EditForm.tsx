@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { DamageReport } from "@prisma/client"
 import { sortedInsuranceOptions, sortedInsurerNameOptions } from "@/lib/validation"
@@ -43,13 +43,24 @@ const VEHICLE_TYPE_OPTIONS = [
 
 interface EditFormProps {
   report: DamageReport
+  // "token" (alapértelmezés): ügyfél/műhelyi tokenes szerkesztés (PATCH /api/edit, mentéskor a lezárt
+  // rekord dokumentumai újragenerálódnak és kimennek). "admin": admin szerkesztés
+  // (PATCH /api/admin/kitoltesek/[id], optimista zárolással, dokumentum-újragenerálás opcionális).
+  mode?: "token" | "admin"
 }
 
-export default function EditForm({ report }: EditFormProps) {
+export default function EditForm({ report, mode = "token" }: EditFormProps) {
+  const isAdmin = mode === "admin"
   const router = useRouter()
+  // Admin mód: az űrlap betöltésekor kapott updatedAt — ezt küldjük vissza az optimista zároláshoz
+  const [lockStamp, setLockStamp] = useState(() => new Date(report.updatedAt).toISOString())
+  const [regenerate, setRegenerate] = useState(false)
+  const [conflict, setConflict] = useState(false)
+  const submitting = useRef(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [successNote, setSuccessNote] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Form state inicializálása a report adatokkal
@@ -140,11 +151,53 @@ export default function EditForm({ report }: EditFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitting.current) return // dupla beküldés ellen (a state frissítése előtti gyors kattintás)
+    submitting.current = true
     setIsSubmitting(true)
     setSubmitError(null)
     setSubmitSuccess(false)
+    setSuccessNote("")
+    setConflict(false)
 
     try {
+      if (isAdmin) {
+        const response = await fetch(`/api/admin/kitoltesek/${report.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ updatedAt: lockStamp, regenerate, data: formData }),
+        })
+        const data = await response.json().catch(() => ({}))
+
+        if (response.status === 401) {
+          throw new Error("A munkamenet lejárt. Jelentkezz be újra, majd töltsd újra az oldalt (a módosításaid még nem mentődtek).")
+        }
+        if (response.status === 409) {
+          setConflict(true)
+          throw new Error(data.error || "A kitöltést közben valaki módosította. Töltsd újra az oldalt.")
+        }
+        if (response.status === 400 && data.details && typeof data.details === "object") {
+          const fieldErrors: Record<string, string> = {}
+          for (const [key, msgs] of Object.entries(data.details as Record<string, string[]>)) {
+            if (msgs?.[0]) fieldErrors[key] = msgs[0]
+          }
+          setErrors(fieldErrors)
+        }
+        if (!response.ok) {
+          throw new Error(data.error || "Sikertelen mentés")
+        }
+
+        // Sikeres mentés: az új zárolási bélyeg, hogy egy újabb mentés ne ütközzön a sajátunkkal
+        if (typeof data.updatedAt === "string") setLockStamp(data.updatedAt)
+        setRegenerate(false)
+        setSubmitSuccess(true)
+        const notes = [data.regenerateNote, data.regenerateError && `A dokumentumok újragenerálása nem sikerült: ${data.regenerateError}`].filter(Boolean)
+        if (data.unchanged) notes.unshift("Nem történt változás, nem mentettünk semmit.")
+        else if (data.regenerated) notes.unshift("A dokumentumok újragenerálva.")
+        setSuccessNote(notes.join(" "))
+        window.scrollTo({ top: 0, behavior: "smooth" })
+        return
+      }
+
       const response = await fetch("/api/edit", {
         method: "PATCH",
         headers: {
@@ -189,6 +242,7 @@ export default function EditForm({ report }: EditFormProps) {
       )
       window.scrollTo({ top: 0, behavior: "smooth" })
     } finally {
+      submitting.current = false
       setIsSubmitting(false)
     }
   }
@@ -200,6 +254,13 @@ export default function EditForm({ report }: EditFormProps) {
         {submitError && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <p className="text-red-800 dark:text-red-200 text-sm">{submitError}</p>
+            {isAdmin && conflict && (
+              <div className="mt-3">
+                <Button type="button" variant="secondary" onClick={() => window.location.reload()}>
+                  Oldal újratöltése
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -209,6 +270,14 @@ export default function EditForm({ report }: EditFormProps) {
             <p className="text-green-800 dark:text-green-200 text-sm font-medium">
               ✓ A módosítások sikeresen mentve!
             </p>
+            {successNote && <p className="text-green-800 dark:text-green-200 text-sm mt-1">{successNote}</p>}
+            {isAdmin && (
+              <p className="mt-2 text-sm">
+                <a href={`/admin/kitoltesek/${report.id}`} className="text-blue-700 dark:text-blue-300 underline">
+                  Vissza a kitöltés részleteihez
+                </a>
+              </p>
+            )}
           </div>
         )}
 
@@ -712,7 +781,7 @@ export default function EditForm({ report }: EditFormProps) {
         {/* Jegyzőkönyv — kategória / munkafolyamat / állapot (technikusi adatok) */}
         <FormSection
           title="Jegyzőkönyv: jármű kategória, munkafolyamat, állapot"
-          description="A technikus választásai a Jegyzőkönyvön — mentéskor a PDF újragenerálódik"
+          description={isAdmin ? "A technikus választásai a Jegyzőkönyvön" : "A technikus választásai a Jegyzőkönyvön — mentéskor a PDF újragenerálódik"}
         >
           <RadioGroup
             label="Jármű kategória"
@@ -802,14 +871,29 @@ export default function EditForm({ report }: EditFormProps) {
           </div>
         </FormSection>
 
+        {/* Admin: opcionális dokumentum-újragenerálás (alapból kijelöletlen; csak lezárt rekordnál) */}
+        {isAdmin && report.status === "COMPLETED" && (
+          <div className="mt-6 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <Checkbox
+              label="Dokumentumok (PDF-ek) újragenerálása mentés után — e-mail nem megy ki"
+              name="regenerate"
+              checked={regenerate}
+              onChange={(e) => setRegenerate(e.target.checked)}
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 ml-7">
+              E-mail újraküldéséhez a részletek oldalon használd a „Dokumentumok újragenerálása” műveletet.
+            </p>
+          </div>
+        )}
+
         {/* Submit gomb */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
           <Button
             type="button"
             variant="secondary"
-            onClick={() => router.push("/")}
+            onClick={() => router.push(isAdmin ? `/admin/kitoltesek/${report.id}` : "/")}
           >
-            Mégse
+            {isAdmin ? "Vissza" : "Mégse"}
           </Button>
 
           <Button

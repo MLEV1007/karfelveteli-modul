@@ -4,10 +4,19 @@ const nextConfig = {
     serverComponentsExternalPackages: ["@react-pdf/renderer"],
   },
   async headers() {
+    // Admin felület (oldalak és API-k): MIME-sniffing tiltása, nincs Referer-szivárgás, nem keretezhető
+    // (clickjacking ellen). A no-store / noindex fejléceket a middleware adja.
+    const adminSecurityHeaders = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "no-referrer" },
+      { key: "X-Frame-Options", value: "DENY" },
+    ]
     // Ezek az útvonalak email-ből kapott tokent fogadnak query paraméterben
     // (egyszeri csere session cookie-ra) — no-referrer, hogy a token semmilyen
     // harmadik fél felé ne szivárogjon ki a Referer headerben.
     return [
+      { source: "/admin/:path*", headers: adminSecurityHeaders },
+      { source: "/api/admin/:path*", headers: adminSecurityHeaders },
       {
         source: "/edit/:path*",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],

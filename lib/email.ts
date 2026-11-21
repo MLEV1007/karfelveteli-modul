@@ -77,7 +77,9 @@ export async function sendCustomerSubmissionEmail(data: {
 export async function sendFinalReportEmails(
   data: EmailData,
   pdfBuffer: Buffer,
-  authorizationPdfs: { filename: string; companyName: string; buffer: Buffer }[] = []
+  authorizationPdfs: { filename: string; companyName: string; buffer: Buffer }[] = [],
+  // Alapértelmezés: mindkét fél kap emailt. Az admin újragenerálás választhat címzettet.
+  recipients: { customer: boolean; workshop: boolean } = { customer: true, workshop: true }
 ): Promise<void> {
   // Lazy initialization - csak runtime-ban inicializálunk
   const resend = new Resend(process.env.RESEND_API_KEY)
@@ -94,7 +96,7 @@ export async function sendFinalReportEmails(
   const authorizationNames = authorizationPdfs.map((pdf) => pdf.companyName)
 
   // 1. Email az ügyfélnek — az összevont kárfelvételi PDF + a kiválasztott meghatalmazások külön-külön
-  await resend.emails.send({
+  if (recipients.customer) await resend.emails.send({
     from: process.env.EMAIL_FROM!,
     to: resolveRecipients(data.customerEmail),
     subject: `Kárfelvételi visszaigazolás — ${data.vehiclePlate.toUpperCase()}`,
@@ -103,7 +105,7 @@ export async function sendFinalReportEmails(
   })
 
   // 2. Email a műhelynek — ugyanazok a mellékletek, külön-külön
-  await resend.emails.send({
+  if (recipients.workshop) await resend.emails.send({
     from: process.env.EMAIL_FROM!,
     to: resolveRecipients(getWorkshopRecipients()),
     subject: `Új kárfelvétel — ${data.vehiclePlate.toUpperCase()} — ${new Intl.DateTimeFormat("hu-HU", {

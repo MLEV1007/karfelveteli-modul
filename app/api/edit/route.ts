@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { editReportSchema, editReportLegacyWindshieldSchema } from "@/lib/validation"
-import { isWindshieldDamage, normalizeWindshieldCause } from "@/lib/damageTypes"
+import { pickEditSchema, buildEditUpdateData } from "@/lib/editReportData"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
 import { prisma } from "@/lib/db"
@@ -41,9 +40,7 @@ export async function PATCH(req: NextRequest) {
     // 4. Zod validáció (strict mode — csak engedélyezett mezők)
     // Régi (szélvédő-ok nélkül beküldött) szélvédős rekord: ha a kérés sem küld okot, az ok
     // nem kötelező és null marad — így a korábbi rekordok változatlanul szerkeszthetők.
-    const isLegacyWindshield =
-      isWindshieldDamage(report.damageType) && !report.windshieldCause && !data.windshieldCause
-    const result = (isLegacyWindshield ? editReportLegacyWindshieldSchema : editReportSchema).safeParse(data)
+    const result = pickEditSchema(report, data).safeParse(data)
     if (!result.success) {
       return NextResponse.json(
         {
@@ -56,86 +53,11 @@ export async function PATCH(req: NextRequest) {
 
     const validatedData = result.data
 
-    // 5. Prisma update (csak a validált mezők)
+    // 5. Prisma update (csak a validált mezők; a közös leképezés a lib/editReportData.ts-ben van —
+    // photoUrls, aláírások, gdprConsent, createdAt, emailSentAt SZÁNDÉKOSAN nincs felsorolva)
     await prisma.damageReport.update({
       where: { id },
-      data: {
-        // Step 1
-        ownerType: validatedData.ownerType,
-        ownerName: validatedData.ownerName,
-        ownerAddress: validatedData.ownerAddress ?? null,
-        idOrTaxNumber: validatedData.idOrTaxNumber ?? null,
-        driverSameAsOwner: validatedData.driverSameAsOwner,
-        driverName: validatedData.driverName ?? null,
-        driverAddress: validatedData.driverAddress ?? null,
-        driverPhone: validatedData.driverPhone ?? null,
-        driverBirthDate: validatedData.driverBirthDate
-          ? new Date(validatedData.driverBirthDate)
-          : null,
-        driverLicenseNumber: validatedData.driverLicenseNumber ?? null,
-        driverLicenseValidUntil: validatedData.driverLicenseValidUntil
-          ? new Date(validatedData.driverLicenseValidUntil)
-          : null,
-        customerEmail: validatedData.customerEmail,
-        customerPhone: validatedData.customerPhone ?? null,
-
-        // Step 2
-        vehiclePlate: validatedData.vehiclePlate,
-        vehicleMake: validatedData.vehicleMake,
-        vehicleModel: validatedData.vehicleModel,
-        vehicleYear: validatedData.vehicleYear ?? null,
-        vehicleVin: validatedData.vehicleVin ?? null,
-        hasCasco: validatedData.hasCasco,
-        cascoInsurer: validatedData.cascoInsurer ?? null,
-        liabilityInsurer: validatedData.liabilityInsurer ?? null,
-        relevantInsurer: validatedData.relevantInsurer ?? null,
-        insuranceCompany: validatedData.insuranceCompany ?? null,
-        insuranceCompanyOther: validatedData.insuranceCompanyOther ?? null,
-
-        // Step 3
-        accidentDate: validatedData.accidentDate
-          ? new Date(validatedData.accidentDate)
-          : null,
-        accidentCountry: validatedData.accidentCountry ?? null,
-        accidentCity: validatedData.accidentCity ?? null,
-        accidentStreet: validatedData.accidentStreet ?? null,
-        outsideSettlement: validatedData.outsideSettlement,
-        roadNumber: validatedData.roadNumber ?? null,
-        kilometerMark: validatedData.kilometerMark ?? null,
-        policeInvolved: validatedData.policeInvolved,
-        policeStation: validatedData.policeStation ?? null,
-        otherVehiclePlate: validatedData.otherVehiclePlate ?? null,
-        otherVehicleType: validatedData.otherVehicleType ?? null,
-        otherVehicleColor: validatedData.otherVehicleColor ?? null,
-        additionalParties: validatedData.additionalParties ?? null,
-        vehicleInspectionLocation: validatedData.vehicleInspectionLocation ?? null,
-
-        // Step 4
-        damageType: validatedData.damageType,
-        ...normalizeWindshieldCause(validatedData),
-        damageDescription: validatedData.damageDescription ?? null,
-        damagePoints: validatedData.damagePoints ?? [],
-
-        // Step 5
-        liableParty: validatedData.liableParty ?? null,
-        underInfluence: validatedData.underInfluence,
-        licenseValid: validatedData.licenseValid,
-        vatReclaimEligible: validatedData.vatReclaimEligible,
-        taxNumber: validatedData.taxNumber ?? null,
-        consentToPhotocopy: validatedData.consentToPhotocopy,
-        cascoClaimRequest: validatedData.cascoClaimRequest,
-        vehicleEncumbrance: validatedData.vehicleEncumbrance,
-
-        // Jegyzőkönyv kizárólagos választásai — csak ha a technikus megadta őket
-        // (undefined esetén a Prisma nem írja felül a meglévő értéket)
-        vehicleCategory: validatedData.vehicleCategory,
-        workProcess: validatedData.workProcess,
-        vehicleCondition: validatedData.vehicleCondition,
-        selectedAuthorizations: validatedData.selectedAuthorizations,
-
-        // photoUrls, aláírások, gdprConsent, createdAt, emailSentAt
-        // SZÁNDÉKOSAN NINCS FELSOROLVA — readonly mezők
-      },
+      data: buildEditUpdateData(validatedData),
     })
 
     // 6. Ha a jegyzőkönyv már lezárva volt (COMPLETED), a szerkesztés miatt a korábban
