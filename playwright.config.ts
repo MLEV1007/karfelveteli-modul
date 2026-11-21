@@ -41,6 +41,9 @@ export default defineConfig({
       RESEND_API_KEY: "e2e-fake",
       WORKSHOP_EMAIL: "workshop@example.invalid",
       EMAIL_FROM: "noreply@example.invalid",
+      // Admin auth: nyilvánvalóan hamis, csak teszthez való értékek (nem valódi titkok)
+      ADMIN_SESSION_SECRET: "e2e-fake-admin-session-secret-not-real-0123456789",
+      ADMIN_TOTP_ENC_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
     },
   },
 })

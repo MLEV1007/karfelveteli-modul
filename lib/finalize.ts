@@ -1,10 +1,64 @@
-import type { DamageReport } from "@prisma/client"
+import type { DamageReport, Prisma } from "@prisma/client"
 import { randomUUID } from "crypto"
 import { prisma } from "./db"
 import { generateMainReportPDF, generateAuthorizationPdfs, type FullPdfData } from "./pdf"
 import { sendFinalReportEmails } from "./email"
 import { uploadFinalPdf, uploadAuthorizationPdfs, downloadSignatureAsBase64 } from "./storage"
 import { getDefaultEquipmentChecklist } from "./equipment"
+import {
+  WitnessError,
+  requireTwoActiveWitnesses,
+  toSnapshot,
+  loadWitnessSignatureDataUrl,
+  type WitnessSnapshotEntry,
+} from "./witnesses"
+import type { PdfWitness } from "./pdf/types"
+
+// A mentett witnessSnapshot JSON ellenőrzése: pontosan 2, teljes bejegyzés kell
+function parseWitnessSnapshot(value: unknown): WitnessSnapshotEntry[] | null {
+  if (!Array.isArray(value) || value.length !== 2) return null
+  const entries: WitnessSnapshotEntry[] = []
+  for (const v of value) {
+    if (!v || typeof v !== "object") return null
+    const { id, name, address, signatureKey } = v as Record<string, unknown>
+    if (typeof id !== "string" || typeof name !== "string" || typeof address !== "string" || typeof signatureKey !== "string") {
+      return null
+    }
+    entries.push({ id, name, address, signatureKey })
+  }
+  return entries
+}
+
+// A meghatalmazások tanúi: ha a rekordnak már van witnessSnapshot-ja (újragenerálás), AZT használjuk —
+// akkor is, ha a tanúlistát azóta módosították. Különben (első lezárás) a pontosan 2 aktív tanú
+// kell; ha nincs, WitnessError -> a rekord FAILED_PDF marad, a lezárás újrapróbálható.
+async function resolveWitnesses(
+  report: DamageReport
+): Promise<{ snapshot: WitnessSnapshotEntry[]; pdfWitnesses: PdfWitness[]; isNew: boolean }> {
+  let snapshot = parseWitnessSnapshot(report.witnessSnapshot)
+  const isNew = !snapshot
+  if (!snapshot) {
+    try {
+      snapshot = toSnapshot(await requireTwoActiveWitnesses())
+    } catch (error) {
+      if (error instanceof WitnessError) {
+        throw new WitnessError(
+          `Nincs 2 aktív tanú: ${error.message}. Állítsa be a tanúkat az admin felületen, majd próbálja újra a lezárást.`
+        )
+      }
+      throw error
+    }
+  }
+  const pdfWitnesses: PdfWitness[] = []
+  for (const w of snapshot) {
+    pdfWitnesses.push({
+      name: w.name,
+      address: w.address,
+      signatureDataUrl: await loadWitnessSignatureDataUrl(w.signatureKey),
+    })
+  }
+  return { snapshot, pdfWitnesses, isNew }
+}
 
 // A tárolt Prisma rekordot a PDF-generátor által várt alakra hozza.
 // A signature mezőket a hívó már base64-re konvertálva adja át (réteg-szétválasztás:
@@ -12,7 +66,8 @@ import { getDefaultEquipmentChecklist } from "./equipment"
 function toFullPdfData(
   report: DamageReport,
   signatures: { owner: string; driver?: string; technician: string },
-  munkalapClosedAt: Date
+  munkalapClosedAt: Date,
+  witnesses?: PdfWitness[]
 ): FullPdfData {
   return {
     id: report.id,
@@ -97,6 +152,7 @@ function toFullPdfData(
     damageNotes: report.damageNotes ?? "",
     technicianName: report.technicianName ?? "",
     technicianSignatureUrl: signatures.technician,
+    witnesses,
   }
 }
 
@@ -139,6 +195,9 @@ export async function finalizeReport(
       })
     }
 
+    // A két tanú (snapshot vagy az aktuális 2 aktív tanú) — hiba esetén a pipeline FAILED_PDF-re áll
+    const witnesses = await resolveWitnesses(report)
+
     const ownerSigBase64 = report.ownerSignatureUrl
       ? await downloadSignatureAsBase64(report.ownerSignatureUrl)
       : ""
@@ -161,7 +220,8 @@ export async function finalizeReport(
         driver: driverSigBase64,
         technician: technicianSigBase64,
       },
-      munkalapClosedAt
+      munkalapClosedAt,
+      witnesses.pdfWitnesses
     )
 
     // A fő, összevont PDF (Kárbejelentő + Iratösszesítő + Jegyzőkönyv) és a technikus által
@@ -183,6 +243,8 @@ export async function finalizeReport(
         finalPdfUrl,
         authorizationPdfUrls,
         munkalapClosedAt,
+        // Első sikeres lezáráskor rögzítjük a tanúkat; újragenerálásnál a meglévő marad
+        ...(witnesses.isNew ? { witnessSnapshot: witnesses.snapshot as unknown as Prisma.InputJsonValue } : {}),
         pdfErrorMessage: null,
       },
     })

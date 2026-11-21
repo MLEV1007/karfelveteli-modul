@@ -1,4 +1,4 @@
-import { Page, View, Text } from "@react-pdf/renderer"
+import { Page, View, Text, Image } from "@react-pdf/renderer"
 import {
   s,
   BORDER,
@@ -15,7 +15,29 @@ import {
 import { getOwnerLabels } from "@/lib/ownerType"
 import { getInsuranceCompanyLabel } from "@/lib/validation"
 import type { LegalEntity } from "@/lib/workshop"
-import type { FullPdfData } from "./types"
+import type { FullPdfData, PdfWitness } from "./types"
+
+// Tanú-oszlop: sorszám, név, lakcím, aláírásminta (beágyazott kép) és aláírási vonal.
+// Fix magasságú aláírás-sáv, hogy a két oszlop vonala egy vonalban legyen és a lap kiszámítható maradjon.
+function WitnessColumn({ index, witness }: { index: number; witness: PdfWitness }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontSize: 7.5, fontWeight: "bold", color: "#111827", marginBottom: 2 }}>
+        Tanú {index + 1}.
+      </Text>
+      <Text style={{ fontSize: 8, color: "#111827" }}>Név: {witness.name}</Text>
+      <Text style={{ fontSize: 8, color: "#111827", marginTop: 1, minHeight: 20 }}>
+        Lakcím: {witness.address}
+      </Text>
+      <View style={{ height: 44, justifyContent: "flex-end" }}>
+        <Image src={witness.signatureDataUrl} style={{ width: "100%", height: 40, objectFit: "contain" }} />
+      </View>
+      <View style={s.signatureLine}>
+        <Text style={s.signatureLabel}>Tanú {index + 1}. aláírása</Text>
+      </View>
+    </View>
+  )
+}
 
 // Az M1 Szerviz Tata Kft.-n kívüli entitásoknak nincs saját `location` mezőjük — a "Kelt:" sor
 // esetükben is a székhely szerinti várost, Tatát mutatja (mindhárom cég tatai bejegyzésű).
@@ -30,6 +52,11 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
   // Magánszemély / cég szerinti feliratok (régi, típus nélküli rekordnál a korábbi közös feliratok)
   const labels = getOwnerLabels(data.ownerType)
   const place = grantee.location ?? WORKSHOP_LOCATION_FALLBACK
+  // Hiányos dokumentum nem készülhet: pontosan 2 tanú kell (lásd lib/finalize.ts)
+  if (!data.witnesses || data.witnesses.length !== 2) {
+    throw new Error("A meghatalmazáshoz pontosan 2 tanú szükséges")
+  }
+  const witnesses = data.witnesses
 
   return (
     <Page size="A4" style={s.page}>
@@ -119,7 +146,7 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
         </View>
       </View>
 
-      {/* wrap={false} az utolsó tartalmi szekció + az aláírás-sor közös külső blokkján:
+      {/* wrap={false} az utolsó tartalmi szekció + az aláírás-sor + a tanúk közös külső blokkján:
           így az aláírás SOHA nem kerülhet egyedül egy (majdnem) üres oldal tetejére —
           ha a kettő együtt nem fér ki az aktuális oldalon, az egész blokk (a
           "Meghatalmazott adatai" szekcióval együtt) egyben csúszik a következő oldalra. */}
@@ -143,6 +170,13 @@ export default function AuthorizationPage({ data, grantee }: { data: FullPdfData
           <View style={{ flex: 1 }}>
             <SignatureBlock label="Meghatalmazó (ügyfél) aláírása" signatureDataUrl={data.ownerSignatureUrl} />
           </View>
+        </View>
+
+        {/* Két tanú — az aláírás-sor alatt, ugyanabban a wrap={false} blokkban */}
+        <View style={{ flexDirection: "row", gap: 16, marginTop: 10 }}>
+          {witnesses.map((w, i) => (
+            <WitnessColumn key={i} index={i} witness={w} />
+          ))}
         </View>
       </View>
 

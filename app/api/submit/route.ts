@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { Prisma } from "@prisma/client"
 import { damageReportSchema } from "@/lib/validation"
+import { normalizeWindshieldCause } from "@/lib/damageTypes"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { prisma } from "@/lib/db"
 import { sendCustomerSubmissionEmail, sendTechnicianNotification } from "@/lib/email"
@@ -204,6 +205,10 @@ export async function POST(req: NextRequest) {
             additionalParties: data.additionalParties ?? null,
             vehicleInspectionLocation: data.vehicleInspectionLocation ?? null,
             damageType: data.damageType ?? null,
+            ...(() => {
+              const w = normalizeWindshieldCause(data)
+              return { windshieldCause: w.windshieldCause ?? null, windshieldCauseOther: w.windshieldCauseOther ?? null }
+            })(),
             damageDescription: data.damageDescription ?? null,
             damagePoints: data.damagePoints ?? [],
             photoUrls: data.photoUrls ?? [],

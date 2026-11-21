@@ -3,13 +3,18 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { DamageReport } from "@prisma/client"
-import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS, type InsuranceCompanyValue } from "@/lib/validation"
+import { sortedInsuranceOptions, sortedInsurerNameOptions } from "@/lib/validation"
 import {
   VEHICLE_CATEGORY_OPTIONS,
   WORK_PROCESS_OPTIONS,
   VEHICLE_CONDITION_OPTIONS,
 } from "@/lib/protocolChoices"
-import { DAMAGE_TYPE_OPTIONS } from "@/lib/damageTypes"
+import {
+  DAMAGE_TYPE_OPTIONS,
+  WINDSHIELD_CAUSE_OPTIONS,
+  isWindshieldDamage,
+  nextDescriptionOnChange,
+} from "@/lib/damageTypes"
 import { WORKSHOP_LEGAL_ENTITIES, AUTHORIZATION_KEYS } from "@/lib/workshop"
 import { OWNER_TYPE_OPTIONS, getOwnerLabels } from "@/lib/ownerType"
 import { VAT_RECLAIM_OPTIONS } from "@/lib/protocolChoices"
@@ -23,16 +28,11 @@ import SelectWithOther from "./ui/SelectWithOther"
 import Card from "./ui/Card"
 import Button from "./ui/Button"
 
-const INSURANCE_COMPANY_OPTIONS = INSURANCE_COMPANIES.map((value) => ({
-  value,
-  label: INSURANCE_COMPANY_LABELS[value],
-}))
+const INSURANCE_COMPANY_OPTIONS = sortedInsuranceOptions()
 
 // A "Saját kötelező biztosító" / "Károkozó fél biztosítója" mezők szabad szöveget tárolnak —
 // a választható nevek innen jönnek, "Egyéb biztosító" nélkül (azt a SelectWithOther adja hozzá).
-const INSURER_NAME_OPTIONS = (Object.entries(INSURANCE_COMPANY_LABELS) as [InsuranceCompanyValue, string][])
-  .filter(([key]) => key !== "EGYEB")
-  .map(([, label]) => ({ value: label, label }))
+const INSURER_NAME_OPTIONS = sortedInsurerNameOptions()
 
 const VEHICLE_TYPE_OPTIONS = [
   { value: "Személygépkocsi", label: "Személygépkocsi" },
@@ -102,6 +102,8 @@ export default function EditForm({ report }: EditFormProps) {
 
     // Step 4
     damageType: (report.damageType ?? "") as string,
+    windshieldCause: (report.windshieldCause ?? "") as string,
+    windshieldCauseOther: report.windshieldCauseOther ?? "",
     damageDescription: report.damageDescription ?? "",
     damagePoints: report.damagePoints as any[] ?? [],
 
@@ -163,6 +165,13 @@ export default function EditForm({ report }: EditFormProps) {
         // Az adatok elmentve, de a frissített PDF/email kiküldése sikertelen volt —
         // a "Mentés" gomb újbóli megnyomása újrapróbálja (a mentett adatokkal).
         throw new Error(data.error || "A frissített dokumentumok kiküldése sikertelen volt.")
+      }
+      if (response.status === 400 && data.details && typeof data.details === "object") {
+        const fieldErrors: Record<string, string> = {}
+        for (const [key, msgs] of Object.entries(data.details as Record<string, string[]>)) {
+          if (msgs?.[0]) fieldErrors[key] = msgs[0]
+        }
+        setErrors(fieldErrors)
       }
       if (!response.ok) {
         throw new Error(data.error || "Sikertelen mentés")
@@ -579,10 +588,48 @@ export default function EditForm({ report }: EditFormProps) {
             label="A kár jellege"
             name="damageType"
             value={formData.damageType}
-            onChange={(val) => updateField("damageType", val)}
+            onChange={(val) => {
+              updateField("damageType", val)
+              const cause = isWindshieldDamage(val) ? formData.windshieldCause : ""
+              if (!isWindshieldDamage(val)) {
+                updateField("windshieldCause", "")
+                updateField("windshieldCauseOther", "")
+              }
+              updateField("damageDescription", nextDescriptionOnChange(formData.damageDescription, val, cause))
+            }}
             options={[...DAMAGE_TYPE_OPTIONS]}
             error={errors.damageType}
           />
+          {isWindshieldDamage(formData.damageType) && (
+            <>
+              <RadioGroup
+                label="A kárt okozó esemény"
+                name="windshieldCause"
+                value={formData.windshieldCause}
+                onChange={(val) => {
+                  updateField("windshieldCause", val)
+                  if (val !== "EGYEB") updateField("windshieldCauseOther", "")
+                  updateField(
+                    "damageDescription",
+                    nextDescriptionOnChange(formData.damageDescription, formData.damageType, val)
+                  )
+                }}
+                options={[...WINDSHIELD_CAUSE_OPTIONS]}
+                error={errors.windshieldCause}
+              />
+              {formData.windshieldCause === "EGYEB" && (
+                <Textarea
+                  label="Írja le a káresemény pontos körülményeit"
+                  name="windshieldCauseOther"
+                  value={formData.windshieldCauseOther}
+                  onChange={(e) => updateField("windshieldCauseOther", e.target.value)}
+                  error={errors.windshieldCauseOther}
+                  required
+                  rows={3}
+                />
+              )}
+            </>
+          )}
           <Textarea
             label="Kár leírása"
             name="damageDescription"

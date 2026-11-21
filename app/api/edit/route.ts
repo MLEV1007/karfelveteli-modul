@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { editReportSchema } from "@/lib/validation"
+import { editReportSchema, editReportLegacyWindshieldSchema } from "@/lib/validation"
+import { isWindshieldDamage, normalizeWindshieldCause } from "@/lib/damageTypes"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
 import { prisma } from "@/lib/db"
@@ -38,7 +39,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     // 4. Zod validáció (strict mode — csak engedélyezett mezők)
-    const result = editReportSchema.safeParse(data)
+    // Régi (szélvédő-ok nélkül beküldött) szélvédős rekord: ha a kérés sem küld okot, az ok
+    // nem kötelező és null marad — így a korábbi rekordok változatlanul szerkeszthetők.
+    const isLegacyWindshield =
+      isWindshieldDamage(report.damageType) && !report.windshieldCause && !data.windshieldCause
+    const result = (isLegacyWindshield ? editReportLegacyWindshieldSchema : editReportSchema).safeParse(data)
     if (!result.success) {
       return NextResponse.json(
         {
@@ -107,6 +112,7 @@ export async function PATCH(req: NextRequest) {
 
         // Step 4
         damageType: validatedData.damageType,
+        ...normalizeWindshieldCause(validatedData),
         damageDescription: validatedData.damageDescription ?? null,
         damagePoints: validatedData.damagePoints ?? [],
 

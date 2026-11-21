@@ -107,6 +107,11 @@ const base: FullPdfData = {
   technicianName: "Nagy Péter",
   technicianSignatureUrl: SIG_TECH,
   selectedAuthorizations: ["m1"],
+  // FIKTÍV tanúk (a meghatalmazáshoz pontosan 2 kell) — nem valós adatok
+  witnesses: [
+    { name: "Minta Tanú Egy", address: "1000 Mintaváros, Fiktív utca 1.", signatureDataUrl: SIG_DRIVER },
+    { name: "Minta Tanú Kettő", address: "2000 Példafalva, Teszt tér 2.", signatureDataUrl: SIG_TECH },
+  ],
 }
 
 const cases: { dir: string; data: FullPdfData }[] = [

@@ -5,7 +5,7 @@ import {
   WORK_PROCESS_VALUES,
   VEHICLE_CONDITION_VALUES,
 } from "./protocolChoices"
-import { DAMAGE_TYPE_VALUES } from "./damageTypes"
+import { DAMAGE_TYPE_VALUES, WINDSHIELD_CAUSE_VALUES, windshieldCauseIssues } from "./damageTypes"
 import { OWNER_TYPE_VALUES, TAX_NUMBER_REGEX } from "./ownerType"
 import { AUTHORIZATION_KEYS } from "./workshop"
 
@@ -20,6 +20,7 @@ const selectedAuthorizationsSchema = z
 // ─────────────────────────────────────────────────────────────
 export const INSURANCE_COMPANIES = [
   "ALLIANZ",
+  "CIG",
   "GENERALI",
   "GROUPAMA",
   "UNIQA",
@@ -28,6 +29,7 @@ export const INSURANCE_COMPANIES = [
   "SIGNAL_IDUNA",
   "WABERERS",
   "GENERTEL",
+  "GRANIT",
   "MAGYAR_POSTA_BIZTOSITO",
   "EGYEB",
 ] as const
@@ -36,6 +38,7 @@ export type InsuranceCompanyValue = (typeof INSURANCE_COMPANIES)[number]
 
 export const INSURANCE_COMPANY_LABELS: Record<InsuranceCompanyValue, string> = {
   ALLIANZ: "Allianz Hungária",
+  CIG: "CIG Biztosító",
   GENERALI: "Generali Biztosító",
   GROUPAMA: "Groupama Biztosító",
   UNIQA: "UNIQA Biztosító",
@@ -44,8 +47,26 @@ export const INSURANCE_COMPANY_LABELS: Record<InsuranceCompanyValue, string> = {
   SIGNAL_IDUNA: "Signal Iduna Biztosító",
   WABERERS: "Wáberer Hungária Biztosító",
   GENERTEL: "Genertel Biztosító",
+  GRANIT: "Gránit Biztosító",
   MAGYAR_POSTA_BIZTOSITO: "Magyar Posta Biztosító",
   EGYEB: "Egyéb biztosító",
+}
+
+// Legördülők: megjelenítési felirat szerint ABC (magyar rendezés), az "Egyéb biztosító" MINDIG
+// utolsó. Közös forrás a Step2 és az EditForm számára — nem az enum sorrendjén múlik.
+export function sortedInsuranceOptions(): { value: InsuranceCompanyValue; label: string }[] {
+  const known = INSURANCE_COMPANIES.filter((v) => v !== "EGYEB")
+    .map((value) => ({ value, label: INSURANCE_COMPANY_LABELS[value] }))
+    .sort((a, b) => a.label.localeCompare(b.label, "hu"))
+  return [...known, { value: "EGYEB" as InsuranceCompanyValue, label: INSURANCE_COMPANY_LABELS.EGYEB }]
+}
+
+// A szabad szöveges biztosító-mezők (CASCO / kötelező / illetékes) névlistája: ugyanaz a
+// rendezés, "Egyéb biztosító" nélkül (azt a SelectWithOther adja hozzá "Egyéb..." opcióként).
+export function sortedInsurerNameOptions(): { value: string; label: string }[] {
+  return sortedInsuranceOptions()
+    .filter((o) => o.value !== "EGYEB")
+    .map(({ label }) => ({ value: label, label }))
 }
 
 const insuranceCompanySchema = z.enum(INSURANCE_COMPANIES, {
@@ -220,6 +241,9 @@ const damageReportObjectSchema = z.object({
 
   // 4. lépés — Kár és sérülés
   damageType: z.preprocess(emptyToUndefined, z.enum(DAMAGE_TYPE_VALUES).optional()),
+  // Szélvédős típusnál kötelező (lásd windshieldCauseRefinement); régi rekordoknál null/hiányzik
+  windshieldCause: z.preprocess(emptyToUndefined, z.enum(WINDSHIELD_CAUSE_VALUES).optional()),
+  windshieldCauseOther: z.string().optional(),
   damageDescription: z.string().min(20, "A kár leírása legalább 20 karakter kell legyen"),
   damagePoints: z
     .array(
@@ -286,7 +310,18 @@ const ownerTaxNumberRefinement = {
   path: ["idOrTaxNumber"],
 }
 
+// Szélvédős típusnál kötelező ok; EGYEB oknál kötelező, nem üres szabad szöveg
+function addWindshieldCauseIssues(
+  data: { damageType?: string; windshieldCause?: string; windshieldCauseOther?: string },
+  ctx: z.RefinementCtx
+) {
+  for (const issue of windshieldCauseIssues(data)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: issue.message, path: [issue.path] })
+  }
+}
+
 export const damageReportSchema = damageReportObjectSchema
+  .superRefine(addWindshieldCauseIssues)
   .refine(insuranceOtherRequired, insuranceOtherRefinement)
   .refine(driverSignatureRequired, driverSignatureRefinement)
   .refine(ownerTaxNumberFormat, ownerTaxNumberRefinement)
@@ -307,7 +342,7 @@ export type DamageReportInput = z.infer<typeof damageReportObjectSchema>
 // Readonly: photoUrls, aláírások, gdprConsent, meghatalmazás jognyilatkozatok, createdAt, emailSentAt
 // A VIN / biztosító / lakcím / igazolványszám / telefon mezőket lazítjuk, hogy a régebbi,
 // e mezők nélkül beküldött jelentések is továbbra is szerkeszthetők maradjanak.
-export const editReportSchema = damageReportObjectSchema
+const editReportObjectSchema = damageReportObjectSchema
   .omit({
     photoUrls: true,
     ownerSignatureUrl: true,
@@ -332,6 +367,16 @@ export const editReportSchema = damageReportObjectSchema
     selectedAuthorizations: selectedAuthorizationsSchema.optional(),
   })
   .strict()
+
+export const editReportSchema = editReportObjectSchema
+  .superRefine(addWindshieldCauseIssues)
+  .refine(insuranceOtherRequired, insuranceOtherRefinement)
+  .refine(ownerTaxNumberFormat, ownerTaxNumberRefinement)
+
+// A korábban (szélvédő-ok nélkül) beküldött szélvédős rekordok szerkesztéséhez: az ok ilyenkor
+// nem kötelező (null marad). Az /api/edit csak akkor használja, ha a mentett rekord ilyen,
+// és a kérés sem tartalmaz okot.
+export const editReportLegacyWindshieldSchema = editReportObjectSchema
   .refine(insuranceOtherRequired, insuranceOtherRefinement)
   .refine(ownerTaxNumberFormat, ownerTaxNumberRefinement)
 

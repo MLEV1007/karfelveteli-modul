@@ -10,6 +10,8 @@ import {
   INSURANCE_COMPANIES,
   INSURANCE_COMPANY_LABELS,
   dateOnlySchema,
+  sortedInsuranceOptions,
+  sortedInsurerNameOptions,
   type InsuranceCompanyValue,
 } from "@/lib/validation"
 
@@ -47,17 +49,13 @@ export const step2Schema = z
     path: ["insuranceCompanyOther"],
   })
 
-const INSURANCE_COMPANY_OPTIONS = INSURANCE_COMPANIES.map((value) => ({
-  value,
-  label: INSURANCE_COMPANY_LABELS[value],
-}))
+// ABC sorrend (felirat szerint), az "Egyéb biztosító" mindig utolsó — lásd sortedInsuranceOptions
+const INSURANCE_COMPANY_OPTIONS = sortedInsuranceOptions()
 
 // A "Saját kötelező biztosító" / "Károkozó fél biztosítója" mezők szabad szöveget tárolnak
 // (mint a baleset országánál) — a választható nevek innen jönnek, "Egyéb biztosító" nélkül,
 // mert azt a SelectWithOther maga teszi hozzá "Egyéb..." opcióként.
-const INSURER_NAME_OPTIONS = (Object.entries(INSURANCE_COMPANY_LABELS) as [InsuranceCompanyValue, string][])
-  .filter(([key]) => key !== "EGYEB")
-  .map(([, label]) => ({ value: label, label }))
+const INSURER_NAME_OPTIONS = sortedInsurerNameOptions()
 
 function findInsuranceCompanyMatch(name: string): InsuranceCompanyValue | null {
   const trimmed = name.trim().toLowerCase()

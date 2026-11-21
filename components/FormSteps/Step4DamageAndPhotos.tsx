@@ -9,9 +9,13 @@ import RadioGroup from "@/components/ui/RadioGroup"
 import {
   DAMAGE_TYPE_OPTIONS,
   DAMAGE_TYPE_VALUES,
-  DAMAGE_TYPE_PRESET_DESCRIPTIONS,
-  isPresetOrEmptyDescription,
+  WINDSHIELD_CAUSE_OPTIONS,
+  WINDSHIELD_CAUSE_VALUES,
+  isWindshieldDamage,
+  nextDescriptionOnChange,
+  windshieldCauseIssues,
   type DamageTypeValue,
+  type WindshieldCauseValue,
 } from "@/lib/damageTypes"
 
 export const step4Schema = z.object({
@@ -19,6 +23,11 @@ export const step4Schema = z.object({
     (v) => (v === "" ? undefined : v),
     z.enum(DAMAGE_TYPE_VALUES).optional()
   ),
+  windshieldCause: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.enum(WINDSHIELD_CAUSE_VALUES).optional()
+  ),
+  windshieldCauseOther: z.string().optional(),
   damageDescription: z
     .string()
     .min(20, "Kérjük részletesebben írja le (min. 20 karakter)"),
@@ -34,10 +43,16 @@ export const step4Schema = z.object({
     )
     .optional(),
   photoUrls: z.array(z.string()).optional(),
+}).superRefine((data, ctx) => {
+  for (const issue of windshieldCauseIssues(data)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: issue.message, path: [issue.path] })
+  }
 })
 
 export type Step4Data = {
   damageType: DamageTypeValue | ""
+  windshieldCause: WindshieldCauseValue | ""
+  windshieldCauseOther: string
   damageDescription: string
   damagePoints: { x: number; y: number; dx: number; dy: number; label: string }[]
   photoUrls: string[]
@@ -237,14 +252,24 @@ export default function Step4DamageAndPhotos({ data, onChange, errors }: Props) 
     )
   }
 
-  // Szélvédőjavítás / -csere: a leírás a rögzített mondattal töltődik ki, de csak ha
-  // még üres vagy egy másik előre megadott mondat áll benne — az ügyfél saját szövege
-  // nem vész el. "Egyéb kár" esetén az előre megadott mondat törlődik.
+  // Szélvédős kár: a leírás az (ártípus × ok) párosból töltődik elő, de csak ha még üres vagy
+  // valamelyik előre megadott sablon áll benne — az ügyfél saját szövege nem vész el.
+  // "Egyéb" oknál (és nem szélvédős típusnál) a sablon törlődik, a leírást az ügyfél írja.
   const handleDamageTypeChange = (value: string) => {
     const type = value as DamageTypeValue
     onChange("damageType", type)
-    if (!isPresetOrEmptyDescription(data.damageDescription)) return
-    onChange("damageDescription", DAMAGE_TYPE_PRESET_DESCRIPTIONS[type] ?? "")
+    if (!isWindshieldDamage(type)) {
+      onChange("windshieldCause", "")
+      onChange("windshieldCauseOther", "")
+    }
+    const cause = isWindshieldDamage(type) ? data.windshieldCause : ""
+    onChange("damageDescription", nextDescriptionOnChange(data.damageDescription, type, cause))
+  }
+
+  const handleCauseChange = (value: string) => {
+    onChange("windshieldCause", value)
+    if (value !== "EGYEB") onChange("windshieldCauseOther", "")
+    onChange("damageDescription", nextDescriptionOnChange(data.damageDescription, data.damageType, value))
   }
 
   // Húzás közbeni preview nyíl dx/dy
@@ -267,6 +292,31 @@ export default function Step4DamageAndPhotos({ data, onChange, errors }: Props) 
         options={[...DAMAGE_TYPE_OPTIONS]}
         error={errors.damageType}
       />
+
+      {isWindshieldDamage(data.damageType) && (
+        <div className="space-y-3">
+          <RadioGroup
+            label="A kárt okozó esemény"
+            name="windshieldCause"
+            value={data.windshieldCause}
+            onChange={handleCauseChange}
+            options={[...WINDSHIELD_CAUSE_OPTIONS]}
+            error={errors.windshieldCause}
+            required
+          />
+          {data.windshieldCause === "EGYEB" && (
+            <Textarea
+              label="Írja le a káresemény pontos körülményeit"
+              name="windshieldCauseOther"
+              value={data.windshieldCauseOther}
+              onChange={(e) => onChange("windshieldCauseOther", e.target.value)}
+              error={errors.windshieldCauseOther}
+              required
+              rows={3}
+            />
+          )}
+        </div>
+      )}
 
       {/* Szöveges leírás */}
       <Textarea

@@ -116,6 +116,8 @@ const initialData: FormData = {
   vehicleInspectionLocation: "",
   // Step 4
   damageType: "",
+  windshieldCause: "",
+  windshieldCauseOther: "",
   damageDescription: "",
   damagePoints: [],
   photoUrls: [],
@@ -303,6 +305,8 @@ export default function FormPage() {
       schema = step4Schema
       data = {
         damageType: formData.damageType,
+        windshieldCause: formData.windshieldCause,
+        windshieldCauseOther: formData.windshieldCauseOther,
         damageDescription: formData.damageDescription,
         damagePoints: formData.damagePoints,
         photoUrls: formData.photoUrls,
@@ -514,6 +518,8 @@ export default function FormPage() {
           <Step4DamageAndPhotos
             data={{
               damageType: formData.damageType,
+              windshieldCause: formData.windshieldCause,
+              windshieldCauseOther: formData.windshieldCauseOther,
               damageDescription: formData.damageDescription,
               damagePoints: formData.damagePoints,
               photoUrls: formData.photoUrls,

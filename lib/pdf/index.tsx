@@ -38,6 +38,10 @@ export interface AuthorizationPdf {
 export async function generateAuthorizationPdfs(data: FullPdfData): Promise<AuthorizationPdf[]> {
   const plate = data.vehiclePlate.toUpperCase().replace(/[^A-Z0-9]/g, "")
   const results: AuthorizationPdf[] = []
+  // Hiányos dokumentum nem készülhet: minden meghatalmazáson ugyanaz a két tanú szerepel
+  if (!data.witnesses || data.witnesses.length !== 2) {
+    throw new Error("A meghatalmazások csak 2 tanúval készíthetők")
+  }
   for (const grantee of resolveSelectedAuthorizations(data.selectedAuthorizations)) {
     const doc = (
       <Document>

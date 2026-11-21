@@ -76,3 +76,64 @@ export async function enforceRateLimit(req: NextRequest): Promise<NextResponse |
 export async function enforceClientLogRateLimit(req: NextRequest): Promise<NextResponse | null> {
   return enforce(clientLogRatelimit, req, "Túl sok kérés.")
 }
+
+// ---------------------------------------------------------------------------------------------
+// Admin bejelentkezés (jelszó- és 2FA-lépés): külön kulcs-előtagok, a meglévő limitek érintetlenek.
+// Fiók-alapú kulcs (e-mail hash / adminId) ÉS IP-alapú kulcs; fail-closed élesben (és ha a Redis hibázik).
+// ---------------------------------------------------------------------------------------------
+const adminLoginAccountLimiter = createLimiter("rl:admin-login-acct", Ratelimit.slidingWindow(5, "15 m"))
+const adminLoginIpLimiter = createLimiter("rl:admin-login-ip", Ratelimit.slidingWindow(10, "15 m"))
+const admin2faAccountLimiter = createLimiter("rl:admin-2fa-acct", Ratelimit.slidingWindow(5, "15 m"))
+const admin2faIpLimiter = createLimiter("rl:admin-2fa-ip", Ratelimit.slidingWindow(10, "15 m"))
+
+export type AdminAuthScope = "login" | "2fa"
+
+/**
+ * Visszaad egy NextResponse-t (429/503), ha a kérést el kell utasítani, különben null.
+ * `accountKey`: login esetén az e-mail (kisbetűs) SHA-256 hash-e, 2fa esetén az adminId — nyers e-mail nem
+ * kerül a Redis-be. `ip` null esetén közös "unknown" vödör.
+ */
+export async function enforceAdminAuthRateLimit(
+  scope: AdminAuthScope,
+  ip: string | null,
+  accountKey: string
+): Promise<NextResponse | null> {
+  const account = scope === "login" ? adminLoginAccountLimiter : admin2faAccountLimiter
+  const byIp = scope === "login" ? adminLoginIpLimiter : admin2faIpLimiter
+
+  if (!account || !byIp) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "Admin rate limiting blokkolva: hiányzó vagy érvénytelen Redis konfiguráció élő környezetben"
+      )
+      return NextResponse.json(
+        { error: "A szolgáltatás átmenetileg nem elérhető." },
+        { status: 503, headers: { "Cache-Control": "no-store" } }
+      )
+    }
+    console.warn("Admin rate limiting kihagyva (dev mode) — Redis konfiguráció hiányzik")
+    return null
+  }
+
+  try {
+    const [a, b] = await Promise.all([
+      account.limit(`${scope}:${accountKey}`),
+      byIp.limit(`${scope}:${ip ?? "unknown"}`),
+    ])
+    if (!a.success || !b.success) {
+      const reset = Math.max(a.success ? 0 : a.reset, b.success ? 0 : b.reset)
+      const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000))
+      return NextResponse.json(
+        { error: "Túl sok próbálkozás. Kérjük, próbálja újra később." },
+        { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": String(retryAfter) } }
+      )
+    }
+  } catch (error) {
+    console.error("Admin rate limit hiba (fail-closed):", error instanceof Error ? error.name : "ismeretlen")
+    return NextResponse.json(
+      { error: "A szolgáltatás átmenetileg nem elérhető." },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
+    )
+  }
+  return null
+}
