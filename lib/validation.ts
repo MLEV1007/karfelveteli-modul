@@ -226,6 +226,11 @@ const damageReportObjectSchema = z.object({
   gdprConsent: z.literal(true, {
     errorMap: () => ({ message: "GDPR beleegyezés kötelező" }),
   }),
+
+  // Idempotencia-kulcs: a kliens egyszer generálja (UUID), és minden újrapróbálásnál
+  // ugyanazt küldi — a szerver ugyanarra a kulcsra ugyanazt a rekordot adja vissza.
+  // Opcionális, hogy a régi kliens (kulcs nélkül) is működjön.
+  clientRequestId: z.string().uuid("Érvénytelen kérés-azonosító").optional(),
 })
 
 // Eltérő vezető és tulajdonos esetén a vezető aláírása is kötelező (azonos személynél
@@ -278,6 +283,7 @@ export const editReportSchema = damageReportObjectSchema
     gdprConsent: true,
     accept8DayPayment: true,
     knowsCascoTerms: true,
+    clientRequestId: true,
   })
   .extend({
     ownerAddress: z.string().optional(),

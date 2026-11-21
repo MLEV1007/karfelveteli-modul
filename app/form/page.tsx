@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import StepIndicator from "@/components/FormSteps/StepIndicator"
 import Step1PersonalData, {
@@ -38,6 +38,13 @@ const Step7Signature = dynamic(
 )
 import Card from "@/components/ui/Card"
 import Button from "@/components/ui/Button"
+import { logClientEvent } from "@/lib/clientLog"
+import { clearDraft, generateClientRequestId, loadDraft, saveDraft } from "@/lib/draft"
+
+// A beküldés időkorlátja: ennyi után megszakítjuk a kérést, és "Újrapróbálás" gombot mutatunk.
+// Az újrapróbálás ugyanazzal a clientRequestId-val megy, így nem jön létre duplikátum.
+const SUBMIT_TIMEOUT_MS = 60_000
+const DRAFT_SAVE_DEBOUNCE_MS = 250
 
 const STEP_LABELS = [
   "Személyes adatok",
@@ -137,6 +144,59 @@ export default function FormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [canRetry, setCanRetry] = useState(false)
+  // A piszkozat betöltése után (hydration-hibák elkerülésére csak kliensen, effectben) true
+  const [draftLoaded, setDraftLoaded] = useState(false)
+  // Idempotencia-kulcs: egyszer generáljuk, a piszkozattal együtt megmarad, és minden
+  // újrapróbálásnál ugyanazt küldjük.
+  const clientRequestIdRef = useRef("")
+  const submittingRef = useRef(false)
+  const submittedRef = useRef(false)
+  const latestDraftRef = useRef({ step: 1, formData: initialData })
+  const storageErrorLoggedRef = useRef(false)
+
+  // Piszkozat visszatöltése (sessionStorage) — egyszer, mountkor
+  useEffect(() => {
+    const draft = loadDraft()
+    if (draft) {
+      setFormData({ ...initialData, ...(draft.formData as Partial<FormData>) })
+      setCurrentStep(Math.min(Math.max(draft.step, 1), TOTAL_STEPS))
+    }
+    clientRequestIdRef.current = draft?.clientRequestId || generateClientRequestId()
+    setDraftLoaded(true)
+  }, [])
+
+  // Piszkozat mentése a sikeres beküldésig (kis késleltetéssel, és oldalelhagyáskor azonnal)
+  const persistDraft = useCallback(() => {
+    if (submittedRef.current || !clientRequestIdRef.current) return
+    const result = saveDraft({
+      step: latestDraftRef.current.step,
+      clientRequestId: clientRequestIdRef.current,
+      formData: latestDraftRef.current.formData as unknown as Record<string, unknown>,
+    })
+    if (result !== "ok" && !storageErrorLoggedRef.current) {
+      storageErrorLoggedRef.current = true
+      logClientEvent("draft_storage_error", { errorCode: result.toUpperCase() })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!draftLoaded) return
+    latestDraftRef.current = { step: currentStep, formData }
+    const timer = setTimeout(persistDraft, DRAFT_SAVE_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [formData, currentStep, draftLoaded, persistDraft])
+
+  useEffect(() => {
+    if (!draftLoaded) return
+    const flush = () => persistDraft()
+    window.addEventListener("pagehide", flush)
+    document.addEventListener("visibilitychange", flush)
+    return () => {
+      window.removeEventListener("pagehide", flush)
+      document.removeEventListener("visibilitychange", flush)
+    }
+  }, [draftLoaded, persistDraft])
 
   // Lépésváltás után görgetünk a lap tetejére — useEffect-ben, a currentStep-re
   // kulcsolva, hogy a görgetés a következő lépés TÉNYLEGES (már kirenderelt és
@@ -285,10 +345,19 @@ export default function FormPage() {
   }
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return
     if (!validateStep()) return
 
+    submittingRef.current = true
     setIsSubmitting(true)
     setSubmitError(null)
+    setCanRetry(false)
+
+    if (!clientRequestIdRef.current) clientRequestIdRef.current = generateClientRequestId()
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS)
+    logClientEvent("submit_attempt")
 
     try {
       const response = await fetch("/api/submit", {
@@ -296,24 +365,54 @@ export default function FormPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, clientRequestId: clientRequestIdRef.current }),
+        signal: controller.signal,
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Sikertelen beküldés")
+        let serverMessage: string | undefined
+        try {
+          const errorData = await response.json()
+          if (typeof errorData?.error === "string") serverMessage = errorData.error
+        } catch {
+          // nem JSON válasz — az alapértelmezett üzenetet használjuk
+        }
+        // Átmeneti hibáknál (5xx, időtúllépés, feldolgozás alatt, túl sok kérés) újrapróbálható
+        const retryable =
+          response.status >= 500 ||
+          response.status === 408 ||
+          response.status === 409 ||
+          response.status === 429
+        logClientEvent("submit_server_error", { errorCode: `HTTP_${response.status}` })
+        setSubmitError(
+          serverMessage ??
+            (retryable
+              ? "A beküldés most nem sikerült. Az adatai és az aláírása megmaradtak, kérjük próbálja újra."
+              : "Sikertelen beküldés")
+        )
+        setCanRetry(retryable)
+        return
       }
 
-      // Sikeres beküldés - átirányítás success oldalra
+      // Sikeres beküldés: a piszkozatot töröljük, és nem mentünk újra
+      submittedRef.current = true
+      clearDraft()
+      logClientEvent("submit_success")
       router.push("/success")
     } catch (error) {
-      console.error("Beküldési hiba:", error)
+      const aborted = error instanceof DOMException && error.name === "AbortError"
+      logClientEvent(aborted ? "submit_timeout" : "submit_network_error", {
+        errorCode: aborted ? "ABORT" : "FETCH_FAILED",
+      })
       setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Hiba történt a beküldés során. Kérjük próbálja újra."
+        aborted
+          ? "A szerver nem válaszolt időben. Az adatai és az aláírása megmaradtak, kérjük próbálja újra."
+          : "Nem sikerült kapcsolódni a szerverhez. Ellenőrizze az internetkapcsolatot — az adatai és az aláírása megmaradtak, kérjük próbálja újra."
       )
+      setCanRetry(true)
     } finally {
+      clearTimeout(timeoutId)
+      submittingRef.current = false
       setIsSubmitting(false)
     }
   }
@@ -473,7 +572,22 @@ export default function FormPage() {
         <Card>
           {submitError && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-red-800 dark:text-red-200 text-sm">{submitError}</p>
+              <p className="text-red-800 dark:text-red-200 text-sm" role="alert">
+                {submitError}
+              </p>
+              {canRetry && (
+                <div className="mt-3">
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={handleSubmit}
+                    loading={isSubmitting}
+                    disabled={isSubmitting}
+                  >
+                    Újrapróbálás
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

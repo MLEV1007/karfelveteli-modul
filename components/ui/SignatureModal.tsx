@@ -4,6 +4,52 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import SignaturePad, { type SignaturePadHandle } from "@/components/ui/SignaturePad"
 import Button from "@/components/ui/Button"
+import { logClientEvent } from "@/lib/clientLog"
+
+// iOS Safari scroll lock: az `overflow: hidden` a body-n iOS-en nem tiltja a háttér
+// görgetését / "gumi-sávozását", ezért a body-t `position: fixed`-re rögzítjük, a
+// görgetési pozíciót elmentjük, és bezáráskor visszaállítjuk. Több hívás esetén
+// számlálóval védett; az unlock idempotens.
+const lockState = { count: 0, scrollY: 0, saved: null as Record<string, string> | null }
+const LOCKED_PROPS = ["position", "top", "left", "right", "width", "overflow"] as const
+
+function lockBodyScroll(): () => void {
+  let released = false
+  try {
+    const body = document.body
+    if (lockState.count === 0) {
+      lockState.scrollY = window.scrollY || window.pageYOffset || 0
+      lockState.saved = {}
+      for (const prop of LOCKED_PROPS) lockState.saved[prop] = body.style[prop]
+      body.style.position = "fixed"
+      body.style.top = `-${lockState.scrollY}px`
+      body.style.left = "0"
+      body.style.right = "0"
+      body.style.width = "100%"
+      body.style.overflow = "hidden"
+    }
+    lockState.count++
+  } catch {
+    // ha a body nem érhető el, nincs mit zárolni — az unlock is no-op lesz
+    return () => {}
+  }
+
+  return () => {
+    if (released) return
+    released = true
+    lockState.count = Math.max(0, lockState.count - 1)
+    if (lockState.count > 0) return
+    try {
+      const body = document.body
+      const saved = lockState.saved ?? {}
+      for (const prop of LOCKED_PROPS) body.style[prop] = saved[prop] ?? ""
+      lockState.saved = null
+      window.scrollTo(0, lockState.scrollY)
+    } catch {
+      // a lock feloldása hibánál se akadjon el
+    }
+  }
+}
 
 interface SignatureModalProps {
   open: boolean
@@ -22,24 +68,37 @@ export default function SignatureModal({
 }: SignatureModalProps) {
   const padRef = useRef<SignaturePadHandle>(null)
   const [hasDrawing, setHasDrawing] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  // Az onCancel gyakran inline függvény (minden szülő-renderkor új identitás): ref-ben
+  // tartjuk, hogy az effect NE fusson újra — különben minden szülő-render újra-zárolná a
+  // body-t, és nullázná a hasDrawing állapotot egy folyamatban lévő rajz alatt.
+  const onCancelRef = useRef(onCancel)
+  useEffect(() => {
+    onCancelRef.current = onCancel
+  }, [onCancel])
 
   useEffect(() => {
     if (!open) return
     setHasDrawing(false)
+    setExportError(null)
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+    const unlock = lockBodyScroll()
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel()
+      if (e.key === "Escape") onCancelRef.current()
     }
+    // bfcache-ből visszatérve / navigáció közben se maradjon zárolva az oldal
+    const onPageHide = () => unlock()
     window.addEventListener("keydown", onKeyDown)
+    window.addEventListener("pagehide", onPageHide)
 
+    // Unmount, bezárás vagy renderelési hiba (error boundary) esetén is lefut
     return () => {
-      document.body.style.overflow = previousOverflow
+      unlock()
       window.removeEventListener("keydown", onKeyDown)
+      window.removeEventListener("pagehide", onPageHide)
     }
-  }, [open, onCancel])
+  }, [open])
 
   // A Step6Signature-ben ez a komponens dynamic(..., { ssr: false })-szal
   // betöltött fa alatt van, tehát csak kliens oldalon renderelődik - de erre
@@ -50,11 +109,26 @@ export default function SignatureModal({
   const handleClear = () => {
     padRef.current?.clear()
     setHasDrawing(false)
+    setExportError(null)
   }
 
   const handleConfirm = () => {
     if (!padRef.current || padRef.current.isEmpty()) return
-    onConfirm(padRef.current.toDataURL("image/png"))
+    const result = padRef.current.exportPng()
+    if (!result.ok) {
+      // Érthető hibaüzenet a felhasználónak, technikai napló (személyes adat nélkül) a szervernek
+      setExportError(result.message)
+      logClientEvent(
+        result.code === "EMPTY_CANVAS" || result.code === "BLANK_EXPORT"
+          ? "signature_export_empty"
+          : "signature_export_error",
+        { ...result.diagnostics, errorCode: result.code }
+      )
+      return
+    }
+    setExportError(null)
+    logClientEvent("signature_export_ok", result.diagnostics)
+    onConfirm(result.dataUrl)
   }
 
   return createPortal(
@@ -94,9 +168,18 @@ export default function SignatureModal({
             penColor={penColor}
             backgroundColor="white"
             className="h-full w-full"
-            onEnd={() => setHasDrawing(true)}
+            onEnd={() => {
+              setHasDrawing(true)
+              setExportError(null)
+            }}
           />
         </div>
+
+        {exportError && (
+          <p role="alert" className="px-4 pb-2 text-sm text-red-600 dark:text-red-400">
+            {exportError}
+          </p>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 dark:border-gray-700">
           <Button variant="secondary" type="button" onClick={handleClear}>

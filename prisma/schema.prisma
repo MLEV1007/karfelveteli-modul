@@ -65,6 +65,9 @@ model DamageReport {
   id              String   @id @default(cuid())
   referenceNumber String   @unique
   createdAt       DateTime @default(now())
+  // Kliens által generált idempotencia-kulcs (UUID): az újrapróbált beküldés ugyanazt a
+  // rekordot kapja vissza, nem hoz létre duplikátumot. Régi rekordoknál NULL.
+  clientRequestId String?  @unique
 
   // 1. lépés — Személyes adatok
   ownerType     OwnerType?

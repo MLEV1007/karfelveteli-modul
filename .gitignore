@@ -49,3 +49,7 @@ prisma/*.db-journal
 
 # Playwright MCP session debris
 .playwright-mcp/
+
+# playwright
+/test-results/
+/playwright-report/
