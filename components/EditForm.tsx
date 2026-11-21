@@ -15,6 +15,7 @@ import { OWNER_TYPE_OPTIONS, getOwnerLabels } from "@/lib/ownerType"
 import { VAT_RECLAIM_OPTIONS } from "@/lib/protocolChoices"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
+import DateField, { DateTimeField } from "./ui/DateField"
 import Textarea from "./ui/Textarea"
 import Checkbox from "./ui/Checkbox"
 import RadioGroup from "./ui/RadioGroup"
@@ -83,7 +84,7 @@ export default function EditForm({ report }: EditFormProps) {
     insuranceCompanyOther: report.insuranceCompanyOther ?? "",
 
     // Step 3
-    // datetime-local ("YYYY-MM-DDTHH:mm") — az időpont is megmarad szerkesztéskor
+    // DateTimeField ("YYYY-MM-DDTHH:mm") — az időpont is megmarad szerkesztéskor
     accidentDate: report.accidentDate?.toISOString().slice(0, 16) ?? "",
     accidentCountry: report.accidentCountry ?? "",
     accidentCity: report.accidentCity ?? "",
@@ -265,13 +266,14 @@ export default function EditForm({ report }: EditFormProps) {
             onChange={(e) => updateField("driverPhone", e.target.value)}
             error={errors.driverPhone}
           />
-          <Input
+          <DateField
             label="Vezető születési ideje"
+            id="driverBirthDate"
             name="driverBirthDate"
-            type="date"
             value={formData.driverBirthDate}
-            onChange={(e) => updateField("driverBirthDate", e.target.value)}
+            onChange={(v) => updateField("driverBirthDate", v)}
             error={errors.driverBirthDate}
+            disallowFuture
           />
           <Input
             label="Vezetői engedély száma"
@@ -280,12 +282,12 @@ export default function EditForm({ report }: EditFormProps) {
             onChange={(e) => updateField("driverLicenseNumber", e.target.value)}
             error={errors.driverLicenseNumber}
           />
-          <Input
+          <DateField
             label="Vezetői engedély érvényességi ideje"
+            id="driverLicenseValidUntil"
             name="driverLicenseValidUntil"
-            type="date"
             value={formData.driverLicenseValidUntil}
-            onChange={(e) => updateField("driverLicenseValidUntil", e.target.value)}
+            onChange={(v) => updateField("driverLicenseValidUntil", v)}
             error={errors.driverLicenseValidUntil}
           />
           <Input
@@ -457,13 +459,16 @@ export default function EditForm({ report }: EditFormProps) {
           title="3. Baleset körülményei"
           description="Hol, mikor, hogyan történt a baleset"
         >
-          <Input
+          <DateTimeField
             label="Baleset időpontja"
+            id="accidentDate"
             name="accidentDate"
-            type="datetime-local"
             value={formData.accidentDate}
-            onChange={(e) => updateField("accidentDate", e.target.value)}
+            onChange={(v) => updateField("accidentDate", v)}
             error={errors.accidentDate}
+            min="1900-01-01T00:00"
+            max="2099-12-31T23:59"
+            disallowFuture
           />
           <Input
             label="Ország"

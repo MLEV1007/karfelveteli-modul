@@ -3,6 +3,7 @@
 import { z } from "zod"
 import { useState } from "react"
 import Input from "@/components/ui/Input"
+import { DateTimeField } from "@/components/ui/DateField"
 import Textarea from "@/components/ui/Textarea"
 import Checkbox from "@/components/ui/Checkbox"
 import SelectWithOther from "@/components/ui/SelectWithOther"
@@ -68,21 +69,6 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
     (field: keyof Step3Data) => (e: React.ChangeEvent<HTMLInputElement>) =>
       onChange(field, e.target.value)
 
-  // A natív datetime-local input éves szegmense a böngésző hibája miatt (pl. Chrome)
-  // begépeléskor 4-nél több számjegyet is elfogad, mielőtt érvénytelenné válna —
-  // ezt itt utasítjuk el, mielőtt bekerülne az állapotba.
-  const handleAccidentDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value) {
-      const yearDigits = value.split("-")[0]
-      const year = Number(yearDigits)
-      if (yearDigits.length > 4 || year < 1900 || year > 2099) {
-        return
-      }
-    }
-    onChange("accidentDate", value)
-  }
-
   const handleTextarea =
     (field: keyof Step3Data) => (e: React.ChangeEvent<HTMLTextAreaElement>) =>
       onChange(field, e.target.value)
@@ -94,16 +80,17 @@ export default function Step3AccidentDetails({ data, onChange, errors }: Step3Pr
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
           A baleset ideje és helyszíne
         </h2>
-        <Input
+        <DateTimeField
           label="Baleset időpontja"
+          id="accidentDate"
           name="accidentDate"
-          type="datetime-local"
           value={data.accidentDate ?? ""}
-          onChange={handleAccidentDateChange}
+          onChange={(v) => onChange("accidentDate", v)}
           error={errors.accidentDate}
           required
           min="1900-01-01T00:00"
           max="2099-12-31T23:59"
+          disallowFuture
         />
         <div className="flex flex-col gap-1">
           <label htmlFor="accidentCountry" className="text-sm font-medium text-gray-700 dark:text-gray-300">

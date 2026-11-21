@@ -19,6 +19,7 @@ import SignatureField from "@/components/ui/SignatureField"
 import SignatureModal from "@/components/ui/SignatureModal"
 import FormSection from "./ui/FormSection"
 import Input from "./ui/Input"
+import { DateTimeField } from "./ui/DateField"
 import Textarea from "./ui/Textarea"
 import Checkbox from "./ui/Checkbox"
 import RadioGroup from "./ui/RadioGroup"
@@ -368,21 +369,21 @@ export default function JegyzokonyvForm({ report }: JegyzokonyvFormProps) {
         </FormSection>
 
         <FormSection title="Átvétel / visszaadás" description="A gépjármű szervizben tartózkodásának ideje">
-          <Input
+          <DateTimeField
             label="Átvétel időpontja"
+            id="vehicleCheckIn"
             name="vehicleCheckIn"
-            type="datetime-local"
             value={vehicleCheckIn}
-            onChange={(e) => setVehicleCheckIn(e.target.value)}
+            onChange={setVehicleCheckIn}
             error={errors.vehicleCheckIn}
             required
           />
-          <Input
+          <DateTimeField
             label="Visszaadás időpontja"
+            id="vehicleCheckOut"
             name="vehicleCheckOut"
-            type="datetime-local"
             value={vehicleCheckOut}
-            onChange={(e) => setVehicleCheckOut(e.target.value)}
+            onChange={setVehicleCheckOut}
             error={errors.vehicleCheckOut}
             required
           />

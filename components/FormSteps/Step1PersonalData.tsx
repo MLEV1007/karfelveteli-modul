@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import Input from "@/components/ui/Input"
+import DateField from "@/components/ui/DateField"
 import RadioGroup from "@/components/ui/RadioGroup"
 import {
   OWNER_TYPE_OPTIONS,
@@ -185,13 +186,14 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
         {/* Ezek a mezők a "Megegyezik a tulajdonossal" jelölőtől függetlenül mindig
             láthatók — a tulajdonos adatai között nincs születési idő / jogosítvány. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
+          <DateField
             label="Vezető születési ideje"
+            id="driverBirthDate"
             name="driverBirthDate"
-            type="date"
             value={data.driverBirthDate ?? ""}
-            onChange={handle("driverBirthDate")}
+            onChange={(v) => onChange("driverBirthDate", v)}
             error={errors.driverBirthDate}
+            disallowFuture
           />
           <Input
             label="Vezetői engedély száma"
@@ -202,12 +204,12 @@ export default function Step1PersonalData({ data, onChange, errors }: Step1Props
             placeholder="pl. AB123456"
           />
         </div>
-        <Input
+        <DateField
           label="Vezetői engedély érvényességi ideje"
+          id="driverLicenseValidUntil"
           name="driverLicenseValidUntil"
-          type="date"
           value={data.driverLicenseValidUntil ?? ""}
-          onChange={handle("driverLicenseValidUntil")}
+          onChange={(v) => onChange("driverLicenseValidUntil", v)}
           error={errors.driverLicenseValidUntil}
         />
       </section>

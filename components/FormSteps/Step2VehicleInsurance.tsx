@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import Input from "@/components/ui/Input"
+import DateField from "@/components/ui/DateField"
 import RadioGroup from "@/components/ui/RadioGroup"
 import Checkbox from "@/components/ui/Checkbox"
 import SelectWithOther from "@/components/ui/SelectWithOther"
@@ -167,20 +168,21 @@ export default function Step2VehicleInsurance({ data, onChange, errors }: Step2P
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
+          <DateField
             label="Forgalomba helyezés dátuma"
+            id="vehicleRegistrationDate"
             name="vehicleRegistrationDate"
-            type="date"
             value={data.vehicleRegistrationDate ?? ""}
-            onChange={handleInput("vehicleRegistrationDate")}
+            onChange={(v) => onChange("vehicleRegistrationDate", v)}
             error={errors.vehicleRegistrationDate}
+            disallowFuture
           />
-          <Input
+          <DateField
             label="Műszaki érvényesség"
+            id="vehicleInspectionValidUntil"
             name="vehicleInspectionValidUntil"
-            type="date"
             value={data.vehicleInspectionValidUntil ?? ""}
-            onChange={handleInput("vehicleInspectionValidUntil")}
+            onChange={(v) => onChange("vehicleInspectionValidUntil", v)}
             error={errors.vehicleInspectionValidUntil}
           />
         </div>
