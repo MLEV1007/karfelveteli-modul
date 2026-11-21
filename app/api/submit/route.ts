@@ -13,16 +13,42 @@ import { nextReferenceNumber } from "@/lib/referenceNumber"
 // időtúllépett, de a szerver dolgozik) — ilyenkor nem indítunk párhuzamos feldolgozást.
 const IN_PROGRESS_WINDOW_MS = 90_000
 
-type ReportRef = { id: string; ownerSignatureUrl: string | null; createdAt: Date }
+type ReportRef = {
+  id: string
+  ownerSignatureUrl: string | null
+  createdAt: Date
+  submissionStartedAt: Date | null
+  submitCompletedAt: Date | null
+}
+
+const REF_SELECT = {
+  id: true,
+  ownerSignatureUrl: true,
+  createdAt: true,
+  submissionStartedAt: true,
+  submitCompletedAt: true,
+  vehiclePlate: true,
+  customerEmail: true,
+} as const
+
+// Feldolgozás alatt: elindult, nem fejeződött be, és még nem járt le az "él még" ablak
+function isInProgress(report: ReportRef): boolean {
+  return (
+    report.submitCompletedAt === null &&
+    report.submissionStartedAt !== null &&
+    Date.now() - report.submissionStartedAt.getTime() < IN_PROGRESS_WINDOW_MS
+  )
+}
+
+function inProgressResponse(): NextResponse {
+  return NextResponse.json(
+    { error: "A beküldés feldolgozása még folyamatban van. Kérjük próbálja újra néhány másodperc múlva." },
+    { status: 409 }
+  )
+}
 
 function duplicateResponse(report: ReportRef): NextResponse {
-  // Ugyanaz a rekord, új e-mail/PDF-kiküldés nélkül
-  if (report.ownerSignatureUrl === null && Date.now() - report.createdAt.getTime() < IN_PROGRESS_WINDOW_MS) {
-    return NextResponse.json(
-      { error: "A beküldés feldolgozása még folyamatban van. Kérjük próbálja újra néhány másodperc múlva." },
-      { status: 409 }
-    )
-  }
+  // Teljesen befejezett beküldés: ugyanaz a rekord, új e-mail/PDF-kiküldés nélkül
   return NextResponse.json(
     {
       success: true,
@@ -63,20 +89,42 @@ export async function POST(req: NextRequest) {
 
     const data = result.data
 
-    // Idempotencia: ugyanarra a clientRequestId-ra ugyanazt a rekordot adjuk vissza. A
+    // Idempotencia: ugyanarra a clientRequestId-ra ugyanazt a rekordot adjuk vissza. Az
     // ellenőrzés a létrehozás ELŐTT van, hogy ne égessünk el felesleges BIZT-sorszámot.
-    // (Aláírás-feltöltésen elbukott, elhagyott rekordnál lásd lent: a feltöltés folytatódik.)
+    // Befejezett beküldésnél 200 (duplicate), futó feldolgozásnál 409, félbemaradtnál
+    // a feldolgozást (aláírás-feltöltés, értesítők) pótoljuk.
+    let requestId: string | null = data.clientRequestId ?? null
     let resumeReport: ReportRef | null = null
-    if (data.clientRequestId) {
+    if (requestId) {
       const existing = await prisma.damageReport.findUnique({
-        where: { clientRequestId: data.clientRequestId },
-        select: { id: true, ownerSignatureUrl: true, createdAt: true },
+        where: { clientRequestId: requestId },
+        select: REF_SELECT,
       })
       if (existing) {
-        if (existing.ownerSignatureUrl !== null) return duplicateResponse(existing)
-        const response = duplicateResponse(existing)
-        if (response.status === 409) return response
-        resumeReport = existing // régi, félbemaradt beküldés: a feltöltést és az értesítést pótoljuk
+        if (existing.vehiclePlate !== data.vehiclePlate || existing.customerEmail !== data.customerEmail) {
+          // Ugyanaz a kulcs, de más ügyfél adata (pl. közös eszközön megmaradt kulcs): ez egy ÚJ
+          // beküldés, nem duplikátum. A kulcs nélkül hozzuk létre, hogy ne nyelődjön el.
+          requestId = null
+        } else if (existing.submitCompletedAt !== null) {
+          return duplicateResponse(existing)
+        } else if (isInProgress(existing)) {
+          return inProgressResponse()
+        } else {
+          // Atomikus "claim": csak egy párhuzamos újrapróbálás veheti át a félbemaradt feldolgozást
+          const claim = await prisma.damageReport.updateMany({
+            where: {
+              id: existing.id,
+              submitCompletedAt: null,
+              OR: [
+                { submissionStartedAt: null },
+                { submissionStartedAt: { lt: new Date(Date.now() - IN_PROGRESS_WINDOW_MS) } },
+              ],
+            },
+            data: { submissionStartedAt: new Date() },
+          })
+          if (claim.count === 0) return inProgressResponse()
+          resumeReport = existing
+        }
       }
     }
 
@@ -108,7 +156,8 @@ export async function POST(req: NextRequest) {
         report = await prisma.damageReport.create({
           data: {
             referenceNumber,
-            clientRequestId: data.clientRequestId ?? null,
+            clientRequestId: requestId,
+            submissionStartedAt: new Date(),
             ownerType: data.ownerType ?? null,
             ownerName: data.ownerName,
             ownerAddress: data.ownerAddress,
@@ -179,15 +228,14 @@ export async function POST(req: NextRequest) {
         })
       } catch (dbError) {
         // Versenyhelyzet: két párhuzamos kérés ugyanazzal a kulccsal — a vesztes a nyertes rekordját kapja
-        if (data.clientRequestId && isClientRequestIdConflict(dbError)) {
+        if (requestId && isClientRequestIdConflict(dbError)) {
           const winner = await prisma.damageReport.findUnique({
-            where: { clientRequestId: data.clientRequestId },
-            select: { id: true, ownerSignatureUrl: true, createdAt: true },
+            where: { clientRequestId: requestId },
+            select: REF_SELECT,
           })
           if (winner) {
-            // A nyertes még feltöltés alatt lehet: ilyenkor a duplicateResponse 409-et ad, a
-            // kliens újrapróbálhatja; kész rekordnál 200 + ugyanaz az id.
-            return duplicateResponse(winner)
+            // Kész rekordnál 200 + ugyanaz az id; különben a nyertes még dolgozik: 409, a kliens újrapróbálhatja
+            return winner.submitCompletedAt !== null ? duplicateResponse(winner) : inProgressResponse()
           }
         }
         console.error("Database error:", dbError)
@@ -198,36 +246,38 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Aláírások feltöltése Supabase Storage-ba
+    // 5. Aláírások feltöltése Supabase Storage-ba (folytatásnál kihagyjuk, ha már megtörtént)
     try {
-      const ownerSigUrl = data.ownerSignatureUrl
-        ? await uploadSignature(data.ownerSignatureUrl, data.vehiclePlate, report.id, "owner")
-        : null
+      if (!resumeReport || resumeReport.ownerSignatureUrl === null) {
+        const ownerSigUrl = data.ownerSignatureUrl
+          ? await uploadSignature(data.ownerSignatureUrl, data.vehiclePlate, report.id, "owner")
+          : null
 
-      // Azonos vezető és tulajdonos esetén csak egy aláírás van (a tulajdonosé) — a PDF
-      // ugyanazt teszi mindkét dobozba, külön vezetői aláírást nem tárolunk.
-      const driverSigUrl = data.driverSignatureUrl && !data.driverSameAsOwner
-        ? await uploadSignature(data.driverSignatureUrl, data.vehiclePlate, report.id, "driver")
-        : null
+        // Azonos vezető és tulajdonos esetén csak egy aláírás van (a tulajdonosé) — a PDF
+        // ugyanazt teszi mindkét dobozba, külön vezetői aláírást nem tárolunk.
+        const driverSigUrl = data.driverSignatureUrl && !data.driverSameAsOwner
+          ? await uploadSignature(data.driverSignatureUrl, data.vehiclePlate, report.id, "driver")
+          : null
 
-      await prisma.damageReport.update({
-        where: { id: report.id },
-        data: {
-          ownerSignatureUrl: ownerSigUrl,
-          driverSignatureUrl: driverSigUrl,
-        },
-      })
+        await prisma.damageReport.update({
+          where: { id: report.id },
+          data: {
+            ownerSignatureUrl: ownerSigUrl,
+            driverSignatureUrl: driverSigUrl,
+          },
+        })
+      }
     } catch (uploadError) {
       console.error("Aláírás feltöltési hiba:", uploadError)
-      // Az éppen most létrehozott, aláírás nélkül maradt rekordot eltávolítjuk, hogy az
-      // újrapróbálás (ugyanazzal a clientRequestId-val) tiszta lappal indulhasson, és ne
-      // maradjon árva sor. Folytatott (resume) rekordhoz nem nyúlunk.
-      if (!resumeReport) {
-        try {
-          await prisma.damageReport.delete({ where: { id: report.id } })
-        } catch (cleanupError) {
-          console.error("Árva rekord törlése sikertelen:", cleanupError)
-        }
+      // A rekordot (és a BIZT-sorszámot) megtartjuk; a "nem fut" jelzéssel az azonnali
+      // újrapróbálás (ugyanazzal a clientRequestId-val) folytathatja a feldolgozást.
+      try {
+        await prisma.damageReport.update({
+          where: { id: report.id },
+          data: { submissionStartedAt: null },
+        })
+      } catch (markError) {
+        console.error("Feldolgozás-jelző visszaállítása sikertelen:", markError)
       }
       return NextResponse.json(
         { error: "Aláírás feltöltési hiba. Kérjük próbálja újra később." },
@@ -267,7 +317,17 @@ export async function POST(req: NextRequest) {
       console.error("Ügyfél visszaigazoló email hiba:", emailError)
     }
 
-    // 8. Sikeres válasz
+    // 8. A feldolgozás befejezve: innentől az azonos kulcsú kérés duplikátum (200), nem pótlás
+    try {
+      await prisma.damageReport.update({
+        where: { id: report.id },
+        data: { submitCompletedAt: new Date() },
+      })
+    } catch (markError) {
+      console.error("Befejezés-jelző mentése sikertelen:", markError)
+    }
+
+    // 9. Sikeres válasz
     return NextResponse.json(
       {
         success: true,

@@ -19,6 +19,7 @@ async function openSignatureStep(page: Page) {
       key,
       JSON.stringify({
         v: 1,
+        savedAt: Date.now(),
         step: 7,
         clientRequestId: "",
         formData: { ownerName: "Teszt Elek", driverSameAsOwner: true, vehiclePlate: "TST-123" },
@@ -26,6 +27,8 @@ async function openSignatureStep(page: Page) {
     )
   }, DRAFT_KEY)
   await page.goto("/form")
+  // A talált piszkozatnál a felhasználó dönt: folytatja
+  await page.getByRole("button", { name: "Folytatás" }).click()
   await expect(page.getByRole("heading", { name: "Aláírás és beküldés" })).toBeVisible()
 }
 
@@ -93,6 +96,7 @@ test.describe("beküldés: piszkozat és újrapróbálás", () => {
     expect(before?.clientRequestId).toMatch(UUID_RE)
 
     await page.reload()
+    await page.getByRole("button", { name: "Folytatás" }).click()
     await expect(page.getByRole("heading", { name: "Aláírás és beküldés" })).toBeVisible()
     await expect(page.getByAltText(/aláírás/)).toBeVisible()
     const after = await readDraft(page)
@@ -124,6 +128,50 @@ test.describe("beküldés: piszkozat és újrapróbálás", () => {
     expect(unlocked.pos).toBe("")
     expect(unlocked.top).toBe("")
     expect(unlocked.y).toBeGreaterThan(250)
+  })
+
+  test("lejárt piszkozat nem töltődik be, és nem kérdez rá", async ({ page }) => {
+    await page.route("**/api/client-log", (route) => route.fulfill({ status: 204 }))
+    await page.addInitScript((key) => {
+      sessionStorage.setItem(
+        key,
+        JSON.stringify({
+          v: 1,
+          savedAt: Date.now() - 31 * 60 * 1000,
+          step: 7,
+          clientRequestId: "",
+          formData: { ownerName: "Régi Ügyfél" },
+        })
+      )
+    }, DRAFT_KEY)
+    await page.goto("/form")
+    await expect(page.getByRole("button", { name: "Folytatás" })).toHaveCount(0)
+    await expect(page.getByText("Digitális Kárfelvételi Űrlap")).toBeVisible()
+  })
+
+  test("Új kitöltés: a korábbi piszkozat törlődik, új kérés-azonosító készül", async ({ page }) => {
+    await page.route("**/api/client-log", (route) => route.fulfill({ status: 204 }))
+    await page.addInitScript((key) => {
+      if (sessionStorage.getItem("e2e:seeded")) return
+      sessionStorage.setItem("e2e:seeded", "1")
+      sessionStorage.setItem(
+        key,
+        JSON.stringify({
+          v: 1,
+          savedAt: Date.now(),
+          step: 7,
+          clientRequestId: "11111111-1111-4111-8111-111111111111",
+          formData: { ownerName: "Előző Ügyfél" },
+        })
+      )
+    }, DRAFT_KEY)
+    await page.goto("/form")
+    await expect(page.getByText("Félbehagyott kitöltés található")).toBeVisible()
+    await page.getByRole("button", { name: "Új kitöltés" }).click()
+    await expect(page.getByText("Digitális Kárfelvételi Űrlap")).toBeVisible()
+    await expect.poll(async () => (await readDraft(page))?.formData.ownerName ?? "").not.toBe("Előző Ügyfél")
+    const draft = await readDraft(page)
+    if (draft) expect(draft.clientRequestId).not.toBe("11111111-1111-4111-8111-111111111111")
   })
 
   test("hiányzó sessionStorage esetén az űrlap hiba nélkül betölt", async ({ page }) => {

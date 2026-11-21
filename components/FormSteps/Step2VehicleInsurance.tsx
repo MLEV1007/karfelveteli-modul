@@ -6,7 +6,12 @@ import DateField from "@/components/ui/DateField"
 import RadioGroup from "@/components/ui/RadioGroup"
 import Checkbox from "@/components/ui/Checkbox"
 import SelectWithOther from "@/components/ui/SelectWithOther"
-import { INSURANCE_COMPANIES, INSURANCE_COMPANY_LABELS, type InsuranceCompanyValue } from "@/lib/validation"
+import {
+  INSURANCE_COMPANIES,
+  INSURANCE_COMPANY_LABELS,
+  dateOnlySchema,
+  type InsuranceCompanyValue,
+} from "@/lib/validation"
 
 const VIN_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/ // I, O, Q kizárva (ISO 3779)
 
@@ -20,8 +25,8 @@ export const step2Schema = z
       .string()
       .length(17, "A VIN szám pontosan 17 karakter hosszú")
       .regex(VIN_REGEX, "A VIN szám nem tartalmazhat I, O vagy Q betűt"),
-    vehicleRegistrationDate: z.string().optional(),
-    vehicleInspectionValidUntil: z.string().optional(),
+    vehicleRegistrationDate: dateOnlySchema,
+    vehicleInspectionValidUntil: dateOnlySchema,
     vehicleEngineCapacity: z.coerce.number().int().min(0).optional(),
     vehiclePowerKw: z.coerce.number().int().min(0).optional(),
     vehicleColor: z.string().optional(),

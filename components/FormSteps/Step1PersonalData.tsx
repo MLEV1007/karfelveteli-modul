@@ -3,6 +3,7 @@
 import { z } from "zod"
 import Input from "@/components/ui/Input"
 import DateField from "@/components/ui/DateField"
+import { dateOnlySchema } from "@/lib/validation"
 import RadioGroup from "@/components/ui/RadioGroup"
 import {
   OWNER_TYPE_OPTIONS,
@@ -24,9 +25,9 @@ export const step1Schema = z.object({
   driverName: z.string().optional(),
   driverAddress: z.string().optional(),
   driverPhone: z.string().optional(),
-  driverBirthDate: z.string().optional(),
+  driverBirthDate: dateOnlySchema,
   driverLicenseNumber: z.string().optional(),
-  driverLicenseValidUntil: z.string().optional(),
+  driverLicenseValidUntil: dateOnlySchema,
   customerEmail: z.string().email("Érvénytelen e-mail cím"),
   customerPhone: z.string().regex(PHONE_REGEX, "Érvénytelen telefonszám formátum (pl. +36 30 123 4567)"),
   driverSameAsOwner: z.boolean(),

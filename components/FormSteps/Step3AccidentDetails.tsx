@@ -7,10 +7,14 @@ import { DateTimeField } from "@/components/ui/DateField"
 import Textarea from "@/components/ui/Textarea"
 import Checkbox from "@/components/ui/Checkbox"
 import SelectWithOther from "@/components/ui/SelectWithOther"
+import { isValidDateTimeLocal } from "@/lib/validation"
 
 export const step3Schema = z.object({
   // Kötelező: a káresemény időpontja a meghatalmazáson is szerepel
-  accidentDate: z.string().min(1, "A baleset időpontjának megadása kötelező"),
+  accidentDate: z
+    .string()
+    .min(1, "A baleset időpontjának megadása kötelező")
+    .refine(isValidDateTimeLocal, "Hiányos vagy érvénytelen időpont"),
   accidentCountry: z.string().optional(),
   accidentCity: z.string().optional(),
   accidentStreet: z.string().optional(),

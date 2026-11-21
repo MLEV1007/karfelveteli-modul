@@ -68,6 +68,9 @@ model DamageReport {
   // Kliens által generált idempotencia-kulcs (UUID): az újrapróbált beküldés ugyanazt a
   // rekordot kapja vissza, nem hoz létre duplikátumot. Régi rekordoknál NULL.
   clientRequestId String?  @unique
+  // Idempotens beküldés állapota: a feldolgozás indulása (NULL = nem fut) és befejezése
+  submissionStartedAt DateTime?
+  submitCompletedAt   DateTime?
 
   // 1. lépés — Személyes adatok
   ownerType     OwnerType?

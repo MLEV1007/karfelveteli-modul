@@ -79,12 +79,44 @@ const vinSchema = z.preprocess(
 )
 
 const PHONE_REGEX = /^\+?[0-9\s-]{7,20}$/
-// YYYY-MM-DD dátum-only mező (forgalomba helyezés / műszaki érvényesség) — a natív
-// <input type="date"> ezt a formátumot adja.
-const dateOnlySchema = z
+// Naptárhelyes dátum/idő ellenőrzés (szerver és kliens közös szabálya): a "2026-02-31",
+// "9999-99-99" vagy a DateField "invalid" jelzője nem megy át.
+const DATE_ONLY_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/
+const DATE_TIME_REGEX = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?Z?$/
+
+function isCalendarDate(y: number, m: number, d: number): boolean {
+  if (y < 1900 || y > 2099 || m < 1 || m > 12 || d < 1) return false
+  return d <= new Date(Date.UTC(y, m, 0)).getUTCDate()
+}
+
+export function isValidDateOnly(val: string): boolean {
+  const m = DATE_ONLY_REGEX.exec(val)
+  return !!m && isCalendarDate(Number(m[1]), Number(m[2]), Number(m[3]))
+}
+
+export function isValidDateTimeLocal(val: string): boolean {
+  const m = DATE_TIME_REGEX.exec(val)
+  return (
+    !!m &&
+    isCalendarDate(Number(m[1]), Number(m[2]), Number(m[3])) &&
+    Number(m[4]) <= 23 &&
+    Number(m[5]) <= 59
+  )
+}
+
+// YYYY-MM-DD dátum-only mező (forgalomba helyezés / műszaki érvényesség, születési idő,
+// jogosítvány érvényesség). Üres érték megengedett (opcionális mező).
+// Aláírás: kizárólag PNG data URL, korlátozott méretben (a kliens exportja ~20–100 KB;
+// a felső korlát egyezik a SignaturePad MAX_DATA_URL_LENGTH értékével).
+export const signatureDataUrlSchema = z
+  .string()
+  .max(1_500_000, "Az aláírás túl nagy")
+  .regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/, "Érvénytelen aláírás formátum")
+
+export const dateOnlySchema = z
   .string()
   .optional()
-  .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), "Érvénytelen dátum formátum")
+  .refine((val) => !val || isValidDateOnly(val), "Hiányos vagy érvénytelen dátum")
 
 const vehicleCategorySchema = z.enum(VEHICLE_CATEGORY_VALUES, {
   errorMap: () => ({ message: "Válassza ki a jármű kategóriáját" }),
@@ -107,15 +139,13 @@ const phoneSchema = z
 // A "YYYY-MM-DDTHH:mm" datetime-local érték év részét korlátozzuk 4 számjegyre —
 // egyes böngészők (pl. Chrome) a natív dátumválasztóban gépeléskor ennél többet is
 // elfogadnak, ezért ezt a szerver oldalon is ki kell kényszeríteni.
-const accidentDateSchema = z
+export const accidentDateSchema = z
   .string()
   .optional()
-  .refine((val) => {
-    if (!val) return true
-    const yearDigits = val.split("-")[0]
-    const year = Number(yearDigits)
-    return yearDigits.length <= 4 && year >= 1900 && year <= 2099
-  }, "Érvénytelen év a baleset időpontjában (max. 4 számjegy, 1900–2099 között)")
+  .refine(
+    (val) => !val || isValidDateTimeLocal(val),
+    "Hiányos vagy érvénytelen időpont (4 jegyű év, 1900–2099 között)"
+  )
 
 // Ha az "EGYEB" (egyéb biztosító) opciót választja a felhasználó, a konkrét nevet
 // szabadszöveges mezőben kell megadnia — ezt a damageReportObjectSchema-ra épülő
@@ -221,8 +251,8 @@ const damageReportObjectSchema = z.object({
   }),
 
   // 7. lépés — Aláírás
-  ownerSignatureUrl: z.string().min(1, "Tulajdonos aláírása kötelező"),
-  driverSignatureUrl: z.string().optional(),
+  ownerSignatureUrl: z.string().min(1, "Tulajdonos aláírása kötelező").pipe(signatureDataUrlSchema),
+  driverSignatureUrl: z.union([z.literal(""), signatureDataUrlSchema]).optional(),
   gdprConsent: z.literal(true, {
     errorMap: () => ({ message: "GDPR beleegyezés kötelező" }),
   }),
@@ -309,8 +339,14 @@ export type EditReportInput = z.infer<typeof editReportSchema>
 // Jegyzőkönyv — technikusi adatok (csak a /admin/munkalap felületen)
 // ─────────────────────────────────────────────────────────────
 const munkalapObjectSchema = z.object({
-  vehicleCheckIn: z.string().min(1, "Az átvétel időpontja kötelező"),
-  vehicleCheckOut: z.string().min(1, "A visszaadás időpontja kötelező"),
+  vehicleCheckIn: z
+    .string()
+    .min(1, "Az átvétel időpontja kötelező")
+    .refine(isValidDateTimeLocal, "Hiányos vagy érvénytelen átvételi időpont"),
+  vehicleCheckOut: z
+    .string()
+    .min(1, "A visszaadás időpontja kötelező")
+    .refine(isValidDateTimeLocal, "Hiányos vagy érvénytelen visszaadási időpont"),
   vehicleCategory: vehicleCategorySchema,
   workProcess: workProcessSchema,
   vehicleCondition: vehicleConditionSchema,
@@ -318,7 +354,10 @@ const munkalapObjectSchema = z.object({
   equipmentChecklist: equipmentChecklistSchema,
   damageNotes: z.string().min(1, "Az átvételkori állapot rögzítése kötelező"),
   technicianName: z.string().min(2, "A technikus neve kötelező"),
-  technicianSignatureUrl: z.string().min(1, "A technikus (átvevő) aláírása kötelező"),
+  technicianSignatureUrl: z
+    .string()
+    .min(1, "A technikus (átvevő) aláírása kötelező")
+    .pipe(signatureDataUrlSchema),
 })
 
 function checkOutAfterCheckIn(data: { vehicleCheckIn: string; vehicleCheckOut: string }) {

@@ -25,10 +25,15 @@ export async function uploadSignature(
   type: "owner" | "driver" | "technician"
 ): Promise<string> {
   const base64 = dataUrl.split(",")[1]
+  if (!base64) throw new Error("Érvénytelen aláírás: hiányzó adat")
   const binary = atob(base64)
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i)
+  }
+  // PNG-aláírás (magic bytes) ellenőrzése: csak valódi PNG kerül a tárolóba
+  if (bytes.length < 8 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47) {
+    throw new Error("Érvénytelen aláírás: nem PNG")
   }
 
   const dateStr = formatDateForFolder()

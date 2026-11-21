@@ -6,6 +6,8 @@
 
 export const DRAFT_STORAGE_KEY = "km:draft:v1"
 const DRAFT_VERSION = 1
+// A piszkozat ennyi ideig érvényes (közös műhelyeszköz: ne maradjon meg a következő ügyfélnek)
+export const DRAFT_MAX_AGE_MS = 30 * 60 * 1000
 
 export interface DraftState {
   step: number
@@ -22,8 +24,14 @@ export function loadDraft(): DraftState | null {
       step?: unknown
       clientRequestId?: unknown
       formData?: unknown
+      savedAt?: unknown
     }
     if (parsed?.v !== DRAFT_VERSION) return null
+    // Lejárt vagy időbélyeg nélküli piszkozat: eldobjuk
+    if (typeof parsed.savedAt !== "number" || Date.now() - parsed.savedAt > DRAFT_MAX_AGE_MS) {
+      clearDraft()
+      return null
+    }
     if (typeof parsed.formData !== "object" || parsed.formData === null) return null
     if (typeof parsed.step !== "number" || !Number.isFinite(parsed.step)) return null
     return {
@@ -42,7 +50,7 @@ const SIGNATURE_FIELDS = ["ownerSignatureUrl", "driverSignatureUrl"]
 
 export function saveDraft(state: DraftState): SaveDraftResult {
   try {
-    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ v: DRAFT_VERSION, ...state }))
+    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ v: DRAFT_VERSION, savedAt: Date.now(), ...state }))
     return "ok"
   } catch {
     // Kvóta betelt: az aláírás nélküli változatot még megpróbáljuk menteni
@@ -51,7 +59,7 @@ export function saveDraft(state: DraftState): SaveDraftResult {
       for (const f of SIGNATURE_FIELDS) slim[f] = ""
       window.sessionStorage.setItem(
         DRAFT_STORAGE_KEY,
-        JSON.stringify({ v: DRAFT_VERSION, ...state, formData: slim })
+        JSON.stringify({ v: DRAFT_VERSION, savedAt: Date.now(), ...state, formData: slim })
       )
       return "ok_without_signatures"
     } catch {

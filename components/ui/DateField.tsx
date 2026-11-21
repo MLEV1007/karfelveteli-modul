@@ -186,6 +186,8 @@ function DateFieldBase({
   const [touched, setTouched] = useState(false)
   const partsRef = useRef(parts)
   const valueRef = useRef(value)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
   valueRef.current = value
   const inputRefs = useRef<Partial<Record<PartKey, HTMLInputElement | null>>>({})
 
@@ -201,9 +203,36 @@ function DateFieldBase({
       partsRef.current = next
       setPartsState(next)
       // Mentett piszkozatból érkező "invalid" jelző üres mezőnél: tisztítsuk ki.
-      if (value === INVALID_DATE_VALUE) onChange("")
+      if (value === INVALID_DATE_VALUE) onChangeRef.current("")
     }
   }, [value, withTime])
+
+  // Android virtuális billentyűzetek (Gboard) üres mezőben gyakran nem küldenek használható
+  // keydown-t (key: "Unidentified"), de a natív beforeinput deleteContentBackward megérkezik.
+  useEffect(() => {
+    const order = withTime ? DATETIME_KEYS : DATE_KEYS
+    const cleanups: Array<() => void> = []
+    order.forEach((key, i) => {
+      const el = inputRefs.current[key]
+      const prev = order[i - 1]
+      if (!el || !prev) return
+      const onBeforeInput = (ev: Event) => {
+        const ie = ev as InputEvent
+        if (ie.inputType === "deleteContentBackward" && el.value === "") {
+          ev.preventDefault()
+          const target = inputRefs.current[prev]
+          if (target) {
+            target.focus()
+            const len = target.value.length
+            target.setSelectionRange(len, len)
+          }
+        }
+      }
+      el.addEventListener("beforeinput", onBeforeInput)
+      cleanups.push(() => el.removeEventListener("beforeinput", onBeforeInput))
+    })
+    return () => cleanups.forEach((fn) => fn())
+  }, [withTime])
 
   const commit = (next: Parts) => {
     partsRef.current = next
@@ -249,7 +278,7 @@ function DateFieldBase({
     const el = e.currentTarget
     const prevKey = neighbour(key, -1)
     const nextKey = neighbour(key, 1)
-    if (e.key === "Backspace" && el.value === "" && prevKey) {
+    if ((e.key === "Backspace" || e.keyCode === 8) && el.value === "" && prevKey) {
       e.preventDefault()
       focusPart(prevKey, true)
     } else if (e.key === "ArrowLeft" && el.selectionStart === 0 && el.selectionEnd === 0 && prevKey) {
@@ -345,6 +374,7 @@ function DateFieldBase({
                 aria-label={meta.ariaLabel}
                 aria-required={required || undefined}
                 aria-invalid={shownError ? true : undefined}
+                aria-describedby={shownError ? errorId : undefined}
                 disabled={disabled}
                 value={parts[key]}
                 onChange={(e) => handleChange(key, e.target.value)}
@@ -361,7 +391,7 @@ function DateFieldBase({
       </div>
       {name && <input type="hidden" name={name} value={value} />}
       {shownError && (
-        <p id={errorId} className="text-xs text-red-500">
+        <p id={errorId} role="alert" className="text-xs text-red-500">
           {shownError}
         </p>
       )}

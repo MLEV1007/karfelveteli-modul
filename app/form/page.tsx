@@ -39,7 +39,7 @@ const Step7Signature = dynamic(
 import Card from "@/components/ui/Card"
 import Button from "@/components/ui/Button"
 import { logClientEvent } from "@/lib/clientLog"
-import { clearDraft, generateClientRequestId, loadDraft, saveDraft } from "@/lib/draft"
+import { clearDraft, generateClientRequestId, loadDraft, saveDraft, type DraftState } from "@/lib/draft"
 
 // A beküldés időkorlátja: ennyi után megszakítjuk a kérést, és "Újrapróbálás" gombot mutatunk.
 // Az újrapróbálás ugyanazzal a clientRequestId-val megy, így nem jön létre duplikátum.
@@ -147,6 +147,9 @@ export default function FormPage() {
   const [canRetry, setCanRetry] = useState(false)
   // A piszkozat betöltése után (hydration-hibák elkerülésére csak kliensen, effectben) true
   const [draftLoaded, setDraftLoaded] = useState(false)
+  // Talált, még érvényes piszkozat: a felhasználó dönt, hogy folytatja-e (közös eszközön
+  // ne töltődjön be automatikusan az előző ügyfél adata)
+  const [pendingDraft, setPendingDraft] = useState<DraftState | null>(null)
   // Idempotencia-kulcs: egyszer generáljuk, a piszkozattal együtt megmarad, és minden
   // újrapróbálásnál ugyanazt küldjük.
   const clientRequestIdRef = useRef("")
@@ -155,16 +158,32 @@ export default function FormPage() {
   const latestDraftRef = useRef({ step: 1, formData: initialData })
   const storageErrorLoggedRef = useRef(false)
 
-  // Piszkozat visszatöltése (sessionStorage) — egyszer, mountkor
+  // Piszkozat keresése (sessionStorage) — egyszer, mountkor. Ha van érvényes, megkérdezzük.
   useEffect(() => {
     const draft = loadDraft()
     if (draft) {
-      setFormData({ ...initialData, ...(draft.formData as Partial<FormData>) })
-      setCurrentStep(Math.min(Math.max(draft.step, 1), TOTAL_STEPS))
+      setPendingDraft(draft)
+      return
     }
-    clientRequestIdRef.current = draft?.clientRequestId || generateClientRequestId()
+    clientRequestIdRef.current = generateClientRequestId()
     setDraftLoaded(true)
   }, [])
+
+  const resumeDraft = () => {
+    if (!pendingDraft) return
+    setFormData({ ...initialData, ...(pendingDraft.formData as Partial<FormData>) })
+    setCurrentStep(Math.min(Math.max(pendingDraft.step, 1), TOTAL_STEPS))
+    clientRequestIdRef.current = pendingDraft.clientRequestId || generateClientRequestId()
+    setPendingDraft(null)
+    setDraftLoaded(true)
+  }
+
+  const discardDraft = () => {
+    clearDraft()
+    clientRequestIdRef.current = generateClientRequestId()
+    setPendingDraft(null)
+    setDraftLoaded(true)
+  }
 
   // Piszkozat mentése a sikeres beküldésig (kis késleltetéssel, és oldalelhagyáskor azonnal)
   const persistDraft = useCallback(() => {
@@ -558,6 +577,30 @@ export default function FormPage() {
           />
         )
     }
+  }
+
+  if (pendingDraft) {
+    return (
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-950 px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <Card>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
+              Félbehagyott kitöltés található
+            </h1>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
+              Ezen az eszközön egy korábban megkezdett kárfelvétel adatai maradtak meg. Folytatja a
+              kitöltést, vagy új, üres űrlapot kezd? Új kitöltésnél a korábbi adatok törlődnek.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button onClick={resumeDraft}>Folytatás</Button>
+              <Button variant="secondary" onClick={discardDraft}>
+                Új kitöltés
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </main>
+    )
   }
 
   return (
