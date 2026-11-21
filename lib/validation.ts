@@ -104,15 +104,17 @@ export function isValidDateTimeLocal(val: string): boolean {
   )
 }
 
-// YYYY-MM-DD dátum-only mező (forgalomba helyezés / műszaki érvényesség, születési idő,
-// jogosítvány érvényesség). Üres érték megengedett (opcionális mező).
 // Aláírás: kizárólag PNG data URL, korlátozott méretben (a kliens exportja ~20–100 KB;
 // a felső korlát egyezik a SignaturePad MAX_DATA_URL_LENGTH értékével).
 export const signatureDataUrlSchema = z
   .string()
   .max(1_500_000, "Az aláírás túl nagy")
-  .regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/, "Érvénytelen aláírás formátum")
+  // PNG fejléc (iVBORw0KGgo = 89 50 4E 47 0D 0A 1A 0A) + érvényes base64 karakterkészlet
+  .regex(/^data:image\/png;base64,iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/, "Érvénytelen aláírás formátum")
+  .refine((v) => (v.length - "data:image/png;base64,".length) % 4 === 0, "Érvénytelen aláírás kódolás")
 
+// YYYY-MM-DD dátum-only mező (forgalomba helyezés / műszaki érvényesség, születési idő,
+// jogosítvány érvényesség). Üres érték megengedett (opcionális mező).
 export const dateOnlySchema = z
   .string()
   .optional()
