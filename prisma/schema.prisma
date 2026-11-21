@@ -19,6 +19,8 @@ enum InsuranceCompany {
   WABERERS
   GENERTEL
   MAGYAR_POSTA_BIZTOSITO
+  CIG
+  GRANIT
   EGYEB
 }
 
@@ -54,6 +56,14 @@ enum DamageType {
   EGYEB
 }
 
+// Szélvédős kár oka (4. lépés) — a kárleírás előre kitöltött szövege ebből generálódik
+enum WindshieldCause {
+  KAVICS
+  MADAR
+  IDEGEN_TARGY
+  EGYEB
+}
+
 // A tulajdonos (meghatalmazó) típusa — a feliratok (név/cégnév, lakcím/székhely,
 // okmányszám/adószám) ehhez igazodnak. Az azonosító továbbra is az idOrTaxNumber mezőben van.
 enum OwnerType {
@@ -62,48 +72,56 @@ enum OwnerType {
 }
 
 model DamageReport {
-  id              String   @id @default(cuid())
-  referenceNumber String   @unique
-  createdAt       DateTime @default(now())
+  id                   String           @id @default(cuid())
+  referenceNumber      String           @unique
+  createdAt            DateTime         @default(now())
+  // Admin szerkesztés optimista zárolásához (egyidejű módosítás észlelése)
+  updatedAt            DateTime         @default(now()) @updatedAt
   // Kliens által generált idempotencia-kulcs (UUID): az újrapróbált beküldés ugyanazt a
   // rekordot kapja vissza, nem hoz létre duplikátumot. Régi rekordoknál NULL.
-  clientRequestId String?  @unique
+  clientRequestId      String?          @unique
   // Idempotens beküldés állapota: a feldolgozás indulása (NULL = nem fut) és befejezése
-  submissionStartedAt DateTime?
-  submitCompletedAt   DateTime?
+  submissionStartedAt  DateTime?
+  submitCompletedAt    DateTime?
+  // Szélvédős kár oka + "Egyéb" esetén a körülmények szabad szöveges leírása
+  windshieldCause      WindshieldCause?
+  windshieldCauseOther String?
+  // A lezáráskor rögzített két tanú (név, lakcím, aláírás kulcsa): az újragenerált
+  // meghatalmazás ugyanazt használja, akkor is, ha a tanúlistát később módosítják
+  witnessSnapshot      Json?
 
   // 1. lépés — Személyes adatok
-  ownerType     OwnerType?
-  ownerName     String
-  ownerAddress  String?
+  ownerType               OwnerType?
+  ownerName               String
+  ownerAddress            String?
   // "A vezető személye és a tulajdonos személye megegyezik" — ekkor egyszer írnak alá,
   // és ugyanaz az aláírás kerül mindkét dobozba (Vezető / Tulajdonos aláírása).
-  driverSameAsOwner Boolean @default(false)
-  driverName    String?
-  driverAddress String?
-  driverPhone   String?
+  driverSameAsOwner       Boolean    @default(false)
+  driverName              String?
+  driverAddress           String?
+  driverPhone             String?
   driverBirthDate         DateTime?
   driverLicenseNumber     String?
   driverLicenseValidUntil DateTime?
-  customerEmail String
-  customerPhone String?
+  customerEmail           String
+  customerPhone           String?
 
   // 2. lépés — Jármű + biztosítás
-  vehiclePlate     String
-  vehicleMake      String
-  vehicleModel     String
-  vehicleYear      Int?
-  vehicleVin       String?
-  hasCasco         Boolean @default(false)
-  cascoInsurer     String?
-  liabilityInsurer String?
-  relevantInsurer  String?
+  vehiclePlate                String
+  vehicleMake                 String
+  vehicleModel                String
+  vehicleYear                 Int?
+  vehicleVin                  String?
+  hasCasco                    Boolean   @default(false)
+  cascoInsurer                String?
+  liabilityInsurer            String?
+  relevantInsurer             String?
   // Jármű alapadatok (a felhasználó tölti ki, 2. lépés)
   vehicleRegistrationDate     DateTime?
   vehicleInspectionValidUntil DateTime?
   vehicleEngineCapacity       Int?
-  vehiclePowerKw               Int?
-  vehicleColor                 String?
+  vehiclePowerKw              Int?
+  vehicleColor                String?
 
   // 3. lépés — Baleset körülményei
   accidentDate              DateTime?
@@ -128,15 +146,15 @@ model DamageReport {
   photoUrls         String[]
 
   // 5. lépés — Felelősség nyilatkozatok
-  liableParty        String?
-  underInfluence     Boolean @default(false)
-  licenseValid       Boolean @default(true)
-  vatReclaimEligible    Boolean @default(false)
-  taxNumber          String?
-  consentToPhotocopy    Boolean @default(false)
-  cascoClaimRequest     Boolean @default(false)
-  vehicleEncumbrance    Boolean @default(false)
-  encumbranceFinancier  String?
+  liableParty          String?
+  underInfluence       Boolean @default(false)
+  licenseValid         Boolean @default(true)
+  vatReclaimEligible   Boolean @default(false)
+  taxNumber            String?
+  consentToPhotocopy   Boolean @default(false)
+  cascoClaimRequest    Boolean @default(false)
+  vehicleEncumbrance   Boolean @default(false)
+  encumbranceFinancier String?
 
   // 6. lépés — Aláírás + GDPR
   ownerSignatureUrl  String?
@@ -145,40 +163,95 @@ model DamageReport {
   emailSentAt        DateTime?
 
   // Meghatalmazás — ügyfél azonosítás és illetékes biztosító
-  idOrTaxNumber        String?
-  insuranceCompany     InsuranceCompany?
+  idOrTaxNumber         String?
+  insuranceCompany      InsuranceCompany?
   insuranceCompanyOther String?
-  accept8DayPayment    Boolean           @default(false)
-  knowsCascoTerms   Boolean           @default(false)
+  accept8DayPayment     Boolean           @default(false)
+  knowsCascoTerms       Boolean           @default(false)
 
   // Jegyzőkönyv — átvétel/visszaadás időpontjai (technikus rögzíti)
   vehicleCheckIn  DateTime?
   vehicleCheckOut DateTime?
 
   // Jegyzőkönyv — technikusi adatok
-  vehicleCategory          VehicleCategory?
-  workProcess              WorkProcess?
-  vehicleCondition         VehicleCondition?
-  equipmentChecklist      Json?
-  damageNotes             String?
-  technicianName          String?
-  technicianSignatureUrl  String?
+  vehicleCategory        VehicleCategory?
+  workProcess            WorkProcess?
+  vehicleCondition       VehicleCondition?
+  equipmentChecklist     Json?
+  damageNotes            String?
+  technicianName         String?
+  technicianSignatureUrl String?
 
   // Beküldési pipeline állapota
-  status                    ReportStatus @default(PENDING_TECHNICIAN)
-  technicianToken           String?      @unique
-  technicianTokenExpiresAt  DateTime?
-  finalPdfUrl               String?
+  status                   ReportStatus @default(PENDING_TECHNICIAN)
+  technicianToken          String?      @unique
+  technicianTokenExpiresAt DateTime?
+  finalPdfUrl              String?
   // A 3 önálló Meghatalmazás-PDF Supabase Storage URL-jei, LegalEntity.key szerinti kulcsokkal
   // ({ m1, autouveg, bodrogi }) — csak a műhely kapja meg emailben, lásd lib/finalize.ts.
-  authorizationPdfUrls       Json?
+  authorizationPdfUrls     Json?
   // A technikus által a Jegyzőkönyv lezárásakor kiválasztott meghatalmazások
   // (LegalEntity.key: "m1" | "autouveg" | "bodrogi"). Üres tömb (régi rekord) = mindhárom.
-  selectedAuthorizations     String[] @default([])
-  munkalapClosedAt          DateTime?
-  pdfErrorMessage           String?
+  selectedAuthorizations   String[]     @default([])
+  munkalapClosedAt         DateTime?
+  pdfErrorMessage          String?
 
   // Szerkesztési token (magic link)
-  editToken     String?   @unique
+  editToken      String?   @unique
   tokenExpiresAt DateTime?
+}
+
+// Két globális tanú a meghatalmazáson (mindhárom cég dokumentumán ugyanaz a kettő).
+// Az aláírás-kép a privát "signatures" bucketben van, itt csak a kulcsa.
+model Witness {
+  id           String   @id @default(cuid())
+  name         String
+  address      String
+  signatureKey String
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Admin felhasználó (1 db): erős jelszó + TOTP 2FA
+model AdminUser {
+  id               String              @id @default(cuid())
+  email            String              @unique
+  name             String
+  passwordHash     String
+  totpSecretEnc    String
+  totpEnabledAt    DateTime?
+  lastTotpStep     Int?
+  failedLoginCount Int                 @default(0)
+  lockedUntil      DateTime?
+  isActive         Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  lastLoginAt      DateTime?
+  recoveryCodes    AdminRecoveryCode[]
+}
+
+model AdminRecoveryCode {
+  id          String    @id @default(cuid())
+  adminUserId String
+  codeHash    String
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+}
+
+// Admin műveletek naplója (bejelentkezés, szerkesztés, újragenerálás, tanú-módosítás)
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String?
+  action    String
+  reportId  String?
+  details   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([reportId])
 }
