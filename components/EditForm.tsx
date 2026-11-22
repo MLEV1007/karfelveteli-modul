@@ -15,7 +15,7 @@ import {
   isWindshieldDamage,
   nextDescriptionOnChange,
 } from "@/lib/damageTypes"
-import { WORKSHOP_LEGAL_ENTITIES, AUTHORIZATION_KEYS } from "@/lib/workshop"
+import { WORKSHOP_LEGAL_ENTITIES } from "@/lib/workshop"
 import { OWNER_TYPE_OPTIONS, getOwnerLabels } from "@/lib/ownerType"
 import { VAT_RECLAIM_OPTIONS } from "@/lib/protocolChoices"
 import FormSection from "./ui/FormSection"
@@ -131,12 +131,19 @@ export default function EditForm({ report, mode = "token" }: EditFormProps) {
     vehicleCategory: (report.vehicleCategory ?? "") as string,
     workProcess: (report.workProcess ?? "") as string,
     vehicleCondition: (report.vehicleCondition ?? "") as string,
-    // Üres (régi kárügy) = mindhárom meghatalmazás készült, ezért mindhárom bejelölve indul
-    selectedAuthorizations:
-      report.selectedAuthorizations && report.selectedAuthorizations.length > 0
-        ? report.selectedAuthorizations
-        : [...AUTHORIZATION_KEYS] as string[],
+    // Üres/null (régi kárügy) = mindhárom meghatalmazás készült; a kiinduló érték ilyenkor SZÁNDÉKOSAN üres
+    // marad, és üresen nem is küldjük el (a szerver nem módosítja) — így nincs hamis változás az admin diffben.
+    selectedAuthorizations: [...(report.selectedAuthorizations ?? [])] as string[],
   })
+  // Régi rekord: nincs mentett választás → üresen is menthető (a meglévő viselkedés marad)
+  const legacyAuthorizations = !report.selectedAuthorizations || report.selectedAuthorizations.length === 0
+  const authorizationsMissing = !legacyAuthorizations && formData.selectedAuthorizations.length === 0
+
+  // Üres meghatalmazás-választás nem kerül a kérésbe (a szerver séma legalább egyet kér; "nincs adat" = nincs módosítás)
+  const buildPayload = () => {
+    const { selectedAuthorizations, ...rest } = formData
+    return selectedAuthorizations.length > 0 ? { ...rest, selectedAuthorizations } : rest
+  }
 
   const updateField = (field: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -164,7 +171,7 @@ export default function EditForm({ report, mode = "token" }: EditFormProps) {
         const response = await fetch(`/api/admin/kitoltesek/${report.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ updatedAt: lockStamp, regenerate, data: formData }),
+          body: JSON.stringify({ updatedAt: lockStamp, regenerate, data: buildPayload() }),
         })
         const data = await response.json().catch(() => ({}))
 
@@ -205,7 +212,7 @@ export default function EditForm({ report, mode = "token" }: EditFormProps) {
         },
         body: JSON.stringify({
           id: report.id,
-          ...formData,
+          ...buildPayload(),
         }),
       })
 
@@ -830,8 +837,13 @@ export default function EditForm({ report, mode = "token" }: EditFormProps) {
               }
             />
           ))}
-          {formData.selectedAuthorizations.length === 0 && (
+          {authorizationsMissing && (
             <p className="text-xs text-red-500">Legalább egy meghatalmazást ki kell választani</p>
+          )}
+          {legacyAuthorizations && formData.selectedAuthorizations.length === 0 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Régi kitöltés: nincs mentett választás (mindhárom meghatalmazás készült). Ha nem jelölsz ki semmit, ez nem változik.
+            </p>
           )}
         </FormSection>
 
@@ -899,7 +911,7 @@ export default function EditForm({ report, mode = "token" }: EditFormProps) {
           <Button
             type="submit"
             variant="primary"
-            disabled={isSubmitting || formData.selectedAuthorizations.length === 0}
+            disabled={isSubmitting || authorizationsMissing}
           >
             {isSubmitting ? "Mentés..." : "Módosítások mentése"}
           </Button>

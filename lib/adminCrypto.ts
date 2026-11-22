@@ -104,15 +104,17 @@ export async function verifyPassword(password: string, stored: string): Promise<
   }
 }
 
-let dummyHashPromise: Promise<string> | null = null
+// Modulbetöltéskor készül el (nem az első ismeretlen-felhasználós kérésnél), hogy az első kérés ne legyen
+// érezhetően lassabb a többinél. Hiba esetén a verifyAgainstDummy ugyanúgy false-t ad.
+const dummyHashPromise: Promise<string | null> = hashPassword(randomBytes(16).toString("hex")).catch(() => null)
 
 /**
  * Nem létező felhasználónál is ugyanannyi scrypt-munkát végzünk (időzítés alapú felhasználó-felderítés
  * ellen). Mindig false-t ad vissza.
  */
 export async function verifyAgainstDummy(password: string): Promise<false> {
-  dummyHashPromise ??= hashPassword(randomBytes(16).toString("hex"))
-  await verifyPassword(password, await dummyHashPromise)
+  const dummy = await dummyHashPromise
+  if (dummy) await verifyPassword(password, dummy)
   return false
 }
 

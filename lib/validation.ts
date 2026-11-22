@@ -243,7 +243,7 @@ const damageReportObjectSchema = z.object({
   damageType: z.preprocess(emptyToUndefined, z.enum(DAMAGE_TYPE_VALUES).optional()),
   // Szélvédős típusnál kötelező (lásd windshieldCauseRefinement); régi rekordoknál null/hiányzik
   windshieldCause: z.preprocess(emptyToUndefined, z.enum(WINDSHIELD_CAUSE_VALUES).optional()),
-  windshieldCauseOther: z.string().optional(),
+  windshieldCauseOther: z.string().trim().max(500, "Legfeljebb 500 karakter lehet").optional(),
   damageDescription: z.string().min(20, "A kár leírása legalább 20 karakter kell legyen"),
   damagePoints: z
     .array(

@@ -187,14 +187,4 @@ export async function logAudit(entry: {
   }
 }
 
-/** Kliens IP: req.ip (Vercel) → x-real-ip → x-forwarded-for első eleme. Érvénytelen alak → null. */
-export function clientIp(req: NextRequest): string | null {
-  const candidate =
-    req.ip ??
-    req.headers.get("x-real-ip") ??
-    req.headers.get("x-forwarded-for")?.split(",")[0] ??
-    null
-  const ip = candidate?.trim()
-  if (!ip || ip.length > 45 || !/^[0-9a-fA-F:.]+$/.test(ip)) return null
-  return ip
-}
+export { clientIp } from "./clientIp"

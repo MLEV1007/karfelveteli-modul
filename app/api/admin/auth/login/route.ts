@@ -2,7 +2,7 @@ import { NextRequest } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { verifyAgainstDummy, verifyPassword } from "@/lib/adminCrypto"
-import { GENERIC_AUTH_ERROR, isLocked, normalizeEmail, registerAuthFailure } from "@/lib/adminAuth"
+import { GENERIC_AUTH_ERROR, clearExpiredLock, isLocked, normalizeEmail, registerAuthFailure } from "@/lib/adminAuth"
 import {
   adminJson,
   adminUnavailable,
@@ -14,6 +14,9 @@ import {
 } from "@/lib/adminSession"
 import { enforceAdminAuthRateLimit } from "@/lib/ratelimit"
 import { createHash } from "crypto"
+
+// Ismeretlen usernél a lejárt-zárolás nullázás (egy további DB-művelet) helyett ez az olvasás fut le.
+const DUMMY_LOOKUP_EMAIL = "dummy-lookup@invalid.invalid"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -51,6 +54,8 @@ export async function POST(req: NextRequest) {
   let user
   try {
     user = await prisma.adminUser.findUnique({ where: { email } })
+    if (user) user = await clearExpiredLock(user)
+    else await prisma.adminUser.findUnique({ where: { email: DUMMY_LOOKUP_EMAIL } }) // időzítés: ismeretlen usernél is egy további olvasás
   } catch (error) {
     console.error("Admin login DB hiba:", error instanceof Error ? error.name : "ismeretlen")
     return adminUnavailable()

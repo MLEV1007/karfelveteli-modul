@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Ratelimit } from "@upstash/ratelimit"
 import { Redis } from "@upstash/redis"
+import { clientIp } from "./clientIp"
 
 // IP alapú (NEM token alapú), hogy lejárt/idegen tokennel se lehessen spammelni.
 // Minden limiter külön Redis-kulcs-előtagot (prefix) kap, így a számlálók függetlenek.
@@ -51,7 +52,8 @@ async function enforce(
     return null
   }
 
-  const ip = req.ip ?? req.headers.get("x-forwarded-for") ?? "127.0.0.1"
+  // Nem a teljes XFF-sztring (hamisítható, kulcsonként változó): lásd clientIp()
+  const ip = clientIp(req) ?? "127.0.0.1"
   const { success } = await limiter.limit(ip)
 
   if (!success) {
@@ -79,29 +81,48 @@ export async function enforceClientLogRateLimit(req: NextRequest): Promise<NextR
 
 // ---------------------------------------------------------------------------------------------
 // Admin bejelentkezés (jelszó- és 2FA-lépés): külön kulcs-előtagok, a meglévő limitek érintetlenek.
-// Fiók-alapú kulcs (e-mail hash / adminId) ÉS IP-alapú kulcs; fail-closed élesben (és ha a Redis hibázik).
+// Három limiter: (1) SZIGORÚ: IP + fiók kulcs (5 / 15 perc) — a támadó IP-jét zárja ki, a valódi admint nem;
+// (2) fiók-szintű, engedékeny (20 / 15 perc) — csak elosztott találgatás ellen, így egy idegen nem tudja
+// kizárni a valódi admint; (3) IP-szintű (10 / 15 perc). Fail-closed élesben (és ha a Redis hibázik).
 // ---------------------------------------------------------------------------------------------
-const adminLoginAccountLimiter = createLimiter("rl:admin-login-acct", Ratelimit.slidingWindow(5, "15 m"))
+const adminLoginPairLimiter = createLimiter("rl:admin-login-pair", Ratelimit.slidingWindow(5, "15 m"))
+const adminLoginAccountLimiter = createLimiter("rl:admin-login-acct2", Ratelimit.slidingWindow(20, "15 m"))
 const adminLoginIpLimiter = createLimiter("rl:admin-login-ip", Ratelimit.slidingWindow(10, "15 m"))
-const admin2faAccountLimiter = createLimiter("rl:admin-2fa-acct", Ratelimit.slidingWindow(5, "15 m"))
+const admin2faPairLimiter = createLimiter("rl:admin-2fa-pair", Ratelimit.slidingWindow(5, "15 m"))
+const admin2faAccountLimiter = createLimiter("rl:admin-2fa-acct2", Ratelimit.slidingWindow(20, "15 m"))
 const admin2faIpLimiter = createLimiter("rl:admin-2fa-ip", Ratelimit.slidingWindow(10, "15 m"))
 
 export type AdminAuthScope = "login" | "2fa"
 
+export interface LimiterLike {
+  limit(key: string): Promise<{ success: boolean; reset: number }>
+}
+
+export interface AdminAuthLimiters {
+  pair: LimiterLike | null
+  account: LimiterLike | null
+  ip: LimiterLike | null
+}
+
+const ADMIN_AUTH_LIMITERS: Record<AdminAuthScope, AdminAuthLimiters> = {
+  login: { pair: adminLoginPairLimiter, account: adminLoginAccountLimiter, ip: adminLoginIpLimiter },
+  "2fa": { pair: admin2faPairLimiter, account: admin2faAccountLimiter, ip: admin2faIpLimiter },
+}
+
 /**
  * Visszaad egy NextResponse-t (429/503), ha a kérést el kell utasítani, különben null.
  * `accountKey`: login esetén az e-mail (kisbetűs) SHA-256 hash-e, 2fa esetén az adminId — nyers e-mail nem
- * kerül a Redis-be. `ip` null esetén közös "unknown" vödör.
+ * kerül a Redis-be. `ip` null esetén közös "unknown" vödör. A `limiters` paraméter teszteléshez cserélhető.
  */
 export async function enforceAdminAuthRateLimit(
   scope: AdminAuthScope,
   ip: string | null,
-  accountKey: string
+  accountKey: string,
+  limiters: AdminAuthLimiters = ADMIN_AUTH_LIMITERS[scope]
 ): Promise<NextResponse | null> {
-  const account = scope === "login" ? adminLoginAccountLimiter : admin2faAccountLimiter
-  const byIp = scope === "login" ? adminLoginIpLimiter : admin2faIpLimiter
+  const { pair, account, ip: byIp } = limiters
 
-  if (!account || !byIp) {
+  if (!pair || !account || !byIp) {
     if (process.env.NODE_ENV === "production") {
       console.error(
         "Admin rate limiting blokkolva: hiányzó vagy érvénytelen Redis konfiguráció élő környezetben"
@@ -115,13 +136,16 @@ export async function enforceAdminAuthRateLimit(
     return null
   }
 
+  const ipPart = ip ?? "unknown"
   try {
-    const [a, b] = await Promise.all([
+    const results = await Promise.all([
+      pair.limit(`${scope}:${ipPart}:${accountKey}`),
       account.limit(`${scope}:${accountKey}`),
-      byIp.limit(`${scope}:${ip ?? "unknown"}`),
+      byIp.limit(`${scope}:${ipPart}`),
     ])
-    if (!a.success || !b.success) {
-      const reset = Math.max(a.success ? 0 : a.reset, b.success ? 0 : b.reset)
+    const failed = results.filter((r) => !r.success)
+    if (failed.length > 0) {
+      const reset = Math.max(...failed.map((r) => r.reset))
       const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000))
       return NextResponse.json(
         { error: "Túl sok próbálkozás. Kérjük, próbálja újra később." },

@@ -6,6 +6,7 @@ import { requireAdminPage } from "@/lib/adminSession"
 import { prisma } from "@/lib/db"
 import { isValidId } from "@/lib/adminApi"
 import AdminShell from "@/components/admin/AdminShell"
+import { toClientEditReport } from "@/lib/editReportData"
 import EditForm from "@/components/EditForm"
 
 export const dynamic = "force-dynamic"
@@ -18,20 +19,8 @@ export default async function AdminEditPage({ params }: { params: { id: string }
   const report = await prisma.damageReport.findUnique({ where: { id: params.id } })
   if (!report) notFound()
 
-  // A kliensnek átadott rekord NEM tartalmaz tokent, fájl-URL-t és tanú-kulcsot: az EditForm ezekből csak
-  // azt használja, hogy van-e fotó/aláírás (darabszám / jelenlét), ezért helyőrzőt adunk át.
-  const safeReport = {
-    ...report,
-    editToken: null,
-    technicianToken: null,
-    photoUrls: report.photoUrls.map(() => ""),
-    ownerSignatureUrl: report.ownerSignatureUrl ? "present" : null,
-    driverSignatureUrl: report.driverSignatureUrl ? "present" : null,
-    technicianSignatureUrl: report.technicianSignatureUrl ? "present" : null,
-    finalPdfUrl: null,
-    authorizationPdfUrls: null,
-    witnessSnapshot: null,
-  }
+  // A kliensnek átadott rekord NEM tartalmaz tokent, tanú-pillanatképet és fájl-URL-t (közös helper)
+  const safeReport = toClientEditReport(report)
 
   return (
     <AdminShell adminName={admin.name} active="kitoltesek">

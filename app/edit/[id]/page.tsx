@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { sessionCookieName, verifySessionCookieValue } from "@/lib/session"
 import { prisma } from "@/lib/db"
+import { toClientEditReport } from "@/lib/editReportData"
 import EditForm from "@/components/EditForm"
 
 interface EditPageProps {
@@ -38,7 +39,7 @@ export default async function EditPage({ params }: EditPageProps) {
           </p>
         </div>
 
-        <EditForm report={report} />
+        <EditForm report={toClientEditReport(report)} />
       </div>
     </main>
   )

@@ -1,5 +1,6 @@
 // Tanú-kérések törzsének feldolgozása (multipart/form-data: név, lakcím, aláírás rajzolva VAGY feltöltve).
 import type { NextRequest } from "next/server"
+import { readBodyLimited, BodyTooLargeError } from "./bodyLimit"
 import { MAX_UPLOAD_BYTES } from "./signatureImage"
 import { witnessTextSchema, AdminWitnessError, type SignatureInput } from "./adminWitnesses"
 
@@ -11,14 +12,15 @@ export interface ParsedWitnessForm {
 }
 
 export async function parseWitnessForm(req: NextRequest): Promise<ParsedWitnessForm> {
-  const length = Number(req.headers.get("content-length") ?? 0)
-  if (length > MAX_UPLOAD_BYTES + 512 * 1024) {
-    throw new AdminWitnessError("A kérés túl nagy (a kép legfeljebb 2 MB lehet).", 413)
-  }
+  // Valós korlát: Content-Length olvasás előtt + stream-olvasás közben (chunked kérésnél is)
   let form: FormData
   try {
-    form = await req.formData()
-  } catch {
+    const bytes = await readBodyLimited(req, MAX_UPLOAD_BYTES + 512 * 1024)
+    form = await new Response(bytes as unknown as BodyInit, { headers: { "content-type": req.headers.get("content-type") ?? "" } }).formData()
+  } catch (error) {
+    if (error instanceof BodyTooLargeError) {
+      throw new AdminWitnessError("A kérés túl nagy (a kép legfeljebb 2 MB lehet).", 413)
+    }
     throw new AdminWitnessError("Érvénytelen űrlap.")
   }
 

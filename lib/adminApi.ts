@@ -1,17 +1,21 @@
 // Közös segédek az admin API route-okhoz.
 import type { NextRequest } from "next/server"
 import { adminJson } from "./adminSession"
+import { readBodyLimited } from "./bodyLimit"
 
 const ID_REGEX = /^[A-Za-z0-9_-]{1,64}$/
 export function isValidId(id: string): boolean {
   return ID_REGEX.test(id)
 }
 
-/** JSON törzs beolvasása; érvénytelen JSON vagy túl nagy törzs esetén null. */
-export async function readJsonBody(req: NextRequest, maxBytes = 1_000_000): Promise<unknown | null> {
+/** JSON törzs beolvasása valós méretkorláttal (Content-Length + stream); érvénytelen JSON vagy túl nagy törzs esetén null. */
+export async function readJsonBody(
+  req: Pick<NextRequest, "headers" | "body">,
+  maxBytes = 1_000_000
+): Promise<unknown | null> {
   try {
-    const text = await req.text()
-    if (text.length > maxBytes) return null
+    const bytes = await readBodyLimited(req, maxBytes)
+    const text = new TextDecoder().decode(bytes)
     return text ? JSON.parse(text) : {}
   } catch {
     return null

@@ -8,7 +8,7 @@ import {
   hashRecoveryCode,
   normalizeRecoveryCode,
 } from "@/lib/adminCrypto"
-import { GENERIC_AUTH_ERROR, isLocked, registerAuthFailure } from "@/lib/adminAuth"
+import { GENERIC_AUTH_ERROR, clearExpiredLock, isLocked, registerAuthFailure } from "@/lib/adminAuth"
 import { verifyTotp } from "@/lib/totp"
 import {
   ADMIN_PENDING_COOKIE,
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
   let user
   try {
     user = await prisma.adminUser.findUnique({ where: { id: adminId } })
+    if (user) user = await clearExpiredLock(user)
   } catch (error) {
     console.error("Admin 2FA DB hiba:", error instanceof Error ? error.name : "ismeretlen")
     return adminUnavailable()

@@ -62,6 +62,12 @@ function loggable(value: unknown): DiffValue {
   return json.length > MAX_VALUE_LENGTH ? `${json.slice(0, MAX_VALUE_LENGTH)}…` : json
 }
 
+/** Csak az összehasonlításhoz (a naplózott érték változatlan): a meghatalmazás-lista sorrendje nem számít (null/üres = null). */
+function sortedForCompare(field: string, n: unknown): unknown {
+  if (field === "selectedAuthorizations" && Array.isArray(n)) return [...n].sort()
+  return n
+}
+
 /**
  * A `before` és `after` objektum különbsége a megadott mezőkre (alapértelmezés: DIFF_FIELDS).
  * Csak a valóban változott mezők szerepelnek; a tiltott kulcsnevű mezők mindig kimaradnak.
@@ -76,7 +82,7 @@ export function computeFieldDiff(
     if (FORBIDDEN_KEY.test(field)) continue
     const b = normalizeValue(before[field])
     const a = normalizeValue(after[field])
-    if (stable(b) === stable(a)) continue
+    if (stable(sortedForCompare(field, b)) === stable(sortedForCompare(field, a))) continue
     if (OPAQUE_FIELDS.has(field)) {
       changes.push({ field, opaque: true })
     } else {

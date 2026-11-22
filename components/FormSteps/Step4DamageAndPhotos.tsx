@@ -27,7 +27,7 @@ export const step4Schema = z.object({
     (v) => (v === "" ? undefined : v),
     z.enum(WINDSHIELD_CAUSE_VALUES).optional()
   ),
-  windshieldCauseOther: z.string().optional(),
+  windshieldCauseOther: z.string().trim().max(500, "Legfeljebb 500 karakter lehet").optional(),
   damageDescription: z
     .string()
     .min(20, "Kérjük részletesebben írja le (min. 20 karakter)"),

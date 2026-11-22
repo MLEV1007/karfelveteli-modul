@@ -15,7 +15,9 @@ const nextConfig = {
     // (egyszeri csere session cookie-ra) — no-referrer, hogy a token semmilyen
     // harmadik fél felé ne szivárogjon ki a Referer headerben.
     return [
-      { source: "/admin/:path*", headers: adminSecurityHeaders },
+      // /admin/munkalap/* (technikusi, tokenes oldal) kimarad: arra csak a lenti Referrer-Policy szabály vonatkozik
+      { source: "/admin", headers: adminSecurityHeaders },
+      { source: "/admin/:path((?!munkalap(?:/|$)).*)", headers: adminSecurityHeaders },
       { source: "/api/admin/:path*", headers: adminSecurityHeaders },
       {
         source: "/edit/:path*",
