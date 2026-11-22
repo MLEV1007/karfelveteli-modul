@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+/* Aláírás-modal: a szövegkijelölés tiltása minden leszármazottnál (iPad Safari, Firefox) */
+[data-signature-modal],
+[data-signature-modal] * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+[data-signature-modal] canvas {
+  touch-action: none !important;
+}
+
+/* Generált tartalom: nem kijelölhető (iPad Safari/Firefox szókijelölés ellen) */
+.sig-text::before {
+  content: attr(data-text);
+}

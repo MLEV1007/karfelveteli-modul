@@ -67,6 +67,7 @@ export default function SignatureModal({
   onConfirm,
 }: SignatureModalProps) {
   const padRef = useRef<SignaturePadHandle>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
   const [hasDrawing, setHasDrawing] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   // Az onCancel gyakran inline függvény (minden szülő-renderkor új identitás): ref-ben
@@ -84,6 +85,39 @@ export default function SignatureModal({
 
     const unlock = lockBodyScroll()
 
+    // Tablet/toll: a húzás közben ne jelölődjön ki szöveg a modalon belül
+    const onSelectStart = (e: Event) => {
+      if (overlayRef.current && e.target instanceof Node && overlayRef.current.contains(e.target)) {
+        e.preventDefault()
+      }
+    }
+    document.addEventListener("selectstart", onSelectStart)
+    // iPad Safari/Firefox (WebKit) a user-select: none ellenére is kijelölhet szót a
+    // vászon mellett (tartás / Apple Pencil). Ha mégis létrejön kijelölés, azonnal töröljük.
+    const onSelectionChange = () => {
+      try {
+        const sel = window.getSelection()
+        if (sel && !sel.isCollapsed) sel.removeAllRanges()
+      } catch {
+        // nem minden környezetben érhető el — nem gond
+      }
+    }
+    document.addEventListener("selectionchange", onSelectionChange)
+    onSelectionChange()
+    // A modal háttérén húzás közben ne induljon görgetés / kijelölés (iPad Safari)
+    const overlayEl = overlayRef.current
+    const onOverlayTouchMove = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault()
+    }
+    overlayEl?.addEventListener("touchmove", onOverlayTouchMove, { passive: false })
+    // Firefox: a pointerdown preventDefault nem mindig akadályozza meg a mousedown
+    // alapértelmezett szövegkijelölését, ezért a modal háttérén az egér-lenyomást is
+    // letiltjuk (a gombok click eseménye ettől nem változik).
+    const onOverlayMouseDown = (e: MouseEvent) => {
+      if (e.cancelable) e.preventDefault()
+    }
+    overlayEl?.addEventListener("mousedown", onOverlayMouseDown, { capture: true })
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancelRef.current()
     }
@@ -95,6 +129,10 @@ export default function SignatureModal({
     // Unmount, bezárás vagy renderelési hiba (error boundary) esetén is lefut
     return () => {
       unlock()
+      document.removeEventListener("selectstart", onSelectStart)
+      document.removeEventListener("selectionchange", onSelectionChange)
+      overlayEl?.removeEventListener("touchmove", onOverlayTouchMove)
+      overlayEl?.removeEventListener("mousedown", onOverlayMouseDown, { capture: true })
       window.removeEventListener("keydown", onKeyDown)
       window.removeEventListener("pagehide", onPageHide)
     }
@@ -133,14 +171,25 @@ export default function SignatureModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-black/60 p-3 sm:p-6"
+      className="fixed inset-0 z-[100] flex flex-col bg-black/60 p-3 sm:p-6 select-none touch-none"
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        WebkitTouchCallout: "none",
+        touchAction: "none",
+      }}
+      ref={overlayRef}
+      data-signature-modal=""
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-900">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+          <h3
+            className="sig-text pointer-events-none select-none text-base font-semibold text-gray-900 dark:text-gray-100"
+            data-text={title}
+          />
           <button
             type="button"
             onClick={onCancel}
@@ -158,9 +207,13 @@ export default function SignatureModal({
           </button>
         </div>
 
-        <p className="px-4 pt-3 text-xs text-gray-500 dark:text-gray-400">
-          Írja alá az egérrel, digitalizáló táblával vagy érintéssel az alábbi felületen.
-        </p>
+        {/* A szöveg CSS-generált tartalom (::before): az nem jelölhető ki egyetlen böngészőben sem */}
+        <p
+          role="note"
+          aria-label="Írja alá az egérrel, digitalizáló táblával vagy érintéssel az alábbi felületen."
+          className="sig-text pointer-events-none select-none px-4 pt-3 text-xs text-gray-500 dark:text-gray-400"
+          data-text="Írja alá az egérrel, digitalizáló táblával vagy érintéssel az alábbi felületen."
+        />
 
         <div className="m-4 mt-2 flex-1 overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white dark:border-gray-600">
           <SignaturePad
