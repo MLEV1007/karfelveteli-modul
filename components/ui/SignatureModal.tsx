@@ -173,7 +173,7 @@ export default function SignatureModal({
     >
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-900">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+          <h3 className="pointer-events-none select-none text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
           <button
             type="button"
             onClick={onCancel}
@@ -191,7 +191,7 @@ export default function SignatureModal({
           </button>
         </div>
 
-        <p className="px-4 pt-3 text-xs text-gray-500 dark:text-gray-400">
+        <p className="pointer-events-none select-none px-4 pt-3 text-xs text-gray-500 dark:text-gray-400">
           Írja alá az egérrel, digitalizáló táblával vagy érintéssel az alábbi felületen.
         </p>
 
