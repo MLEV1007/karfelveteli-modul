@@ -92,6 +92,18 @@ export default function SignatureModal({
       }
     }
     document.addEventListener("selectstart", onSelectStart)
+    // iPad Safari/Firefox (WebKit) a user-select: none ellenére is kijelölhet szót a
+    // vászon mellett (tartás / Apple Pencil). Ha mégis létrejön kijelölés, azonnal töröljük.
+    const onSelectionChange = () => {
+      try {
+        const sel = window.getSelection()
+        if (sel && !sel.isCollapsed) sel.removeAllRanges()
+      } catch {
+        // nem minden környezetben érhető el — nem gond
+      }
+    }
+    document.addEventListener("selectionchange", onSelectionChange)
+    onSelectionChange()
     // A modal háttérén húzás közben ne induljon görgetés / kijelölés (iPad Safari)
     const overlayEl = overlayRef.current
     const onOverlayTouchMove = (e: TouchEvent) => {
@@ -118,6 +130,7 @@ export default function SignatureModal({
     return () => {
       unlock()
       document.removeEventListener("selectstart", onSelectStart)
+      document.removeEventListener("selectionchange", onSelectionChange)
       overlayEl?.removeEventListener("touchmove", onOverlayTouchMove)
       overlayEl?.removeEventListener("mousedown", onOverlayMouseDown, { capture: true })
       window.removeEventListener("keydown", onKeyDown)
@@ -173,7 +186,10 @@ export default function SignatureModal({
     >
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-900">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-          <h3 className="pointer-events-none select-none text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+          <h3
+            className="sig-text pointer-events-none select-none text-base font-semibold text-gray-900 dark:text-gray-100"
+            data-text={title}
+          />
           <button
             type="button"
             onClick={onCancel}
@@ -191,9 +207,13 @@ export default function SignatureModal({
           </button>
         </div>
 
-        <p className="pointer-events-none select-none px-4 pt-3 text-xs text-gray-500 dark:text-gray-400">
-          Írja alá az egérrel, digitalizáló táblával vagy érintéssel az alábbi felületen.
-        </p>
+        {/* A szöveg CSS-generált tartalom (::before): az nem jelölhető ki egyetlen böngészőben sem */}
+        <p
+          role="note"
+          aria-label="Írja alá az egérrel, digitalizáló táblával vagy érintéssel az alábbi felületen."
+          className="sig-text pointer-events-none select-none px-4 pt-3 text-xs text-gray-500 dark:text-gray-400"
+          data-text="Írja alá az egérrel, digitalizáló táblával vagy érintéssel az alábbi felületen."
+        />
 
         <div className="m-4 mt-2 flex-1 overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white dark:border-gray-600">
           <SignaturePad

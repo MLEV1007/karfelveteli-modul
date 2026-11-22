@@ -10,3 +10,8 @@
 [data-signature-modal] canvas {
   touch-action: none !important;
 }
+
+/* Generált tartalom: nem kijelölhető (iPad Safari/Firefox szókijelölés ellen) */
+.sig-text::before {
+  content: attr(data-text);
+}
