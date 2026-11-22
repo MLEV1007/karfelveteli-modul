@@ -359,6 +359,11 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
       const onBlur = () => finishStroke("blur")
       const onContextMenu = (e: Event) => e.preventDefault()
       const onSelectStart = (e: Event) => e.preventDefault()
+      // iPad Safari / Android: a sima érintés-események (nem a pointer-ek) indíthatnak
+      // kijelölést, nagyítót vagy húzást. Ezeket a vásznon is le kell tiltani.
+      const onTouch = (e: TouchEvent) => {
+        if (e.cancelable) e.preventDefault()
+      }
 
       canvas.addEventListener("pointerdown", onDown)
       canvas.addEventListener("pointermove", onMove)
@@ -367,6 +372,8 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
       canvas.addEventListener("lostpointercapture", onLost)
       canvas.addEventListener("contextmenu", onContextMenu)
       canvas.addEventListener("selectstart", onSelectStart)
+      canvas.addEventListener("touchstart", onTouch, { passive: false })
+      canvas.addEventListener("touchmove", onTouch, { passive: false })
       // Tartalék, ha a pointer capture nem sikerült: a felengedés a vászonon kívül is lezár
       window.addEventListener("pointerup", onUp)
       window.addEventListener("pointercancel", onCancel)
@@ -381,6 +388,8 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
         canvas.removeEventListener("lostpointercapture", onLost)
         canvas.removeEventListener("contextmenu", onContextMenu)
         canvas.removeEventListener("selectstart", onSelectStart)
+        canvas.removeEventListener("touchstart", onTouch)
+        canvas.removeEventListener("touchmove", onTouch)
         window.removeEventListener("pointerup", onUp)
         window.removeEventListener("pointercancel", onCancel)
         window.removeEventListener("blur", onBlur)

@@ -92,6 +92,12 @@ export default function SignatureModal({
       }
     }
     document.addEventListener("selectstart", onSelectStart)
+    // A modal háttérén húzás közben ne induljon görgetés / kijelölés (iPad Safari)
+    const overlayEl = overlayRef.current
+    const onOverlayTouchMove = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault()
+    }
+    overlayEl?.addEventListener("touchmove", onOverlayTouchMove, { passive: false })
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancelRef.current()
@@ -105,6 +111,7 @@ export default function SignatureModal({
     return () => {
       unlock()
       document.removeEventListener("selectstart", onSelectStart)
+      overlayEl?.removeEventListener("touchmove", onOverlayTouchMove)
       window.removeEventListener("keydown", onKeyDown)
       window.removeEventListener("pagehide", onPageHide)
     }
