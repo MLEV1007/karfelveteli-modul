@@ -67,6 +67,7 @@ export default function SignatureModal({
   onConfirm,
 }: SignatureModalProps) {
   const padRef = useRef<SignaturePadHandle>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
   const [hasDrawing, setHasDrawing] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   // Az onCancel gyakran inline függvény (minden szülő-renderkor új identitás): ref-ben
@@ -84,6 +85,14 @@ export default function SignatureModal({
 
     const unlock = lockBodyScroll()
 
+    // Tablet/toll: a húzás közben ne jelölődjön ki szöveg a modalon belül
+    const onSelectStart = (e: Event) => {
+      if (overlayRef.current && e.target instanceof Node && overlayRef.current.contains(e.target)) {
+        e.preventDefault()
+      }
+    }
+    document.addEventListener("selectstart", onSelectStart)
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancelRef.current()
     }
@@ -95,6 +104,7 @@ export default function SignatureModal({
     // Unmount, bezárás vagy renderelési hiba (error boundary) esetén is lefut
     return () => {
       unlock()
+      document.removeEventListener("selectstart", onSelectStart)
       window.removeEventListener("keydown", onKeyDown)
       window.removeEventListener("pagehide", onPageHide)
     }
@@ -133,7 +143,14 @@ export default function SignatureModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-black/60 p-3 sm:p-6"
+      className="fixed inset-0 z-[100] flex flex-col bg-black/60 p-3 sm:p-6 select-none touch-none"
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        WebkitTouchCallout: "none",
+        touchAction: "none",
+      }}
+      ref={overlayRef}
       role="dialog"
       aria-modal="true"
       aria-label={title}

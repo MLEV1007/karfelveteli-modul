@@ -288,6 +288,13 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
         // Egérnél csak a bal gomb rajzol
         if (e.pointerType === "mouse" && e.button !== 0) return
         e.preventDefault()
+        // Tabletnél (toll/ujj) a böngésző a tartás/húzás közben szöveget is kijelölhet
+        // a környező oldalon: a már létrejött kijelölést azonnal eldobjuk.
+        try {
+          window.getSelection()?.removeAllRanges()
+        } catch {
+          // nem minden környezetben érhető el — nem gond
+        }
 
         const active = activePointer.current
         if (active) {
@@ -351,6 +358,7 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
       const onLost = makeEndHandler("lost")
       const onBlur = () => finishStroke("blur")
       const onContextMenu = (e: Event) => e.preventDefault()
+      const onSelectStart = (e: Event) => e.preventDefault()
 
       canvas.addEventListener("pointerdown", onDown)
       canvas.addEventListener("pointermove", onMove)
@@ -358,6 +366,7 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
       canvas.addEventListener("pointercancel", onCancel)
       canvas.addEventListener("lostpointercapture", onLost)
       canvas.addEventListener("contextmenu", onContextMenu)
+      canvas.addEventListener("selectstart", onSelectStart)
       // Tartalék, ha a pointer capture nem sikerült: a felengedés a vászonon kívül is lezár
       window.addEventListener("pointerup", onUp)
       window.addEventListener("pointercancel", onCancel)
@@ -371,6 +380,7 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
         canvas.removeEventListener("pointercancel", onCancel)
         canvas.removeEventListener("lostpointercapture", onLost)
         canvas.removeEventListener("contextmenu", onContextMenu)
+        canvas.removeEventListener("selectstart", onSelectStart)
         window.removeEventListener("pointerup", onUp)
         window.removeEventListener("pointercancel", onCancel)
         window.removeEventListener("blur", onBlur)
@@ -467,6 +477,7 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(
         ref={canvasRef}
         className={className}
         data-testid="signature-canvas"
+        onDragStart={(e) => e.preventDefault()}
         style={{
           width: "100%",
           height: "100%",
