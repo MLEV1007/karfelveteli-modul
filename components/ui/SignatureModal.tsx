@@ -98,6 +98,13 @@ export default function SignatureModal({
       if (e.cancelable) e.preventDefault()
     }
     overlayEl?.addEventListener("touchmove", onOverlayTouchMove, { passive: false })
+    // Firefox: a pointerdown preventDefault nem mindig akadályozza meg a mousedown
+    // alapértelmezett szövegkijelölését, ezért a modal háttérén az egér-lenyomást is
+    // letiltjuk (a gombok click eseménye ettől nem változik).
+    const onOverlayMouseDown = (e: MouseEvent) => {
+      if (e.cancelable) e.preventDefault()
+    }
+    overlayEl?.addEventListener("mousedown", onOverlayMouseDown, { capture: true })
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancelRef.current()
@@ -112,6 +119,7 @@ export default function SignatureModal({
       unlock()
       document.removeEventListener("selectstart", onSelectStart)
       overlayEl?.removeEventListener("touchmove", onOverlayTouchMove)
+      overlayEl?.removeEventListener("mousedown", onOverlayMouseDown, { capture: true })
       window.removeEventListener("keydown", onKeyDown)
       window.removeEventListener("pagehide", onPageHide)
     }
@@ -158,6 +166,7 @@ export default function SignatureModal({
         touchAction: "none",
       }}
       ref={overlayRef}
+      data-signature-modal=""
       role="dialog"
       aria-modal="true"
       aria-label={title}
