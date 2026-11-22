@@ -374,7 +374,7 @@ export const editReportSchema = editReportObjectSchema
   .refine(ownerTaxNumberFormat, ownerTaxNumberRefinement)
 
 // A korábban (szélvédő-ok nélkül) beküldött szélvédős rekordok szerkesztéséhez: az ok ilyenkor
-// nem kötelező (null marad). Az /api/edit csak akkor használja, ha a mentett rekord ilyen,
+// nem kötelező (null marad). Az admin szerkesztés csak akkor használja, ha a mentett rekord ilyen,
 // és a kérés sem tartalmaz okot.
 export const editReportLegacyWindshieldSchema = editReportObjectSchema
   .refine(insuranceOtherRequired, insuranceOtherRefinement)

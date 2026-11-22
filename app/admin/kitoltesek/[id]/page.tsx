@@ -12,6 +12,7 @@ import { WORKSHOP_LEGAL_ENTITIES } from "@/lib/workshop"
 import AdminShell from "@/components/admin/AdminShell"
 import StatusBadge from "@/components/admin/StatusBadge"
 import ReportActions from "@/components/admin/ReportActions"
+import DeleteReportButton from "@/components/admin/DeleteReportButton"
 import Card from "@/components/ui/Card"
 
 export const dynamic = "force-dynamic"
@@ -77,6 +78,7 @@ export default async function AdminReportDetailPage({ params }: { params: { id: 
       </div>
 
       <ReportActions reportId={report.id} status={report.status} customerEmail={report.customerEmail} />
+      <DeleteReportButton reportId={report.id} referenceNumber={report.referenceNumber} />
 
       <Card className="mb-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Fájlok</h2>

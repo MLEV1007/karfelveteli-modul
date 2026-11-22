@@ -1,5 +1,4 @@
 import type { DamageReport, Prisma } from "@prisma/client"
-import { randomUUID } from "crypto"
 import { prisma } from "./db"
 import { generateMainReportPDF, generateAuthorizationPdfs, type FullPdfData } from "./pdf"
 import { sendFinalReportEmails } from "./email"
@@ -158,11 +157,9 @@ function toFullPdfData(
 
 export type FinalizeResult = { ok: true } | { ok: false; error: string }
 
-const EDIT_TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000 // 14 nap
-
 interface FinalizeOptions {
   // Egy már COMPLETED rekordot is újra végigfuttat a pipeline-on (új PDF + email) —
-  // a műhelyi szerkesztés utáni dokumentum-frissítéshez használja az /api/edit route.
+  // az admin szerkesztés utáni dokumentum-frissítéshez használja.
   force?: boolean
   // Mely végleges e-maileket küldje ki (alapértelmezés: mindkettőt — a technikusi lezárás útja).
   // Az admin „újragenerálás” alapból NEM küld e-mailt, csak a kijelölt címzetteknek.
@@ -185,19 +182,6 @@ export async function finalizeReport(
   }
 
   try {
-    // Szerkesztési token (csak a műhelynek) — a jegyzőkönyv lezárásakor jön létre,
-    // 14 napig érvényes a lezárástól (nem a beküldéstől) számítva. Egy utólagos
-    // szerkesztés/újraküldés a már meglévő tokent használja, nem generál újat.
-    let editToken = report.editToken
-    if (!editToken) {
-      editToken = randomUUID()
-      const tokenExpiresAt = new Date(Date.now() + EDIT_TOKEN_TTL_MS)
-      await prisma.damageReport.update({
-        where: { id: report.id },
-        data: { editToken, tokenExpiresAt },
-      })
-    }
-
     // A két tanú (snapshot vagy az aktuális 2 aktív tanú) — hiba esetén a pipeline FAILED_PDF-re áll
     const witnesses = await resolveWitnesses(report)
 
@@ -237,7 +221,7 @@ export async function finalizeReport(
     const finalPdfUrl = await uploadFinalPdf(pdfBuffer, report.vehiclePlate, report.id)
     const authorizationPdfUrls = await uploadAuthorizationPdfs(authorizationPdfs, report.vehiclePlate, report.id)
 
-    await sendFinalReportEmails({ ...pdfData, editToken }, pdfBuffer, authorizationPdfs, options?.emails)
+    await sendFinalReportEmails(pdfData, pdfBuffer, authorizationPdfs, options?.emails)
 
     await prisma.damageReport.update({
       where: { id: report.id },

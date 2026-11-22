@@ -90,8 +90,8 @@ test.describe("biztonsági fejlécek", () => {
     }
   })
 
-  test("a meglévő fejlécek nem tűntek el (/edit, /api/edit/session: no-referrer)", async ({ request }) => {
-    for (const path of ["/edit/valami", "/api/edit/session"]) {
+  test("a meglévő fejlécek nem tűntek el (/form, /api/submit: no-referrer)", async ({ request }) => {
+    for (const path of ["/form", "/api/submit"]) {
       const res = await request.get(path, { maxRedirects: 0 })
       expect(res.headers()["referrer-policy"], path).toBe("no-referrer")
     }

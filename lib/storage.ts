@@ -140,3 +140,19 @@ export async function convertFileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file)
   })
 }
+
+// Supabase Storage-objektum törlése a DB-ben tárolt nyilvános URL alapján (bucket: "signatures" vagy "reports").
+// true = törölve (vagy már nincs), false = hiba vagy nem ehhez a bucket-hez tartozó URL.
+export async function deleteStorageObjectByUrl(bucket: "signatures" | "reports", url: string): Promise<boolean> {
+  const marker = `/storage/v1/object/public/${bucket}/`
+  const idx = url.indexOf(marker)
+  if (idx === -1) return false
+  const path = decodeURIComponent(url.slice(idx + marker.length).split(/[?#]/)[0])
+  if (!path || path.split("/").some((s) => s === ".." || s === "")) return false
+  const { error } = await supabaseAdmin.storage.from(bucket).remove([path])
+  if (error) {
+    console.error("Storage törlési hiba:", bucket)
+    return false
+  }
+  return true
+}

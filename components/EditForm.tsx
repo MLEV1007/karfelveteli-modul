@@ -43,13 +43,12 @@ const VEHICLE_TYPE_OPTIONS = [
 
 interface EditFormProps {
   report: DamageReport
-  // "token" (alapértelmezés): ügyfél/műhelyi tokenes szerkesztés (PATCH /api/edit, mentéskor a lezárt
-  // rekord dokumentumai újragenerálódnak és kimennek). "admin": admin szerkesztés
-  // (PATCH /api/admin/kitoltesek/[id], optimista zárolással, dokumentum-újragenerálás opcionális).
-  mode?: "token" | "admin"
+  // Csak admin szerkesztés (PATCH /api/admin/kitoltesek/[id], optimista zárolással,
+  // dokumentum-újragenerálás opcionális). A publikus, tokenes szerkesztés megszűnt.
+  mode?: "admin"
 }
 
-export default function EditForm({ report, mode = "token" }: EditFormProps) {
+export default function EditForm({ report, mode = "admin" }: EditFormProps) {
   const isAdmin = mode === "admin"
   const router = useRouter()
   // Admin mód: az űrlap betöltésekor kapott updatedAt — ezt küldjük vissza az optimista zároláshoz
@@ -205,41 +204,6 @@ export default function EditForm({ report, mode = "token" }: EditFormProps) {
         return
       }
 
-      const response = await fetch("/api/edit", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: report.id,
-          ...buildPayload(),
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.status === 401) {
-        throw new Error("A szerkesztési link lejárt vagy érvénytelen.")
-      }
-      if (response.status === 207) {
-        // Az adatok elmentve, de a frissített PDF/email kiküldése sikertelen volt —
-        // a "Mentés" gomb újbóli megnyomása újrapróbálja (a mentett adatokkal).
-        throw new Error(data.error || "A frissített dokumentumok kiküldése sikertelen volt.")
-      }
-      if (response.status === 400 && data.details && typeof data.details === "object") {
-        const fieldErrors: Record<string, string> = {}
-        for (const [key, msgs] of Object.entries(data.details as Record<string, string[]>)) {
-          if (msgs?.[0]) fieldErrors[key] = msgs[0]
-        }
-        setErrors(fieldErrors)
-      }
-      if (!response.ok) {
-        throw new Error(data.error || "Sikertelen mentés")
-      }
-
-      // Sikeres mentés
-      setSubmitSuccess(true)
-      window.scrollTo({ top: 0, behavior: "smooth" })
     } catch (error) {
       console.error("Szerkesztési hiba:", error)
       setSubmitError(

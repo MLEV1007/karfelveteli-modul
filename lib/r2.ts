@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 const r2Client = new S3Client({
@@ -66,4 +66,23 @@ export async function getPresignedDownloadUrl(publicUrl: string, expiresInSecond
   const key = decodeURIComponent(publicUrl.slice(prefix.length).split(/[?#]/)[0])
   if (!key || key.split("/").some((s) => s === ".." || s === "")) return null
   return getSignedUrl(r2Client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: expiresInSeconds })
+}
+
+// Egy R2-objektum törlése a DB-ben tárolt nyilvános URL alapján. true = törölve (vagy már nem létezik),
+// false = hiba vagy nem a mi bucketünk URL-je. Csak a saját CLOUDFLARE_R2_PUBLIC_URL alatti kulcsot töröl.
+export async function deleteR2ObjectByUrl(publicUrl: string): Promise<boolean> {
+  const base = process.env.CLOUDFLARE_R2_PUBLIC_URL
+  const bucket = process.env.CLOUDFLARE_R2_BUCKET_NAME
+  if (!base || !bucket || !process.env.CLOUDFLARE_R2_ACCOUNT_ID) return false
+  const prefix = base.replace(/\/+$/, "") + "/"
+  if (!publicUrl.startsWith(prefix)) return false
+  const key = decodeURIComponent(publicUrl.slice(prefix.length).split(/[?#]/)[0])
+  if (!key || key.split("/").some((s) => s === ".." || s === "")) return false
+  try {
+    await r2Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }))
+    return true
+  } catch (error) {
+    console.error("R2 törlési hiba:", error instanceof Error ? error.name : "ismeretlen")
+    return false
+  }
 }

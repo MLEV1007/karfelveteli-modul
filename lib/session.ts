@@ -1,9 +1,9 @@
 import { createHmac, timingSafeEqual } from "crypto"
 
 /**
- * Aláírt, rövid életű session cookie-k a hosszú élettartamú (7/30 napos),
- * e-mailben kiküldött editToken/technicianToken helyett. A nyers tokent csak
- * a /api/edit/session és /api/munkalap/session csere-endpoint látja egyszer —
+ * Aláírt, rövid életű session cookie-k a hosszú élettartamú (30 napos),
+ * e-mailben kiküldött technicianToken helyett. A nyers tokent csak
+ * a /api/munkalap/session csere-endpoint látja egyszer —
  * onnantól minden kérés ezzel a stateless, HMAC-aláírt cookie-val hitelesít,
  * a token soha nem kerül vissza URL-be vagy kliens oldali JS-be.
  */

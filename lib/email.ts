@@ -9,7 +9,6 @@ interface EmailData extends DamageReportInput {
   id: string
   referenceNumber: string
   createdAt: Date
-  editToken?: string
 }
 
 // A WORKSHOP_EMAIL env változóban vesszővel elválasztva több cím is megadható

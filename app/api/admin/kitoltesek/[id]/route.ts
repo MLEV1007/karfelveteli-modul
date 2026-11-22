@@ -9,6 +9,7 @@ import { withLock } from "@/lib/adminLocks"
 import { buildEditUpdateData, pickEditSchema } from "@/lib/editReportData"
 import { computeFieldDiff } from "@/lib/adminDiff"
 import { finalizeReport } from "@/lib/finalize"
+import { deleteReportPermanently } from "@/lib/adminReportDelete"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -116,6 +117,49 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return locked.busy ? busy() : locked.value
   } catch (error) {
     console.error("Admin szerkesztési hiba:", error instanceof Error ? error.name : "ismeretlen")
+    return serverError()
+  }
+}
+
+// DELETE /api/admin/kitoltesek/[id] — végleges törlés: az adatbázis sorok, az audit-diffek és a fájlok.
+// Törzs: { referenceNumber } — csak akkor törlünk, ha egyezik a rekord referenciaszámával (gépelt megerősítés).
+const deleteBodySchema = z
+  .object({
+    referenceNumber: z.string().trim().min(1).max(50),
+  })
+  .strict()
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const admin = await requireAdminApi(req)
+  if ("status" in admin) return admin
+  if (!isValidId(params.id)) return notFound()
+
+  try {
+    const body = deleteBodySchema.safeParse(await readJsonBody(req, 4_000))
+    if (!body.success) return badRequest("Érvénytelen kérés.")
+
+    const locked = await withLock(`report:${params.id}`, async () => {
+      const outcome = await deleteReportPermanently(params.id, body.data.referenceNumber)
+      if (!outcome.ok) {
+        if (outcome.reason === "not_found") return notFound()
+        return adminJson({ error: "A referenciaszám nem egyezik, a törlés nem történt meg." }, 400)
+      }
+
+      // Csak minimális nyom marad: ki, mikor, melyik referenciaszámú kárfelvételt törölte (személyes adat nélkül)
+      await logAudit({
+        adminId: admin.adminId,
+        action: "REPORT_DELETE",
+        reportId: null,
+        details: { referenceNumber: body.data.referenceNumber, storageFailures: outcome.storageFailures },
+        ip: clientIp(req),
+      })
+
+      return adminJson({ ok: true, storageWarning: outcome.storageWarning })
+    })
+
+    return locked.busy ? busy() : locked.value
+  } catch (error) {
+    console.error("Admin törlési hiba:", error instanceof Error ? error.name : "ismeretlen")
     return serverError()
   }
 }

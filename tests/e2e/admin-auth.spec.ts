@@ -82,8 +82,8 @@ test.describe("middleware védelem", () => {
     expect(res.status()).toBeLessThan(400)
     expect(res.headers()["location"]).toContain("error=missing_token")
     expect(res.headers()["x-robots-tag"]).toBeUndefined()
-    // /api/submit és /api/edit: nem admin-védelem (401 admin-üzenettel) válaszol
-    for (const path of ["/api/submit", "/api/edit"]) {
+    // /api/submit: nem admin-védelem (401 admin-üzenettel) válaszol
+    for (const path of ["/api/submit"]) {
       const r = await request.post(path, { data: {} })
       const text = await r.text()
       expect(text).not.toContain("Nincs bejelentkezve")

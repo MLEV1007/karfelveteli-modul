@@ -16,7 +16,7 @@ import {
 import type { DamageReportInput } from "@/lib/validation"
 
 interface WorkshopEmailProps {
-  data: DamageReportInput & { id: string; referenceNumber: string; createdAt: Date; editToken?: string }
+  data: DamageReportInput & { id: string; referenceNumber: string; createdAt: Date }
   // A mellékelt (a technikus által kiválasztott) meghatalmazások cégnevei
   authorizationNames?: string[]
 }
@@ -116,19 +116,6 @@ export default function WorkshopEmail({ data, authorizationNames = [] }: Worksho
                   </Link>
                 </Text>
               ))}
-            </Section>
-          )}
-
-          {/* Szerkesztési link (csak szerviznek) */}
-          {data.editToken && (
-            <Section style={buttonSection}>
-              <Button
-                href={`${process.env.NEXT_PUBLIC_APP_URL}/api/edit/session?id=${data.id}&token=${data.editToken}`}
-                style={button}
-              >
-                Beküldött adatok szerkesztése →
-              </Button>
-              <Text style={smallText}>A szerkesztési link 14 napig érvényes.</Text>
             </Section>
           )}
 

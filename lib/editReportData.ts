@@ -1,6 +1,5 @@
 // A szerkesztés közös logikája: melyik Zod-séma érvényes, és a validált adatból a Prisma
-// frissítési adat. Közös az ügyfél-oldali tokenes /api/edit és az admin PATCH között,
-// hogy a két út mezőlistája ne csússzon szét.
+// frissítési adat. Az admin PATCH (/api/admin/kitoltesek/[id]) használja.
 import type { DamageReport, Prisma } from "@prisma/client"
 import { editReportSchema, editReportLegacyWindshieldSchema, type EditReportInput } from "./validation"
 import { isWindshieldDamage, normalizeWindshieldCause } from "./damageTypes"
@@ -91,8 +90,8 @@ export function buildEditUpdateData(v: EditReportInput): Prisma.DamageReportUnch
 }
 
 /**
- * A kliens-komponensnek (EditForm) átadható rekord — közös az ügyfél-oldali /edit/[id] és az admin
- * szerkesztő oldalnál, hogy a két oldal ne csússzon szét. SOHA nem tartalmaz tokent (editToken,
+ * A kliens-komponensnek (EditForm) átadható rekord — az admin szerkesztő oldalon használt.
+ * SOHA nem tartalmaz tokent (editToken,
  * technicianToken és lejáratuk), tanú-pillanatképet (witnessSnapshot), tárhely-hivatkozást / URL-t
  * (fotók, aláírások, PDF-ek), belső azonosítót vagy hibaüzenetet. Az EditForm ezekből csak azt használja,
  * hogy van-e fotó (darabszám) / aláírás (jelenlét), ezért ezekhez helyőrző érték kerül.
